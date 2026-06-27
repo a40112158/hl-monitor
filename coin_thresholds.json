@@ -1,0 +1,32 @@
+{
+  "DEFAULT": {
+    "score_push": 8,
+    "perp": 1000000,
+    "spot": 500000,
+    "min_watch_score": 5
+  },
+  "BTC": {
+    "score_push": 10,
+    "perp": 10000000,
+    "spot": 5000000,
+    "min_watch_score": 6
+  },
+  "ETH": {
+    "score_push": 9,
+    "perp": 5000000,
+    "spot": 3000000,
+    "min_watch_score": 6
+  },
+  "HYPE": {
+    "score_push": 7,
+    "perp": 2000000,
+    "spot": 800000,
+    "min_watch_score": 5
+  },
+  "SOL": {
+    "score_push": 8,
+    "perp": 3000000,
+    "spot": 1200000,
+    "min_watch_score": 5
+  }
+}
