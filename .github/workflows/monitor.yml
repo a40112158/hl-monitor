@@ -77,20 +77,47 @@ jobs:
           LONG_TERM_MIN_STREAK: "2"
           LONG_TERM_RISK_PCT: "2"
           LONG_TERM_MAX_LEVERAGE: "3"
+
+          # 每日归档：reports/daily/YYYY-MM-DD，每天保留一份长期复盘快照
+          DAILY_ARCHIVE: "1"
+          DAILY_ARCHIVE_KEEP_DAYS: "30"
+
+          # 钱包质量系统：最近30天滚动分类并导出全部钱包
+          WALLET_QUALITY_MODE: "1"
+          WALLET_QUALITY_WINDOW_DAYS: "30"
+          WALLET_QUALITY_MIN_SAMPLES: "10"
+          WALLET_QUALITY_EXPORT: "1"
+
+          # 合约杠杆质量过滤：适配低杠杆长期单
+          LEVERAGE_QUALITY_MODE: "1"
+          LEVERAGE_LOW_MAX: "3"
+          LEVERAGE_MID_MAX: "5"
+          LEVERAGE_HIGH_MIN: "10"
+          LIQ_SAFE_DISTANCE_PCT: "40"
+          LIQ_DANGER_DISTANCE_PCT: "10"
+
           PYTHONUNBUFFERED: "1"
 
         run: |
           python -u hl_monitor_final.py --rpm 200 --concurrency 5 --note "github hourly"
 
-      - name: Keep latest reports
+      - name: Clean report archives
         run: |
           mkdir -p reports
-          find reports -type f -name "final_report_run_*.txt" | sort | head -n -5 | xargs -r rm -f
+          # 新版不再保留小时级 final_report_run_x.txt，历史遗留文件也删除
+          rm -f reports/final_report_run_*.txt
+          # 每日归档只保留最近 30 天
+          if [ -d reports/daily ]; then
+            find reports/daily -mindepth 1 -maxdepth 1 -type d | sort | head -n -30 | xargs -r rm -rf
+          fi
 
       - name: Commit monitor state
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin main
+          git pull --rebase origin main || true
 
           git add hl_monitor.db reports coin_thresholds.json || true
 
@@ -98,5 +125,17 @@ jobs:
             echo "No changes to commit."
           else
             git commit -m "update hl monitor state"
-            git push
+
+            for i in 1 2 3; do
+              git pull --rebase origin main || true
+              if git push; then
+                echo "Push success."
+                exit 0
+              fi
+              echo "Push failed, retry $i..."
+              sleep 5
+            done
+
+            echo "Push failed after retries."
+            exit 1
           fi
