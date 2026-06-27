@@ -55,6 +55,14 @@ TG_CHAT_ID = os.getenv("TG_CHAT_ID", "").strip()
 PUSH_EVERY_RUN = os.getenv("PUSH_EVERY_RUN", "0") == "1"
 DAILY_PUSH_HOUR_UTC = int(os.getenv("DAILY_PUSH_HOUR_UTC", "0"))
 MIN_OK_RATE = float(os.getenv("MIN_OK_RATE", "0.85"))
+MIN_WALLET_COUNT = int(os.getenv("MIN_WALLET_COUNT", "100"))
+
+# 低杠杆长期单模式：把信号再过滤成“长期观察计划”，避免被短线噪音带偏
+LONG_TERM_MODE = os.getenv("LONG_TERM_MODE", "1") == "1"
+LONG_TERM_MIN_SCORE = float(os.getenv("LONG_TERM_MIN_SCORE", "7"))
+LONG_TERM_MIN_STREAK = int(os.getenv("LONG_TERM_MIN_STREAK", "2"))
+LONG_TERM_RISK_PCT = float(os.getenv("LONG_TERM_RISK_PCT", "2"))
+LONG_TERM_MAX_LEVERAGE = float(os.getenv("LONG_TERM_MAX_LEVERAGE", "3"))
 
 # 默认阈值，可被 coin_thresholds.json 覆盖
 DEFAULT_THRESHOLDS = {
@@ -447,6 +455,22 @@ def load_rows(table: str, run_id: int) -> List[Dict[str, Any]]:
     return rows
 
 
+def run_wallet_stats(run_id: int) -> Dict[str, Any]:
+    rows = load_rows("wallet_states", run_id)
+    total = len(rows)
+    ok = sum(1 for w in rows if w.get("status") == "ok")
+    partial = sum(1 for w in rows if w.get("status") == "partial")
+    failed = sum(1 for w in rows if w.get("status") == "failed")
+    ok_rate = (ok + partial * 0.5) / total if total else 0.0
+    return {
+        "total": total,
+        "ok": ok,
+        "partial": partial,
+        "failed": failed,
+        "ok_rate": ok_rate,
+    }
+
+
 def load_wallet_addresses() -> Dict[str, List[str]]:
     address_groups: Dict[str, List[str]] = defaultdict(list)
     for group, filename in ADDRESS_SOURCES.items():
@@ -464,10 +488,10 @@ def load_wallet_addresses() -> Dict[str, List[str]]:
                 if group not in address_groups[addr]:
                     address_groups[addr].append(group)
                     count += 1
-        print(f"{group} 读取地址数：{count}")
+        print(f"{group} 读取地址数：{count}", flush=True)
     if not address_groups:
         raise RuntimeError("没有读取到钱包地址：请检查 money_printer_all_addresses.txt 和 smart_money_all_addresses.txt")
-    print(f"去重后总地址数：{len(address_groups)}")
+    print(f"去重后总地址数：{len(address_groups)}", flush=True)
     return dict(address_groups)
 
 
@@ -1392,6 +1416,185 @@ def should_push_daily() -> bool:
     return utc_now().hour == DAILY_PUSH_HOUR_UTC and not already_pushed_today("daily")
 
 
+
+def get_coin_recent_rows(coin: str, run_id: int, limit: int = 6) -> List[Dict[str, Any]]:
+    """读取某个币最近几轮信号，用于判断连续性。"""
+    conn = db_conn()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+        SELECT run_id, direction, final_score, confidence, signal_state, signal_type
+        FROM coin_signals
+        WHERE coin = ? AND run_id <= ?
+        ORDER BY run_id DESC
+        LIMIT ?
+        """, (coin, run_id, limit))
+        rows = [dict(x) for x in cur.fetchall()]
+    except Exception:
+        rows = []
+    conn.close()
+    return rows
+
+
+def signal_streak(coin: str, direction: str, run_id: int, min_abs_score: float = 0.0) -> int:
+    """统计最近连续同方向轮数。只统计分数达到 min_abs_score 的轮次。"""
+    rows = get_coin_recent_rows(coin, run_id, limit=8)
+    streak = 0
+    for r in rows:
+        fs = abs(safe_float(r.get("final_score")) or 0.0)
+        if r.get("direction") == direction and fs >= min_abs_score:
+            streak += 1
+        else:
+            break
+    return streak
+
+
+def long_term_leverage_hint(sig: Dict[str, Any], ctx: Dict[str, Any]) -> str:
+    """按波动和信号质量给低杠杆建议，不做自动下单。"""
+    pct4 = abs(safe_float(ctx.get("pct_4h")) or 0.0)
+    pct24 = abs(safe_float(ctx.get("pct_24h")) or 0.0)
+    stype = sig.get("signal_type") or ""
+    confidence = sig.get("confidence") or "低"
+    score = abs(safe_float(sig.get("final_score")) or 0.0)
+
+    cap = LONG_TERM_MAX_LEVERAGE
+    if pct4 >= 5 or pct24 >= 12 or stype in ("高位追多", "低位追空"):
+        cap = min(cap, 2.0)
+    elif confidence == "高" and score >= 9 and stype in ("低位吸筹", "高位加空", "普通趋势", "高位突破", "低位破位"):
+        cap = min(cap, 3.0)
+    else:
+        cap = min(cap, 2.5)
+
+    if cap <= 2:
+        return "1x-2x"
+    if cap <= 2.5:
+        return "1x-2.5x"
+    return "1x-3x"
+
+
+def long_term_entry_plan(sig: Dict[str, Any], ctx: Dict[str, Any], streak: int) -> Dict[str, str]:
+    direction = sig.get("direction")
+    stype = sig.get("signal_type") or ""
+    confidence = sig.get("confidence") or "低"
+    state = sig.get("signal_state") or ""
+    score = abs(safe_float(sig.get("final_score")) or 0.0)
+    pct4 = safe_float(ctx.get("pct_4h"))
+    pos = safe_float(ctx.get("pos_24h"))
+
+    avoid_states = {"可能对冲", "现货流出+合约做多，换杠杆/冲突", "不明确", "追涨杀跌风险"}
+    good_state = state in {"清晰同向", "合约主导", "现货主导", "现货持有+合约做空，对冲偏空"}
+    bad_position = stype in {"高位追多", "低位追空"}
+
+    if confidence == "低" or state in avoid_states or bad_position:
+        action = "只观察，不适合直接做长期单"
+        entry = "等待下一轮确认；不要因为单次异动直接开仓。"
+    elif score >= LONG_TERM_MIN_SCORE and streak >= LONG_TERM_MIN_STREAK and good_state:
+        action = "可进入低杠杆长期观察"
+        entry = "分3批：30%试仓，30%确认加仓，40%回踩/反抽后再加；不要一次打满。"
+    elif score >= LONG_TERM_MIN_SCORE and good_state:
+        action = "等待连续性确认"
+        entry = f"当前只有连续{streak}轮，建议等到连续{LONG_TERM_MIN_STREAK}轮同方向后再考虑。"
+    else:
+        action = "只观察"
+        entry = "分数或状态不足，先看下一轮。"
+
+    if direction == "bullish":
+        invalid = "失效条件：final_score跌破4；跌出做多观察；现货转流出且合约净多下降；BTC 4h明显转弱。"
+        price_note = "做多更适合低位吸筹、普通趋势或突破回踩；高位追多要降仓位。"
+    else:
+        invalid = "失效条件：final_score回到-4以内；跌出做空观察；空头明显平仓；现货重新流入；BTC 4h明显转强。"
+        price_note = "做空更适合高位加空、普通趋势或破位反抽；低位追空要降仓位。"
+
+    if pct4 is not None and abs(pct4) >= 5:
+        price_note += f" 当前4h波动 {fmt_pct(pct4)}，不适合重仓追。"
+    if pos is not None:
+        price_note += f" 24h价格位置约 {pos:.2f}。"
+
+    return {
+        "action": action,
+        "entry": entry,
+        "invalid": invalid,
+        "price_note": price_note,
+        "leverage": long_term_leverage_hint(sig, ctx),
+    }
+
+
+def build_long_term_candidates(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """把短线/小时级信号过滤成适合低杠杆长期单观察的候选。"""
+    if not LONG_TERM_MODE:
+        return []
+
+    out: List[Dict[str, Any]] = []
+    for s in signals:
+        score = abs(safe_float(s.get("final_score")) or 0.0)
+        if score < threshold(load_thresholds(), s["coin"], "min_watch_score"):
+            continue
+        coin = s["coin"]
+        direction = s["direction"]
+        ctx = ctx_map.get(coin, {})
+        streak = signal_streak(coin, direction, run_id, min_abs_score=threshold(load_thresholds(), coin, "min_watch_score"))
+        plan = long_term_entry_plan(s, ctx, streak)
+
+        # 长期评分：final_score + 连续性 + 可信度 + 清晰状态 - 风险位置
+        lt_score = score
+        if streak >= LONG_TERM_MIN_STREAK:
+            lt_score += 1.0
+        if s.get("confidence") == "高":
+            lt_score += 1.0
+        elif s.get("confidence") == "低":
+            lt_score -= 1.0
+        if s.get("signal_state") in {"清晰同向", "合约主导", "现货主导", "现货持有+合约做空，对冲偏空"}:
+            lt_score += 0.8
+        if s.get("signal_type") in {"高位追多", "低位追空"}:
+            lt_score -= 1.5
+
+        out.append({
+            "coin": coin,
+            "direction": direction,
+            "direction_cn": dir_cn(direction),
+            "final_score": safe_float(s.get("final_score")) or 0.0,
+            "long_term_score": lt_score,
+            "streak": streak,
+            "confidence": s.get("confidence"),
+            "signal_state": s.get("signal_state"),
+            "signal_type": s.get("signal_type"),
+            "leverage": plan["leverage"],
+            "action": plan["action"],
+            "entry": plan["entry"],
+            "invalid": plan["invalid"],
+            "price_note": plan["price_note"],
+            "risk_pct": LONG_TERM_RISK_PCT,
+        })
+
+    out.sort(key=lambda x: x["long_term_score"], reverse=True)
+    return out
+
+
+def write_long_term_plan(candidates: List[Dict[str, Any]]) -> None:
+    ensure_dirs()
+    path = os.path.join(REPORT_DIR, "long_term_plan.txt")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("【低杠杆长期单观察计划】\n")
+        f.write(f"更新时间 UTC：{now_str()}\n")
+        f.write(f"风控默认：单币最大亏损控制在账户 {LONG_TERM_RISK_PCT:.1f}% 左右；建议低杠杆，不一次打满。\n\n")
+        if not candidates:
+            f.write("暂无适合低杠杆长期单的候选。\n")
+            return
+        for c in candidates[:TOP_N]:
+            f.write(f"{c['coin']} {c['direction_cn']} | 长期分={c['long_term_score']:.1f} | final={c['final_score']:+.1f} | 连续={c['streak']}轮 | 可信度={c['confidence']}\n")
+            f.write(f"状态：{c['signal_state']} | 类型：{c['signal_type']} | 建议杠杆：{c['leverage']}\n")
+            f.write(f"动作：{c['action']}\n")
+            f.write(f"入场：{c['entry']}\n")
+            f.write(f"价格：{c['price_note']}\n")
+            f.write(f"失效：{c['invalid']}\n\n")
+
+    csv_path = os.path.join(REPORT_DIR, "long_term_candidates.csv")
+    if candidates:
+        with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
+            writer = csv.DictWriter(f, fieldnames=list(candidates[0].keys()))
+            writer.writeheader()
+            writer.writerows(candidates)
+
 def write_watchlists(signals: List[Dict[str, Any]]) -> None:
     ensure_dirs()
     mapping = {"long": "watchlist_long.txt", "short": "watchlist_short.txt", "observe": "watchlist_observe.txt"}
@@ -1422,7 +1625,14 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
     lines.append("币种阈值 + 钱包主动变化 + 市场环境 + 观察列表 + TG 推送")
     lines.append(f"UTC时间：{now_str()}")
     lines.append(f"run_id：{run_id}")
-    lines.append(f"有效成功率：{ok_rate*100:.2f}% | 新信号追踪：{new_signal_events} | 更新动作收益：{updated_actions} | 更新信号收益：{updated_signals}")
+    stats = run_wallet_stats(run_id)
+    lines.append("【扫描健康】")
+    lines.append(
+        f"监控钱包：{stats['total']} | 成功：{stats['ok']} | "
+        f"partial：{stats['partial']} | failed：{stats['failed']} | "
+        f"成功率：{stats['ok_rate']*100:.2f}%"
+    )
+    lines.append(f"新信号追踪：{new_signal_events} | 更新动作收益：{updated_actions} | 更新信号收益：{updated_signals}")
     lines.append("")
     lines.append("【大盘环境】")
     lines.append(f"BTC: 1h {fmt_pct(btc.get('pct_1h'))} | 4h {fmt_pct(btc.get('pct_4h'))} | 24h {fmt_pct(btc.get('pct_24h'))} | regime={btc.get('regime')}")
@@ -1459,6 +1669,22 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
         for s in observes[:TOP_N]:
             lines.append(f"{s['coin']} {dir_cn(s['direction'])} score={s['final_score']:+.1f} | {s['signal_state']} | 风险：{s['risk']}")
     lines.append("")
+    if LONG_TERM_MODE:
+        lt_candidates = build_long_term_candidates(run_id, signals, ctx_map)
+        lines.append("【低杠杆长期单过滤】")
+        if not lt_candidates:
+            lines.append("暂无适合低杠杆长期单的候选。")
+        else:
+            for c in lt_candidates[:TOP_N]:
+                lines.append(
+                    f"{c['coin']} {c['direction_cn']} | 长期分={c['long_term_score']:.1f} | "
+                    f"final={c['final_score']:+.1f} | 连续={c['streak']}轮 | "
+                    f"可信度={c['confidence']} | 建议杠杆={c['leverage']}"
+                )
+                lines.append(f"  动作：{c['action']}")
+                lines.append(f"  入场：{c['entry']}")
+                lines.append(f"  失效：{c['invalid']}")
+        lines.append("")
     lines.append("【单钱包主动变化 Top】")
     if not actions:
         lines.append("暂无超过阈值的钱包主动变化。")
@@ -1566,8 +1792,19 @@ async def run_once(args: argparse.Namespace) -> None:
     init_db()
     thresholds = load_thresholds()
     addresses = load_wallet_addresses()
+    if len(addresses) < MIN_WALLET_COUNT:
+        msg = (
+            "⚠️ 地址数量异常，可能文件没上传完整。\n\n"
+            f"读取到的钱包数：{len(addresses)}\n"
+            f"最低要求：{MIN_WALLET_COUNT}\n\n"
+            "请检查 money_printer_all_addresses.txt 和 smart_money_all_addresses.txt，"
+            "确保一行一个 0x 钱包地址。"
+        )
+        print(msg, flush=True)
+        await send_tg(msg)
+        raise RuntimeError(msg)
     run_id = create_run(args.note)
-    print(f"开始 run_id={run_id}")
+    print(f"开始 run_id={run_id}", flush=True)
 
     wallet_rows, perp_rows, spot_rows, mid_prices, _token_price, spot_coin_price = await fetch_all(addresses, args.rpm, args.concurrency)
     save_snapshot(run_id, wallet_rows, perp_rows, spot_rows)
@@ -1581,11 +1818,29 @@ async def run_once(args: argparse.Namespace) -> None:
     updated_actions, updated_signals = evaluate_events({**spot_coin_price, **mid_prices})
 
     if prev_id is None:
-        report = f"🧠 Hyperliquid 钱包监控 FINAL\nUTC时间：{now_str()}\nrun_id：{run_id}\n\n第一次运行，已建立快照。第二次开始才有趋势对比。"
+        stats = run_wallet_stats(run_id)
+        report = (
+            f"🧠 Hyperliquid 钱包监控 FINAL\n"
+            f"UTC时间：{now_str()}\n"
+            f"run_id：{run_id}\n\n"
+            f"【扫描健康】\n"
+            f"监控钱包：{stats['total']} | 成功：{stats['ok']} | "
+            f"partial：{stats['partial']} | failed：{stats['failed']} | "
+            f"成功率：{stats['ok_rate']*100:.2f}%\n\n"
+            f"第一次运行，已建立快照。第二次开始才有趋势对比。"
+        )
         with open(os.path.join(REPORT_DIR, "final_latest_report.txt"), "w", encoding="utf-8") as f:
             f.write(report)
-        finish_run(run_id, wallet_rows, perp_rows, spot_rows, False)
-        print(report)
+        with open(os.path.join(REPORT_DIR, "long_term_plan.txt"), "w", encoding="utf-8") as f:
+            f.write("第一次运行，已建立快照。第二次开始生成低杠杆长期单观察计划。\n")
+        daily_due = should_push_daily()
+        pushed = False
+        if PUSH_EVERY_RUN or daily_due:
+            pushed = await send_tg(report)
+            if pushed and daily_due:
+                mark_pushed("daily")
+        finish_run(run_id, wallet_rows, perp_rows, spot_rows, pushed)
+        print(report, flush=True)
         return
 
     preliminary, actions, cashflows = compute_preliminary(run_id, prev_id, thresholds)
@@ -1601,6 +1856,8 @@ async def run_once(args: argparse.Namespace) -> None:
     new_signal_events = create_signal_events(run_id, signals, {**spot_coin_price, **mid_prices}, thresholds) if ok_rate >= MIN_OK_RATE else 0
 
     write_watchlists(signals)
+    if LONG_TERM_MODE:
+        write_long_term_plan(build_long_term_candidates(run_id, signals, ctx_map))
     export_latest_csv(run_id)
 
     report = build_report(run_id, signals, ctx_map, actions, cashflows, ok_rate, new_signal_events, updated_actions, updated_signals)
@@ -1619,8 +1876,8 @@ async def run_once(args: argparse.Namespace) -> None:
         print("无强信号，也不是每日推送时间，不推送 TG。")
 
     finish_run(run_id, wallet_rows, perp_rows, spot_rows, pushed)
-    print(f"新增钱包动作：{inserted_actions} | 强信号：{len(strong)}")
-    print(report)
+    print(f"新增钱包动作：{inserted_actions} | 强信号：{len(strong)}", flush=True)
+    print(report, flush=True)
 
 
 def parse_args() -> argparse.Namespace:
