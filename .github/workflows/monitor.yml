@@ -96,6 +96,18 @@ jobs:
           LIQ_SAFE_DISTANCE_PCT: "40"
           LIQ_DANGER_DISTANCE_PCT: "10"
 
+          # 仓位生命周期收益：只按开/加/减/平统计，不使用账户权益 ROI
+          POSITION_TRADE_MODE: "1"
+          POSITION_PERF_WINDOW_DAYS: "30"
+          POSITION_MIN_QTY_CHANGE_RATIO: "0.05"
+          POSITION_MIN_QTY_CHANGE_USD: "1000"
+
+          # 现货增减明细：资金流 Lite 中显示本轮增持/减持了哪些现货币
+          SPOT_DETAIL_MIN_USD: "1000"
+
+          # 报告底部复盘窗口：过去30天信号复盘 + 过去30天钱包主动资金流
+          REPORT_REVIEW_WINDOW_DAYS: "30"
+
           PYTHONUNBUFFERED: "1"
 
         run: |
