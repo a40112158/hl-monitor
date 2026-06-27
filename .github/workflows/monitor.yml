@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
 
   schedule:
+    # 每小时第17分钟运行一次，UTC时间。
+    # UTC 00:17 对应北京时间 08:17 / 日本时间 09:17。
     - cron: "17 * * * *"
 
 permissions:
@@ -38,21 +40,47 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Test Telegram on manual run
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+        run: |
+          if [ -z "$TG_BOT_TOKEN" ] || [ -z "$TG_CHAT_ID" ]; then
+            echo "TG_BOT_TOKEN or TG_CHAT_ID is empty. Skip TG test."
+          else
+            curl -s -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
+              -d chat_id="${TG_CHAT_ID}" \
+              -d text="GitHub Actions TG test: Hyperliquid monitor is starting."
+          fi
+
       - name: Run Hyperliquid monitor
         env:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
 
+          # 0 = 只有强信号或每日复盘才推送；1 = 每次运行都推送
           PUSH_EVERY_RUN: "0"
+
+          # UTC 00:00 = 北京时间 08:00 / 日本时间 09:00
           DAILY_PUSH_HOUR_UTC: "0"
 
           HL_RPM: "200"
           HL_CONCURRENCY: "5"
           MIN_OK_RATE: "0.85"
+          MIN_WALLET_COUNT: "100"
           TOP_N: "15"
 
+          # 低杠杆长期单过滤
+          LONG_TERM_MODE: "1"
+          LONG_TERM_MIN_SCORE: "7"
+          LONG_TERM_MIN_STREAK: "2"
+          LONG_TERM_RISK_PCT: "2"
+          LONG_TERM_MAX_LEVERAGE: "3"
+          PYTHONUNBUFFERED: "1"
+
         run: |
-          python hl_monitor_final.py --rpm 200 --concurrency 5 --note "github hourly"
+          python -u hl_monitor_final.py --rpm 200 --concurrency 5 --note "github hourly"
 
       - name: Keep latest reports
         run: |
