@@ -1,0 +1,78 @@
+name: Hyperliquid Wallet Monitor FINAL
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    # 每小时第17分钟运行一次，UTC时间
+    - cron: "17 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hl-wallet-monitor-final
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Pull latest state
+        run: |
+          git pull --rebase || true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Hyperliquid monitor
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+
+          # 0 = 只有强信号或每日复盘才推送；1 = 每次运行都推送
+          PUSH_EVERY_RUN: "0"
+
+          # UTC 00:00 = 北京时间 08:00 / 日本时间 09:00
+          DAILY_PUSH_HOUR_UTC: "0"
+
+          HL_RPM: "200"
+          HL_CONCURRENCY: "5"
+          MIN_OK_RATE: "0.85"
+          TOP_N: "15"
+
+        run: |
+          python hl_monitor_final.py --rpm 200 --concurrency 5 --note "github hourly"
+
+      - name: Keep latest reports
+        run: |
+          mkdir -p reports
+          find reports -type f -name "final_report_run_*.txt" | sort | head -n -5 | xargs -r rm -f
+
+      - name: Commit monitor state
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add hl_monitor.db reports coin_thresholds.json || true
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "update hl monitor state"
+            git push
+          fi
