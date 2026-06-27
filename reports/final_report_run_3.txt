@@ -1,0 +1,85 @@
+🧠 Hyperliquid 钱包监控 FINAL
+币种阈值 + 钱包主动变化 + 市场环境 + 观察列表 + TG 推送
+UTC时间：2026-06-27 17:15:36
+run_id：3
+【扫描健康】
+监控钱包：2421 | 成功：2421 | partial：0 | failed：0 | 成功率：100.00%
+新信号追踪：0 | 更新动作收益：6 | 更新信号收益：0
+
+【大盘环境】
+BTC: 1h -0.06% | 4h +0.33% | 24h +1.27% | regime=near_high
+ETH: 1h -0.10% | 4h +0.80% | 24h +1.47% | regime=near_high
+
+【最终强信号】
+暂无达到币种专属阈值的强信号。
+
+【做多观察】
+暂无。
+
+【做空观察】
+暂无。
+
+【只观察 / 信号不足】
+UPUMP 偏多 score=+4.0 | 现货主导 | 风险：历史样本/胜率不足
+QONE 偏空 score=-4.0 | 现货主导 | 风险：历史样本/胜率不足
+BASED 偏多 score=+4.0 | 现货主导 | 风险：历史样本/胜率不足
+BTC 偏空 score=-2.8 | 合约主导 | 风险：历史样本/胜率不足
+HYPE 偏多 score=+1.0 | 合约主导 | 风险：历史样本/胜率不足
+TRUMP 偏空 score=-1.0 | 合约主导 | 风险：历史样本/胜率不足
+PUMP 偏空 score=-0.3 | 合约主导 | 风险：历史样本/胜率不足
+
+【低杠杆长期单过滤】
+暂无适合低杠杆长期单的候选。
+
+【单钱包主动变化 Top】
+QONE spot 偏空 0xffff...ffff [money_printer] | 主动=-$69.05M | 价格影响=$0.00
+BASED spot 偏多 0x3999...3336 [smart_money] | 主动=$5.88M | 价格影响=$15.00K
+SOL perp 偏多 0xbf73...5d58 [money_printer] | 主动=$4.36M | 价格影响=-$37.83K
+UPUMP spot 偏多 0x2bd6...b8d8 [smart_money] | 主动=$2.99M | 价格影响=$0.00
+NEAR perp 偏多 0xfb94...0ddf [money_printer] | 主动=$1.51M | 价格影响=$2.45K
+HYPE perp 偏多 0x5323...b23c [smart_money] | 主动=$1.31M | 价格影响=$18.04K
+TRUMP perp 偏空 0x860b...0c27 [smart_money] | 主动=-$1.01M | 价格影响=-$782.58
+BASED spot 偏空 0x3e78...0706 [smart_money] | 主动=-$819.68K | 价格影响=$35.71K
+SUI perp 偏多 0x1658...f65b [smart_money] | 主动=$709.91K | 价格影响=$12.24K
+FARTCOIN perp 偏多 0x7945...a7e6 [money_printer] | 主动=$631.01K | 价格影响=-$11.74K
+UPUMP spot 偏空 0xecb6...2b00 [money_printer] | 主动=-$477.33K | 价格影响=$0.00
+
+【资金流 Lite】
+说明：基于钱包 USDC 和现货余额变化推断，不是外部链上充值提现标签。
+0xffff...ffff [money_printer] | USDC=-$7.75K | 现货=$1.16B | USDC减少 + 现货增加，疑似买入
+0x7a35...3803 [smart_money] | USDC=$0.00 | 现货=$84.88M | 现货变化
+0xe867...c78e [money_printer] | USDC=$0.00 | 现货=-$81.00M | 现货变化
+0x53e6...0637 [smart_money] | USDC=$0.00 | 现货=-$41.40M | 现货变化
+0x7dac...f410 [money_printer] | USDC=$60.62K | 现货=-$35.14M | USDC增加 + 现货减少，疑似卖出/转现金
+0x856c...910d [money_printer] | USDC=-$22.22K | 现货=-$31.02M | USDC减少，疑似资金流出/买入
+0x939f...04d2 [money_printer] | USDC=$110.57K | 现货=-$25.24M | USDC增加 + 现货减少，疑似卖出/转现金
+0xa906...916c [money_printer] | USDC=$0.00 | 现货=-$19.96M | 现货变化
+0x7737...bf66 [money_printer] | USDC=$173.20K | 现货=-$18.55M | USDC增加 + 现货减少，疑似卖出/转现金
+0xa312...ad1e [money_printer] | USDC=$50.37K | 现货=-$13.84M | USDC增加 + 现货减少，疑似卖出/转现金
+0x7fda...17d1 [money_printer] | USDC=$0.00 | 现货=-$13.88M | 现货变化
+0xa87a...71b7 [money_printer] | USDC=$49.38K | 现货=-$13.37M | USDC增加 + 现货减少，疑似卖出/转现金
+0x469e...58a5 [money_printer] | USDC=-$16.96K | 现货=-$13.29M | USDC减少，疑似资金流出/买入
+0xfc66...ca06 [money_printer] | USDC=$0.00 | 现货=-$11.46M | 现货变化
+0x5f94...4b96 [money_printer] | USDC=$5.15K | 现货=-$10.86M | USDC增加 + 现货减少，疑似卖出/转现金
+
+【过去24h 信号复盘】
+暂无24h信号数据。
+
+【过去24h 钱包主动资金流】
+QONE spot 偏空 | 次数=2 | 主动变化=-$69.74M
+BASED spot 偏空 | 次数=3 | 主动变化=-$7.27M
+BASED spot 偏多 | 次数=1 | 主动变化=$5.88M
+SOL perp 偏多 | 次数=1 | 主动变化=$4.36M
+UPUMP spot 偏多 | 次数=2 | 主动变化=$3.83M
+ETH perp 偏空 | 次数=1 | 主动变化=-$2.73M
+NEAR perp 偏多 | 次数=1 | 主动变化=$1.51M
+UPUMP spot 偏空 | 次数=2 | 主动变化=-$1.48M
+HYPE perp 偏多 | 次数=1 | 主动变化=$1.31M
+TRUMP perp 偏空 | 次数=1 | 主动变化=-$1.01M
+SUI perp 偏多 | 次数=1 | 主动变化=$709.91K
+FARTCOIN perp 偏多 | 次数=1 | 主动变化=$631.01K
+
+【说明】
+做多/做空观察不是自动下单建议，只是监控信号方向。
+第一次运行只建立快照，第二次开始才有趋势对比。
+如果 TG 太少，降低 coin_thresholds.json 的 score_push；如果太多，提高 score_push。
