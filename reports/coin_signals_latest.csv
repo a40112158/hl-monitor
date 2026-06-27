@@ -1,4 +1,3 @@
-﻿id,run_id,coin,direction,score,confidence,signal_type,signal_state,watchlist,perp_active,spot_active,weighted_flow,price_position,pct_1h,pct_4h,pct_24h,final_score,threshold_score,conclusion,risk,reason
-11,4,BASED,bearish,-4.0,低,普通趋势,现货主导,observe,0.0,-9884293.631142,-13838011.083598798,,,,,-4.0,8.0,只观察 / 普通趋势,历史样本/胜率不足,现货主动变化-$9.88M；钱包质量加权资金流-$13.84M；历史样本不足
-12,4,QONE,bullish,4.0,低,普通趋势,现货主导,observe,0.0,14525951.766199205,17431142.119439047,,,,,4.0,8.0,只观察 / 普通趋势,历史样本/胜率不足,现货主动变化$14.53M；钱包质量加权资金流$17.43M；历史样本不足
-13,4,UPUMP,bearish,-3.0,低,普通趋势,现货主导,observe,0.0,-1378901.244179479,-1652514.7535429974,,,,,-3.0,8.0,只观察 / 普通趋势,历史样本/胜率不足,现货主动变化-$1.38M；钱包质量加权资金流-$1.65M；历史样本不足
+﻿id,run_id,coin,direction,score,confidence,signal_type,signal_state,watchlist,perp_active,spot_active,weighted_flow,price_position,pct_1h,pct_4h,pct_24h,final_score,threshold_score,conclusion,risk,reason,avg_leverage,avg_liq_distance,longterm_leverage_ratio,highrisk_leverage_ratio,leverage_note
+14,5,XRP,bearish,-3.0,低,普通趋势,合约主导,observe,-3161374.5624999995,0.0,-643252.1630227,0.5385604113110555,0.07088846880907641,-1.4657980456025994,1.1705685618729187,-4.4,8.0,只观察 / 普通趋势,历史样本/胜率不足；同方向高杠杆/爆仓边缘仓位占比98%；同方向平均杠杆16.3x，偏短线,合约主动变化-$3.16M；历史样本不足；同方向平均强平距离800.7%较安全,16.296644899837258,800.692262513591,0.016706129550979186,0.9832938704490208,同向仓位$25.26M，均杠杆=16.3x，均强平距离=800.7%，长期型占比=2%，高风险占比=98%
+15,5,BASED,bearish,-4.0,低,普通趋势,现货主导,observe,0.0,-4219707.523210199,-5907590.532494277,,,,,-4.0,8.0,只观察 / 普通趋势,历史样本/胜率不足,现货主动变化-$4.22M；钱包质量加权资金流-$5.91M；历史样本不足,,,,,
