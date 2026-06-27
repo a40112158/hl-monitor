@@ -11,6 +11,7 @@ Hyperliquid Wallet Monitor FINAL
 - 市场环境和价格位置
 - 信号历史 1h/4h/24h/72h/7d/15d/30d 表现追踪
 - 合约杠杆质量过滤：杠杆倍数 / cross-isolated / 强平距离 / 钱包杠杆风格
+- 仓位生命周期追踪：开仓 / 加仓 / 减仓 / 平仓 / 真实仓位收益
 - 观察列表和 Telegram 推送
 - 适配 GitHub Actions 定时运行
 
@@ -82,6 +83,18 @@ LEVERAGE_MID_MAX = float(os.getenv("LEVERAGE_MID_MAX", "5"))
 LEVERAGE_HIGH_MIN = float(os.getenv("LEVERAGE_HIGH_MIN", "10"))
 LIQ_SAFE_DISTANCE_PCT = float(os.getenv("LIQ_SAFE_DISTANCE_PCT", "40"))
 LIQ_DANGER_DISTANCE_PCT = float(os.getenv("LIQ_DANGER_DISTANCE_PCT", "10"))
+
+# 仓位生命周期追踪：不看账户权益 ROI，只按每个钱包的真实仓位开/加/减/平来记录收益
+POSITION_TRADE_MODE = os.getenv("POSITION_TRADE_MODE", "1") == "1"
+POSITION_PERF_WINDOW_DAYS = int(os.getenv("POSITION_PERF_WINDOW_DAYS", "30"))
+POSITION_MIN_QTY_CHANGE_RATIO = float(os.getenv("POSITION_MIN_QTY_CHANGE_RATIO", "0.05"))
+POSITION_MIN_QTY_CHANGE_USD = float(os.getenv("POSITION_MIN_QTY_CHANGE_USD", "1000"))
+
+# 现货增减明细：资金流 Lite 里明确显示本轮增持/减持了哪些现货币
+SPOT_DETAIL_MIN_USD = float(os.getenv("SPOT_DETAIL_MIN_USD", "1000"))
+
+# 报告底部复盘窗口：默认看过去30天，而不是过去24h
+REPORT_REVIEW_WINDOW_DAYS = int(os.getenv("REPORT_REVIEW_WINDOW_DAYS", "30"))
 
 # 默认阈值，可被 coin_thresholds.json 覆盖
 DEFAULT_THRESHOLDS = {
@@ -193,6 +206,47 @@ def dir_cn(direction: str) -> str:
         return "偏空"
     return "中性"
 
+
+
+def action_type_cn(action_type: str, side: str = "") -> str:
+    a = action_type or ""
+    if a == "new_long":
+        return "新开多"
+    if a == "new_short":
+        return "新开空"
+    if a == "close_long":
+        return "平多"
+    if a == "close_short":
+        return "平空"
+    if a.startswith("flip_"):
+        return "方向反转"
+    if a == "buy_spot":
+        return "现货买入"
+    if a == "sell_spot":
+        return "现货卖出"
+    if a == "perp_change":
+        if side == "long":
+            return "合约多单变化"
+        if side == "short":
+            return "合约空单变化"
+        return "合约变化"
+    return a or "变化"
+
+
+def compact_join(items: List[str], limit: int = 3) -> str:
+    if not items:
+        return "-"
+    if len(items) <= limit:
+        return "；".join(items)
+    return "；".join(items[:limit]) + f"；另{len(items)-limit}项"
+
+
+def side_cn(side: str) -> str:
+    if side == "long":
+        return "多"
+    if side == "short":
+        return "空"
+    return side or "-"
 
 def sign_num(x: float, threshold: float = 0.0) -> int:
     if x > threshold:
@@ -547,6 +601,97 @@ def init_db() -> None:
     """)
 
     cur.execute("""
+    CREATE TABLE IF NOT EXISTS position_trades (
+        trade_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        address TEXT,
+        groups TEXT,
+        coin TEXT,
+        side TEXT,
+        status TEXT,
+        open_time TEXT,
+        close_time TEXT,
+        last_seen TEXT,
+        entry_px REAL,
+        exit_px REAL,
+        current_px REAL,
+        initial_qty REAL,
+        current_qty REAL,
+        max_qty REAL,
+        closed_qty REAL,
+        closed_notional_usd REAL,
+        max_position_value REAL,
+        current_position_value REAL,
+        avg_leverage REAL,
+        max_leverage REAL,
+        min_liq_distance_pct REAL,
+        realized_return_pct REAL,
+        realized_pnl_usd REAL,
+        unrealized_return_pct REAL,
+        estimated_roe_pct REAL,
+        final_return_pct REAL,
+        max_favorable_pct REAL,
+        max_adverse_pct REAL,
+        holding_hours REAL,
+        add_count INTEGER DEFAULT 0,
+        reduce_count INTEGER DEFAULT 0,
+        close_reason TEXT,
+        note TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS position_trade_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        run_id INTEGER,
+        trade_id INTEGER,
+        created_at TEXT,
+        event_type TEXT,
+        address TEXT,
+        groups TEXT,
+        coin TEXT,
+        side TEXT,
+        qty_delta REAL,
+        px REAL,
+        return_pct REAL,
+        position_value REAL,
+        leverage REAL,
+        liq_distance_pct REAL,
+        note TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS wallet_position_performance (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        run_id INTEGER,
+        calculated_at TEXT,
+        window_days INTEGER,
+        address TEXT,
+        groups TEXT,
+        position_grade TEXT,
+        position_score REAL,
+        position_weight_multiplier REAL,
+        sample_trades INTEGER,
+        closed_trades INTEGER,
+        open_trades INTEGER,
+        closed_win_rate REAL,
+        avg_realized_return REAL,
+        avg_unrealized_return REAL,
+        avg_final_return REAL,
+        avg_holding_hours REAL,
+        avg_leverage REAL,
+        max_leverage REAL,
+        avg_max_favorable_pct REAL,
+        avg_max_adverse_pct REAL,
+        low_leverage_ratio REAL,
+        high_leverage_ratio REAL,
+        dominant_coins TEXT,
+        note TEXT,
+        UNIQUE(run_id, address)
+    )
+    """)
+
+    cur.execute("""
     CREATE TABLE IF NOT EXISTS final_reports (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         run_id INTEGER,
@@ -647,7 +792,7 @@ def get_previous_run_id(run_id: int) -> Optional[int]:
 
 
 def load_rows(table: str, run_id: int) -> List[Dict[str, Any]]:
-    allowed = {"wallet_states", "perp_positions", "spot_balances", "wallet_actions", "coin_signals", "market_context", "wallet_quality"}
+    allowed = {"wallet_states", "perp_positions", "spot_balances", "wallet_actions", "coin_signals", "market_context", "wallet_quality", "position_trades", "position_trade_events", "wallet_position_performance"}
     if table not in allowed:
         raise ValueError("bad table")
     conn = db_conn()
@@ -1083,6 +1228,7 @@ def export_latest_csv(run_id: int) -> None:
         ("spot_balances", "spot_balances_latest.csv"),
         ("coin_signals", "coin_signals_latest.csv"),
         ("wallet_quality", "wallet_quality_latest.csv"),
+        ("wallet_position_performance", "wallet_position_performance_latest.csv"),
     ]:
         rows = load_rows(table, run_id)
         if not rows:
@@ -1093,6 +1239,47 @@ def export_latest_csv(run_id: int) -> None:
             writer.writeheader()
             writer.writerows(rows)
 
+
+
+def export_operation_detail_files(actions: List[Dict[str, Any]], cashflows: List[Dict[str, Any]]) -> None:
+    """导出全量单钱包主动变化和资金流 Lite 明细。
+    报告里只显示 Top；这两个 CSV 保留所有触发阈值的地址，并标出：
+    - 操作的现货币
+    - 合约币种、方向、杠杆、强平距离
+    """
+    ensure_dirs()
+
+    def write_csv(filename: str, rows: List[Dict[str, Any]], preferred: List[str]) -> None:
+        path = os.path.join(REPORT_DIR, filename)
+        if not rows:
+            with open(path, "w", encoding="utf-8-sig", newline="") as f:
+                f.write("empty\n")
+            return
+        keys = []
+        for k in preferred:
+            if any(k in r for r in rows):
+                keys.append(k)
+        for r in rows:
+            for k in r.keys():
+                if k not in keys:
+                    keys.append(k)
+        with open(path, "w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=keys)
+            writer.writeheader()
+            writer.writerows(rows)
+
+    write_csv("active_changes_all_latest.csv", actions, [
+        "address", "groups", "coin", "market", "direction", "action_type", "side",
+        "active_delta", "price_effect", "qty_delta", "entry_px", "leverage", "margin_mode",
+        "liq_distance_pct", "leverage_style", "position_value",
+        "spot_increases", "spot_decreases", "spot_net_changes",
+        "spot_operations", "perp_operations", "current_perp_positions", "current_spot_holdings",
+    ])
+    write_csv("fund_flow_lite_all_latest.csv", cashflows, [
+        "address", "groups", "usdc_delta", "spot_delta", "flow_type",
+        "spot_increases", "spot_decreases", "spot_net_changes",
+        "spot_operations", "perp_operations", "current_perp_positions", "current_spot_holdings",
+    ])
 
 def signed_perp_value(row: Optional[Dict[str, Any]]) -> float:
     if not row:
@@ -1133,9 +1320,16 @@ def wallet_quality_weight(address: str, groups: str, quality_map: Optional[Dict[
         return base
     grade = q.get("grade") or "N"
     dyn = safe_float(q.get("quality_weight")) or base
+    pos_grade = q.get("position_grade") or ""
+    pos_mult = safe_float(q.get("position_weight_multiplier"))
+    if pos_mult is None:
+        pos_mult = 1.0
+    # 仓位生命周期表现优先修正权重：P-G 赌徒型降权，P-R 反向仓位钱包反向参考。
+    if pos_grade == "P-R":
+        return -abs(dyn) * abs(pos_mult)
     if grade == "R":
-        return -abs(dyn)
-    return dyn
+        return -abs(dyn) * abs(pos_mult)
+    return dyn * pos_mult
 
 
 # 兼容旧函数名：没有质量图时仍按来源分组加权
@@ -1143,6 +1337,155 @@ def group_weight(groups: str) -> float:
     return group_base_weight(groups)
 
 
+
+
+def build_wallet_operation_maps(
+    wallet_actions: List[Dict[str, Any]],
+    cur_perp_rows: List[Dict[str, Any]],
+    cur_spot_rows: List[Dict[str, Any]],
+    pre_spot_rows: Optional[List[Dict[str, Any]]] = None,
+) -> Dict[str, Dict[str, str]]:
+    """给报告里的单钱包主动变化/资金流 Lite 补充：
+    - 本轮具体操作了哪些现货币
+    - 当前开了哪些合约、方向、杠杆、强平距离
+    """
+    # 精确现货增减明细：直接比较本轮和上一轮的现货数量，
+    # 用来回答“这个钱包本轮增加的现货到底是什么币”。
+    spot_increases: Dict[str, List[str]] = defaultdict(list)
+    spot_decreases: Dict[str, List[str]] = defaultdict(list)
+    spot_net_changes: Dict[str, List[str]] = defaultdict(list)
+    if pre_spot_rows is not None:
+        cur_map = {(str(r.get("address") or "").lower(), str(r.get("coin") or "")): r for r in cur_spot_rows}
+        pre_map = {(str(r.get("address") or "").lower(), str(r.get("coin") or "")): r for r in pre_spot_rows}
+        for key in set(cur_map.keys()) | set(pre_map.keys()):
+            addr, coin = key
+            if not addr or not coin or coin.upper() == "USDC":
+                continue
+            cur = cur_map.get(key)
+            pre = pre_map.get(key)
+            cur_qty = safe_float(cur.get("total")) if cur else 0.0
+            pre_qty = safe_float(pre.get("total")) if pre else 0.0
+            qty_delta = cur_qty - pre_qty
+            cur_px = safe_float(cur.get("mark_px")) if cur else None
+            pre_px = safe_float(pre.get("mark_px")) if pre else None
+            ref_px = cur_px or pre_px or 0.0
+            usd_delta = qty_delta * ref_px
+            if abs(usd_delta) < SPOT_DETAIL_MIN_USD:
+                continue
+            txt = f"{coin} {fmt_money(usd_delta)} 数量Δ={fmt_num(qty_delta)} @ {fmt_num(ref_px)}"
+            if usd_delta > 0:
+                spot_increases[addr].append(txt)
+            else:
+                spot_decreases[addr].append(txt)
+            spot_net_changes[addr].append(txt)
+
+    spot_ops: Dict[str, List[str]] = defaultdict(list)
+    perp_ops: Dict[str, List[str]] = defaultdict(list)
+    for a in wallet_actions:
+        addr = (a.get("address") or "").lower()
+        if not addr:
+            continue
+        coin = a.get("coin") or ""
+        if a.get("market") == "spot":
+            op = action_type_cn(a.get("action_type") or "")
+            spot_ops[addr].append(
+                f"{op}{coin} {fmt_money(a.get('active_delta'))} 数量Δ={fmt_num(a.get('qty_delta'))} @ {fmt_num(a.get('entry_px'))}"
+            )
+        elif a.get("market") == "perp":
+            op = action_type_cn(a.get("action_type") or "", a.get("side") or "")
+            lev = a.get("leverage")
+            lev_txt = f" {fmt_num(lev)}x" if lev is not None else ""
+            liq_txt = f" 强平距={fmt_pct(a.get('liq_distance_pct'))}" if a.get("liq_distance_pct") is not None else ""
+            perp_ops[addr].append(
+                f"{op}{coin}{lev_txt} {fmt_money(a.get('active_delta'))}{liq_txt}"
+            )
+
+    current_perps: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for r in cur_perp_rows:
+        addr = (r.get("address") or "").lower()
+        if not addr:
+            continue
+        current_perps[addr].append(r)
+
+    current_spots: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for r in cur_spot_rows:
+        addr = (r.get("address") or "").lower()
+        coin = str(r.get("coin") or "")
+        if not addr or coin.upper() == "USDC":
+            continue
+        if (safe_float(r.get("current_value")) or 0.0) <= 0:
+            continue
+        current_spots[addr].append(r)
+
+    all_addrs = (
+        set(spot_ops.keys()) | set(perp_ops.keys()) | set(current_perps.keys()) | set(current_spots.keys()) |
+        set(spot_increases.keys()) | set(spot_decreases.keys()) | set(spot_net_changes.keys())
+    )
+    result: Dict[str, Dict[str, str]] = {}
+    for addr in all_addrs:
+        perps = sorted(current_perps.get(addr, []), key=lambda x: abs(safe_float(x.get("position_value")) or 0.0), reverse=True)
+        spots = sorted(current_spots.get(addr, []), key=lambda x: abs(safe_float(x.get("current_value")) or 0.0), reverse=True)
+        perp_pos_txts = []
+        for r in perps[:3]:
+            lev = r.get("leverage")
+            lev_txt = f" {fmt_num(lev)}x" if lev is not None else ""
+            mm = r.get("margin_mode") or ""
+            liq = r.get("liq_distance_pct")
+            liq_txt = f" 强平距={fmt_pct(liq)}" if liq is not None else ""
+            style = r.get("leverage_style") or ""
+            style_txt = f" {style}" if style else ""
+            perp_pos_txts.append(
+                f"{r.get('coin')}{side_cn(r.get('side'))}{lev_txt} {fmt_money(r.get('position_value'))} {mm}{liq_txt}{style_txt}".strip()
+            )
+        spot_hold_txts = []
+        for r in spots[:3]:
+            spot_hold_txts.append(
+                f"{r.get('coin')} {fmt_money(r.get('current_value'))} 数量={fmt_num(r.get('total'))}"
+            )
+        result[addr] = {
+            "spot_increases": compact_join(spot_increases.get(addr, []), 8),
+            "spot_decreases": compact_join(spot_decreases.get(addr, []), 8),
+            "spot_net_changes": compact_join(spot_net_changes.get(addr, []), 10),
+            "spot_operations": compact_join(spot_ops.get(addr, []), 4),
+            "perp_operations": compact_join(perp_ops.get(addr, []), 4),
+            "current_perp_positions": compact_join(perp_pos_txts, 4),
+            "current_spot_holdings": compact_join(spot_hold_txts, 4),
+        }
+    return result
+
+
+def enrich_actions_and_cashflows(
+    actions: List[Dict[str, Any]],
+    cashflows: List[Dict[str, Any]],
+    cur_perp_rows: List[Dict[str, Any]],
+    cur_spot_rows: List[Dict[str, Any]],
+    pre_spot_rows: Optional[List[Dict[str, Any]]] = None,
+) -> None:
+    maps = build_wallet_operation_maps(actions, cur_perp_rows, cur_spot_rows, pre_spot_rows)
+    for item in actions:
+        addr = (item.get("address") or "").lower()
+        extra = maps.get(addr, {})
+        item.update({
+            "spot_increases": extra.get("spot_increases", "-"),
+            "spot_decreases": extra.get("spot_decreases", "-"),
+            "spot_net_changes": extra.get("spot_net_changes", "-"),
+            "spot_operations": extra.get("spot_operations", "-"),
+            "perp_operations": extra.get("perp_operations", "-"),
+            "current_perp_positions": extra.get("current_perp_positions", "-"),
+            "current_spot_holdings": extra.get("current_spot_holdings", "-"),
+        })
+    for item in cashflows:
+        addr = (item.get("address") or "").lower()
+        extra = maps.get(addr, {})
+        item.update({
+            "spot_increases": extra.get("spot_increases", "-"),
+            "spot_decreases": extra.get("spot_decreases", "-"),
+            "spot_net_changes": extra.get("spot_net_changes", "-"),
+            "spot_operations": extra.get("spot_operations", "-"),
+            "perp_operations": extra.get("perp_operations", "-"),
+            "current_perp_positions": extra.get("current_perp_positions", "-"),
+            "current_spot_holdings": extra.get("current_spot_holdings", "-"),
+        })
 def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dict[str, Dict[str, float]], quality_map: Optional[Dict[str, Dict[str, Any]]] = None) -> Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
     if prev_run_id is None:
         return {}, [], []
@@ -1211,6 +1554,8 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
                 "market": "perp",
                 "direction": direction,
                 "action_type": action_type,
+                "side": ref.get("side"),
+                "position_value": ref.get("position_value"),
                 "active_delta": active,
                 "price_effect": price_effect,
                 "qty_delta": qty_delta,
@@ -1283,6 +1628,7 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
             flow_type = "现货变化"
         cashflows.append({"address": addr, "groups": cw.get("groups", ""), "usdc_delta": usdc_delta, "spot_delta": spot_delta, "flow_type": flow_type})
 
+    enrich_actions_and_cashflows(wallet_actions, cashflows, cur_perp, cur_spot, pre_spot)
     wallet_actions.sort(key=lambda x: abs(x["active_delta"]), reverse=True)
     cashflows.sort(key=lambda x: abs(x["usdc_delta"]) + abs(x["spot_delta"]), reverse=True)
     return dict(coins), wallet_actions, cashflows
@@ -1638,6 +1984,398 @@ def leverage_signal_adjust(direction: str, lev: Dict[str, Any]) -> Tuple[float, 
         "highrisk_leverage_ratio": high_ratio,
         "leverage_note": note,
     }
+
+
+def direction_return_pct(side: str, entry_px: Optional[float], exit_px: Optional[float]) -> Optional[float]:
+    """按仓位方向计算收益率，不看账户权益，避免充值/提现误判。"""
+    entry = safe_float(entry_px)
+    px = safe_float(exit_px)
+    if entry is None or px is None or entry <= 0 or px <= 0:
+        return None
+    if side == "long":
+        return (px - entry) / entry * 100.0
+    if side == "short":
+        return (entry - px) / entry * 100.0
+    return None
+
+
+def _hours_between(start: Optional[str], end: Optional[str] = None) -> Optional[float]:
+    st = parse_time(start)
+    ed = parse_time(end) or utc_now()
+    if not st:
+        return None
+    return max(0.0, (ed - st).total_seconds() / 3600.0)
+
+
+def _current_perp_map(run_id: int) -> Dict[Tuple[str, str], Dict[str, Any]]:
+    rows = load_rows("perp_positions", run_id)
+    return {((r.get("address") or "").lower(), str(r.get("coin") or "")): r for r in rows if r.get("address") and r.get("coin")}
+
+
+def _wallet_perp_ok_map(run_id: int) -> Dict[str, bool]:
+    out: Dict[str, bool] = {}
+    for w in load_rows("wallet_states", run_id):
+        addr = (w.get("address") or "").lower()
+        status = w.get("status") or ""
+        err = w.get("error") or ""
+        # failed 或 perp 请求失败时，不把“当前没有仓位”误判成平仓。
+        out[addr] = bool(status == "ok" or (status == "partial" and "perp=" not in err))
+    return out
+
+
+def _insert_position_event(cur: sqlite3.Cursor, run_id: int, trade_id: int, event_type: str, row: Dict[str, Any], qty_delta: float, px: Optional[float], ret_pct: Optional[float], note: str = "") -> None:
+    cur.execute("""
+    INSERT INTO position_trade_events (
+        run_id, trade_id, created_at, event_type, address, groups, coin, side,
+        qty_delta, px, return_pct, position_value, leverage, liq_distance_pct, note
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        run_id, trade_id, now_str(), event_type, row.get("address"), row.get("groups"), row.get("coin"), row.get("side"),
+        qty_delta, px, ret_pct, row.get("position_value"), row.get("leverage"), row.get("liq_distance_pct"), note
+    ))
+
+
+def _open_position_trade(cur: sqlite3.Cursor, run_id: int, row: Dict[str, Any], reason: str = "open") -> int:
+    px = safe_float(row.get("entry_px")) or safe_float(row.get("mark_px"))
+    cur_px = safe_float(row.get("mark_px")) or px
+    qty = abs(safe_float(row.get("abs_szi")) or safe_float(row.get("szi")) or 0.0)
+    val = abs(safe_float(row.get("position_value")) or ((qty or 0.0) * (cur_px or 0.0)))
+    lev = safe_float(row.get("leverage"))
+    dist = safe_float(row.get("liq_distance_pct"))
+    ret = direction_return_pct(row.get("side"), px, cur_px)
+    roe = ret * lev if ret is not None and lev is not None else safe_float(row.get("roe"))
+    cur.execute("""
+    INSERT INTO position_trades (
+        address, groups, coin, side, status, open_time, last_seen,
+        entry_px, current_px, initial_qty, current_qty, max_qty, closed_qty, closed_notional_usd,
+        max_position_value, current_position_value, avg_leverage, max_leverage, min_liq_distance_pct,
+        realized_return_pct, realized_pnl_usd, unrealized_return_pct, estimated_roe_pct, final_return_pct,
+        max_favorable_pct, max_adverse_pct, holding_hours, add_count, reduce_count, close_reason, note
+    ) VALUES (?, ?, ?, ?, 'open', ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, 0, 0, 0, '', ?)
+    """, (
+        row.get("address"), row.get("groups"), row.get("coin"), row.get("side"), now_str(), now_str(),
+        px, cur_px, qty, qty, qty, val, val, lev, lev, dist,
+        ret, roe, ret, max(0.0, ret or 0.0), min(0.0, ret or 0.0), reason
+    ))
+    trade_id = int(cur.lastrowid)
+    _insert_position_event(cur, run_id, trade_id, reason, row, qty, cur_px, ret, "新建仓位生命周期记录")
+    return trade_id
+
+
+def _close_position_trade(cur: sqlite3.Cursor, run_id: int, trade: Dict[str, Any], px: Optional[float], reason: str = "close") -> None:
+    entry = safe_float(trade.get("entry_px"))
+    side = trade.get("side")
+    qty = abs(safe_float(trade.get("current_qty")) or 0.0)
+    exit_px = safe_float(px) or safe_float(trade.get("current_px")) or entry
+    ret = direction_return_pct(side, entry, exit_px)
+    lev = safe_float(trade.get("avg_leverage"))
+    roe = ret * lev if ret is not None and lev is not None else None
+    closed_notional = (safe_float(trade.get("closed_notional_usd")) or 0.0) + (qty * (entry or exit_px or 0.0))
+    realized_pnl = (safe_float(trade.get("realized_pnl_usd")) or 0.0)
+    if ret is not None and entry:
+        realized_pnl += qty * entry * ret / 100.0
+    realized_return = (realized_pnl / closed_notional * 100.0) if closed_notional else ret
+    mfe = max(safe_float(trade.get("max_favorable_pct")) or 0.0, ret or 0.0)
+    mae = min(safe_float(trade.get("max_adverse_pct")) or 0.0, ret or 0.0)
+    hold = _hours_between(trade.get("open_time"))
+    cur.execute("""
+    UPDATE position_trades
+    SET status='closed', close_time=?, last_seen=?, exit_px=?, current_px=?, current_qty=0,
+        closed_qty=COALESCE(closed_qty,0)+?, closed_notional_usd=?, realized_pnl_usd=?, realized_return_pct=?,
+        unrealized_return_pct=NULL, estimated_roe_pct=?, final_return_pct=?, max_favorable_pct=?, max_adverse_pct=?,
+        holding_hours=?, close_reason=?
+    WHERE trade_id=?
+    """, (now_str(), now_str(), exit_px, exit_px, qty, closed_notional, realized_pnl, realized_return,
+          roe, realized_return, mfe, mae, hold, reason, trade.get("trade_id")))
+    event_row = {"address": trade.get("address"), "groups": trade.get("groups"), "coin": trade.get("coin"), "side": trade.get("side"), "position_value": qty * (exit_px or 0.0), "leverage": lev, "liq_distance_pct": trade.get("min_liq_distance_pct")}
+    _insert_position_event(cur, run_id, int(trade.get("trade_id")), reason, event_row, -qty, exit_px, ret, "仓位结束，记录已实现收益")
+
+
+def update_position_trades(run_id: int, prices: Dict[str, float]) -> None:
+    """仓位生命周期追踪：只看仓位开/加/减/平，不用账户权益 ROI。"""
+    if not POSITION_TRADE_MODE:
+        return
+    conn = db_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM position_trades WHERE status='open'")
+    active = {((r["address"] or "").lower(), str(r["coin"] or "")): dict(r) for r in cur.fetchall()}
+    current = _current_perp_map(run_id)
+    perp_ok = _wallet_perp_ok_map(run_id)
+    processed = set()
+
+    for key, row in current.items():
+        addr, coin = key
+        processed.add(key)
+        cur_px = safe_float(row.get("mark_px")) or safe_float(prices.get(coin)) or safe_float(row.get("entry_px"))
+        qty = abs(safe_float(row.get("abs_szi")) or safe_float(row.get("szi")) or 0.0)
+        if qty <= 0 or cur_px is None:
+            continue
+        trade = active.get(key)
+        if not trade:
+            _open_position_trade(cur, run_id, row, "open_detected")
+            continue
+        if trade.get("side") != row.get("side"):
+            _close_position_trade(cur, run_id, trade, cur_px, "reverse_close")
+            _open_position_trade(cur, run_id, row, "reverse_open")
+            continue
+
+        prev_qty = abs(safe_float(trade.get("current_qty")) or 0.0)
+        delta = qty - prev_qty
+        entry = safe_float(row.get("entry_px")) or safe_float(trade.get("entry_px")) or cur_px
+        ret = direction_return_pct(row.get("side"), entry, cur_px)
+        lev = safe_float(row.get("leverage")) or safe_float(trade.get("avg_leverage"))
+        roe = ret * lev if ret is not None and lev is not None else safe_float(row.get("roe"))
+        val = abs(safe_float(row.get("position_value")) or qty * cur_px)
+        max_qty = max(safe_float(trade.get("max_qty")) or 0.0, qty)
+        max_val = max(safe_float(trade.get("max_position_value")) or 0.0, val)
+        max_lev = max(safe_float(trade.get("max_leverage")) or 0.0, lev or 0.0) if lev is not None else safe_float(trade.get("max_leverage"))
+        dist = safe_float(row.get("liq_distance_pct"))
+        old_min_dist = safe_float(trade.get("min_liq_distance_pct"))
+        min_dist = dist if old_min_dist is None else (min(old_min_dist, dist) if dist is not None else old_min_dist)
+        mfe = max(safe_float(trade.get("max_favorable_pct")) or 0.0, ret or 0.0)
+        mae = min(safe_float(trade.get("max_adverse_pct")) or 0.0, ret or 0.0)
+        closed_qty = safe_float(trade.get("closed_qty")) or 0.0
+        closed_notional = safe_float(trade.get("closed_notional_usd")) or 0.0
+        realized_pnl = safe_float(trade.get("realized_pnl_usd")) or 0.0
+        realized_return = safe_float(trade.get("realized_return_pct")) or 0.0
+        add_count = int(trade.get("add_count") or 0)
+        reduce_count = int(trade.get("reduce_count") or 0)
+        event_type = "hold"
+        note = "仓位继续持有"
+        # 只有数量变化超过比例或最小美元价值，才记录为加/减仓，避免浮点噪音。
+        delta_value = abs(delta) * cur_px
+        change_trigger = abs(delta) >= max(prev_qty * POSITION_MIN_QTY_CHANGE_RATIO, 0.0) and delta_value >= POSITION_MIN_QTY_CHANGE_USD
+        if change_trigger and delta > 0:
+            add_count += 1
+            event_type = "add"
+            note = "加仓，更新平均入场价/当前浮盈"
+            _insert_position_event(cur, run_id, int(trade.get("trade_id")), event_type, row, delta, cur_px, ret, note)
+        elif change_trigger and delta < 0:
+            reduce_count += 1
+            event_type = "reduce"
+            reduce_qty = abs(delta)
+            part_ret = direction_return_pct(row.get("side"), safe_float(trade.get("entry_px")) or entry, cur_px)
+            base_entry = safe_float(trade.get("entry_px")) or entry
+            closed_qty += reduce_qty
+            if base_entry:
+                closed_notional += reduce_qty * base_entry
+                if part_ret is not None:
+                    realized_pnl += reduce_qty * base_entry * part_ret / 100.0
+            realized_return = realized_pnl / closed_notional * 100.0 if closed_notional else realized_return
+            note = "部分平仓，记录已实现收益，剩余仓位继续跟踪"
+            _insert_position_event(cur, run_id, int(trade.get("trade_id")), event_type, row, delta, cur_px, part_ret, note)
+        else:
+            # 不写入 hold 事件，避免数据库无限膨胀；只更新 trade 状态。
+            pass
+        hold = _hours_between(trade.get("open_time"))
+        final_ret = realized_return if qty <= 0 else ret
+        cur.execute("""
+        UPDATE position_trades
+        SET last_seen=?, entry_px=?, current_px=?, current_qty=?, max_qty=?, closed_qty=?, closed_notional_usd=?,
+            max_position_value=?, current_position_value=?, avg_leverage=?, max_leverage=?, min_liq_distance_pct=?,
+            realized_return_pct=?, realized_pnl_usd=?, unrealized_return_pct=?, estimated_roe_pct=?, final_return_pct=?,
+            max_favorable_pct=?, max_adverse_pct=?, holding_hours=?, add_count=?, reduce_count=?, note=?
+        WHERE trade_id=?
+        """, (now_str(), entry, cur_px, qty, max_qty, closed_qty, closed_notional, max_val, val, lev, max_lev, min_dist,
+              realized_return, realized_pnl, ret, roe, final_ret, mfe, mae, hold, add_count, reduce_count, note, trade.get("trade_id")))
+
+    # 当前已经没有该仓位：只有在钱包 perp 查询成功时才认定为平仓，避免 API 失败导致误判。
+    for key, trade in active.items():
+        if key in processed:
+            continue
+        addr, coin = key
+        if not perp_ok.get(addr, False):
+            continue
+        px = safe_float(prices.get(coin)) or safe_float(trade.get("current_px")) or safe_float(trade.get("entry_px"))
+        _close_position_trade(cur, run_id, trade, px, "close_detected")
+
+    conn.commit()
+    conn.close()
+    export_position_trade_files(run_id)
+
+
+def _grade_position_wallet(sample: int, closed: int, win: Optional[float], avg_ret: Optional[float], avg_hold: Optional[float], avg_lev: Optional[float], high_ratio: float) -> Tuple[str, float, float, str]:
+    winv = win if win is not None else 0.0
+    avgv = avg_ret if avg_ret is not None else 0.0
+    holdv = avg_hold if avg_hold is not None else 0.0
+    levv = avg_lev if avg_lev is not None else 0.0
+    if sample < 3:
+        return "P-N", 50.0, 1.0, "仓位样本不足，暂不影响权重"
+    # G = gambler：收益可能好，但高杠杆短线特征明显，不适合低杠杆长期单参考。
+    if sample >= 3 and high_ratio >= 0.55 and (levv >= LEVERAGE_HIGH_MIN or holdv < 6):
+        score = 45 + max(-10, min(20, avgv))
+        return "P-G", score, 0.65, "高杠杆/短线赌徒型，长期单降权"
+    if sample >= 5 and winv <= 0.38 and avgv < 0:
+        return "P-R", 25.0, -0.80, "仓位真实收益偏反向，可作为反向参考"
+    score = 50.0
+    score += min(15.0, math.log10(max(1, sample)) * 10)
+    score += (winv - 0.5) * 70
+    score += max(-18.0, min(18.0, avgv * 2.0))
+    if holdv >= 24:
+        score += 6
+    if holdv >= 72:
+        score += 6
+    if avg_lev is not None and avg_lev <= LEVERAGE_LOW_MAX:
+        score += 8
+    elif avg_lev is not None and avg_lev >= LEVERAGE_HIGH_MIN:
+        score -= 12
+    score -= high_ratio * 20
+    score = max(0.0, min(100.0, score))
+    if sample >= 8 and winv >= 0.60 and avgv >= 2.0 and (avg_lev is None or avg_lev <= LEVERAGE_MID_MAX) and holdv >= 24:
+        return "P-S", score, 1.25, "仓位收益、持仓周期、杠杆结构适合长期参考"
+    if sample >= 5 and winv >= 0.55 and avgv >= 1.0 and (avg_lev is None or avg_lev <= 8):
+        return "P-A", score, 1.15, "仓位收益稳定，适合加权参考"
+    if winv >= 0.48 and avgv >= -0.5:
+        return "P-B", score, 1.0, "仓位表现普通有效"
+    return "P-C", score, 0.75, "仓位收益偏弱，降权参考"
+
+
+def export_position_trade_files(run_id: int) -> None:
+    if not POSITION_TRADE_MODE:
+        return
+    ensure_dirs()
+    conn = db_conn()
+    cur = conn.cursor()
+    since = (utc_now() - dt.timedelta(days=POSITION_PERF_WINDOW_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
+    cur.execute("""
+    SELECT * FROM position_trades
+    WHERE status='open' OR COALESCE(close_time, open_time) >= ?
+    ORDER BY COALESCE(close_time, last_seen, open_time) DESC
+    """, (since,))
+    trade_rows = [dict(x) for x in cur.fetchall()]
+
+    if trade_rows:
+        with open(os.path.join(REPORT_DIR, "wallet_position_trades_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=list(trade_rows[0].keys()))
+            writer.writeheader()
+            writer.writerows(trade_rows)
+
+    by_addr: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for r in trade_rows:
+        by_addr[(r.get("address") or "").lower()].append(r)
+
+    perf_rows: List[Dict[str, Any]] = []
+    for addr, arr in by_addr.items():
+        groups = arr[0].get("groups", "") if arr else ""
+        closed_rows = [r for r in arr if r.get("status") == "closed"]
+        open_rows = [r for r in arr if r.get("status") == "open"]
+        closed_rets = [safe_float(r.get("final_return_pct")) for r in closed_rows if safe_float(r.get("final_return_pct")) is not None]
+        open_rets = [safe_float(r.get("unrealized_return_pct")) for r in open_rows if safe_float(r.get("unrealized_return_pct")) is not None]
+        all_rets = [safe_float(r.get("final_return_pct")) for r in arr if safe_float(r.get("final_return_pct")) is not None]
+        win_rate = (sum(1 for x in closed_rets if x > 0) / len(closed_rets)) if closed_rets else None
+        avg_real = _avg(closed_rets)
+        avg_unreal = _avg(open_rets)
+        avg_final = _avg(all_rets)
+        holds = [safe_float(r.get("holding_hours")) for r in arr if safe_float(r.get("holding_hours")) is not None]
+        levs = [safe_float(r.get("avg_leverage")) for r in arr if safe_float(r.get("avg_leverage")) is not None]
+        mfes = [safe_float(r.get("max_favorable_pct")) for r in arr if safe_float(r.get("max_favorable_pct")) is not None]
+        maes = [safe_float(r.get("max_adverse_pct")) for r in arr if safe_float(r.get("max_adverse_pct")) is not None]
+        low_count = sum(1 for r in arr if (safe_float(r.get("avg_leverage")) or 999) <= LEVERAGE_LOW_MAX)
+        high_count = sum(1 for r in arr if (safe_float(r.get("avg_leverage")) or 0) >= LEVERAGE_HIGH_MIN)
+        sample = len(arr)
+        low_ratio = low_count / sample if sample else 0.0
+        high_ratio = high_count / sample if sample else 0.0
+        coins_count: Dict[str, int] = defaultdict(int)
+        for r in arr:
+            if r.get("coin"):
+                coins_count[str(r.get("coin"))] += 1
+        dominant = ",".join([c for c, _ in sorted(coins_count.items(), key=lambda x: x[1], reverse=True)[:5]])
+        grade, score, mult, note = _grade_position_wallet(sample, len(closed_rows), win_rate, avg_final, _avg(holds), _avg(levs), high_ratio)
+        perf_rows.append({
+            "run_id": run_id,
+            "calculated_at": now_str(),
+            "window_days": POSITION_PERF_WINDOW_DAYS,
+            "address": addr,
+            "groups": groups,
+            "position_grade": grade,
+            "position_score": score,
+            "position_weight_multiplier": mult,
+            "sample_trades": sample,
+            "closed_trades": len(closed_rows),
+            "open_trades": len(open_rows),
+            "closed_win_rate": win_rate,
+            "avg_realized_return": avg_real,
+            "avg_unrealized_return": avg_unreal,
+            "avg_final_return": avg_final,
+            "avg_holding_hours": _avg(holds),
+            "avg_leverage": _avg(levs),
+            "max_leverage": max(levs) if levs else None,
+            "avg_max_favorable_pct": _avg(mfes),
+            "avg_max_adverse_pct": _avg(maes),
+            "low_leverage_ratio": low_ratio,
+            "high_leverage_ratio": high_ratio,
+            "dominant_coins": dominant,
+            "note": note,
+        })
+
+    cur.execute("DELETE FROM wallet_position_performance WHERE run_id=?", (run_id,))
+    if perf_rows:
+        cur.executemany("""
+        INSERT INTO wallet_position_performance (
+            run_id, calculated_at, window_days, address, groups, position_grade, position_score, position_weight_multiplier,
+            sample_trades, closed_trades, open_trades, closed_win_rate, avg_realized_return, avg_unrealized_return,
+            avg_final_return, avg_holding_hours, avg_leverage, max_leverage, avg_max_favorable_pct, avg_max_adverse_pct,
+            low_leverage_ratio, high_leverage_ratio, dominant_coins, note
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, [(
+            r["run_id"], r["calculated_at"], r["window_days"], r["address"], r["groups"], r["position_grade"], r["position_score"], r["position_weight_multiplier"],
+            r["sample_trades"], r["closed_trades"], r["open_trades"], r["closed_win_rate"], r["avg_realized_return"], r["avg_unrealized_return"],
+            r["avg_final_return"], r["avg_holding_hours"], r["avg_leverage"], r["max_leverage"], r["avg_max_favorable_pct"], r["avg_max_adverse_pct"],
+            r["low_leverage_ratio"], r["high_leverage_ratio"], r["dominant_coins"], r["note"]
+        ) for r in perf_rows])
+    conn.commit()
+    conn.close()
+
+    if perf_rows:
+        perf_rows.sort(key=lambda x: safe_float(x.get("position_score")) or 0.0, reverse=True)
+        with open(os.path.join(REPORT_DIR, "wallet_position_performance_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=list(perf_rows[0].keys()))
+            writer.writeheader()
+            writer.writerows(perf_rows)
+
+    with open(os.path.join(REPORT_DIR, "wallet_position_report.txt"), "w", encoding="utf-8") as f:
+        f.write("【仓位生命周期收益报告】\n")
+        f.write(f"更新时间 UTC：{now_str()}\n")
+        f.write(f"统计窗口：最近 {POSITION_PERF_WINDOW_DAYS} 天\n")
+        f.write("说明：本报告只按仓位开仓/加仓/减仓/平仓计算收益，不使用账户权益 ROI，避免充值/提现误判。\n\n")
+        counts: Dict[str, int] = defaultdict(int)
+        for r in perf_rows:
+            counts[r.get("position_grade") or "P-N"] += 1
+        f.write("等级数量：" + " | ".join([f"{g}:{counts.get(g,0)}" for g in ["P-S","P-A","P-B","P-C","P-R","P-G","P-N"]]) + "\n\n")
+        f.write("【适合长期参考的钱包 Top】\n")
+        good = [r for r in perf_rows if r.get("position_grade") in ("P-S", "P-A")]
+        if not good:
+            f.write("暂无。刚开始运行时仓位样本不足很正常。\n")
+        for r in good[:TOP_N]:
+            f.write(
+                f"{short_addr(r['address'])} [{r.get('groups','')}] {r['position_grade']} | "
+                f"分={safe_float(r.get('position_score')) or 0:.1f} | 仓位样本={r.get('sample_trades')} | "
+                f"平仓胜率={(safe_float(r.get('closed_win_rate')) or 0)*100:.1f}% | "
+                f"均收益={fmt_pct(r.get('avg_final_return'))} | 均持仓={fmt_num(r.get('avg_holding_hours'))}h | "
+                f"均杠杆={fmt_num(r.get('avg_leverage'))}x | 主币={r.get('dominant_coins') or '-'}\n"
+            )
+        f.write("\n【反向 / 高杠杆赌徒型钱包 Top】\n")
+        bad = [r for r in perf_rows if r.get("position_grade") in ("P-R", "P-G", "P-C")]
+        bad.sort(key=lambda x: (x.get("position_grade") == "P-G", safe_float(x.get("high_leverage_ratio")) or 0.0, -(safe_float(x.get("position_score")) or 0.0)), reverse=True)
+        if not bad:
+            f.write("暂无。\n")
+        for r in bad[:TOP_N]:
+            f.write(
+                f"{short_addr(r['address'])} [{r.get('groups','')}] {r['position_grade']} | "
+                f"分={safe_float(r.get('position_score')) or 0:.1f} | 均收益={fmt_pct(r.get('avg_final_return'))} | "
+                f"高杠杆占比={(safe_float(r.get('high_leverage_ratio')) or 0)*100:.0f}% | "
+                f"均持仓={fmt_num(r.get('avg_holding_hours'))}h | {r.get('note') or ''}\n"
+            )
+    print(f"仓位生命周期收益已更新：trades={len(trade_rows)} perf_wallets={len(perf_rows)}", flush=True)
+
+
+def get_position_performance_map(run_id: int) -> Dict[str, Dict[str, Any]]:
+    conn = db_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM wallet_position_performance WHERE run_id=?", (run_id,))
+    rows = {str(r["address"]).lower(): dict(r) for r in cur.fetchall()}
+    conn.close()
+    return rows
 
 
 def export_leverage_quality_files(run_id: int) -> None:
@@ -2137,11 +2875,47 @@ def refresh_wallet_quality(run_id: int, address_groups: Dict[str, List[str]]) ->
 
 
 def get_wallet_quality_map(run_id: int) -> Dict[str, Dict[str, Any]]:
+    """返回用于信号加权的钱包质量图。
+
+    这里会把两套评分合并到同一个 address：
+    1) wallet_quality：动作后方向胜率 / 24h / 72h / 7d / 15d / 30d。
+    2) wallet_position_performance：仓位生命周期真实表现 / 平仓收益 / 持仓时长 / 杠杆风格。
+
+    注意：早期版本只读取 wallet_quality，导致 P-S/P-A/P-G/P-R
+    只导出报告但没有真正参与加权。这里已修复。
+    """
+    qmap: Dict[str, Dict[str, Any]] = {}
     try:
-        rows = load_rows("wallet_quality", run_id)
+        qrows = load_rows("wallet_quality", run_id)
     except Exception:
-        rows = []
-    return {str(r.get("address", "")).lower(): r for r in rows}
+        qrows = []
+    for r in qrows:
+        addr = str(r.get("address", "")).lower()
+        if addr:
+            qmap[addr] = dict(r)
+
+    try:
+        prows = load_rows("wallet_position_performance", run_id)
+    except Exception:
+        prows = []
+    for r in prows:
+        addr = str(r.get("address", "")).lower()
+        if not addr:
+            continue
+        base = qmap.setdefault(addr, {"address": addr, "groups": r.get("groups", ""), "grade": "N", "quality_weight": group_base_weight(r.get("groups", ""))})
+        # 合并仓位生命周期评分，让 wallet_quality_weight() 真正能读到 P-S/P-A/P-G/P-R。
+        base["position_grade"] = r.get("position_grade")
+        base["position_score"] = r.get("position_score")
+        base["position_weight_multiplier"] = r.get("position_weight_multiplier")
+        base["position_sample_trades"] = r.get("sample_trades")
+        base["position_closed_win_rate"] = r.get("closed_win_rate")
+        base["position_avg_final_return"] = r.get("avg_final_return")
+        base["position_avg_holding_hours"] = r.get("avg_holding_hours")
+        base["position_avg_leverage"] = r.get("avg_leverage")
+        base["position_high_leverage_ratio"] = r.get("high_leverage_ratio")
+        base["position_note"] = r.get("note")
+
+    return qmap
 
 
 def wallet_quality_summary(run_id: int) -> Dict[str, Any]:
@@ -2205,34 +2979,36 @@ def export_wallet_quality_files(rows: List[Dict[str, Any]]) -> None:
                 f"72h均值={fmt_pct(r.get('avg_72h'))} | 主币={r.get('dominant_coins') or '-'}\n"
             )
 
-def recent_24h_signal_summary() -> List[Dict[str, Any]]:
+def recent_signal_summary(days: int = REPORT_REVIEW_WINDOW_DAYS) -> List[Dict[str, Any]]:
+    """报告底部信号复盘。默认统计过去30天。"""
     conn = db_conn()
     cur = conn.cursor()
-    since = (utc_now() - dt.timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
+    since = (utc_now() - dt.timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
     cur.execute("""
     SELECT coin, direction, COUNT(*) AS n, AVG(score) AS avg_score, MAX(ABS(score)) AS max_abs_score
     FROM signal_events
     WHERE created_at >= ?
     GROUP BY coin, direction
     ORDER BY max_abs_score DESC
-    LIMIT 30
+    LIMIT 50
     """, (since,))
     rows = [dict(x) for x in cur.fetchall()]
     conn.close()
     return rows
 
 
-def recent_24h_wallet_flow() -> List[Dict[str, Any]]:
+def recent_wallet_flow(days: int = REPORT_REVIEW_WINDOW_DAYS) -> List[Dict[str, Any]]:
+    """报告底部钱包主动资金流。默认统计过去30天。"""
     conn = db_conn()
     cur = conn.cursor()
-    since = (utc_now() - dt.timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
+    since = (utc_now() - dt.timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
     cur.execute("""
     SELECT coin, market, direction, COUNT(*) AS n, SUM(active_delta) AS active_sum
     FROM wallet_actions
     WHERE created_at >= ?
     GROUP BY coin, market, direction
     ORDER BY ABS(active_sum) DESC
-    LIMIT 30
+    LIMIT 50
     """, (since,))
     rows = [dict(x) for x in cur.fetchall()]
     conn.close()
@@ -2517,6 +3293,24 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
         revq = top_wallet_quality(run_id, ["R"], limit=3)
         if revq:
             lines.append("反向钱包提醒：" + "；".join([f"{short_addr(r['address'])} R 反向{(safe_float(r.get('reverse_score')) or 0):.0f}" for r in revq]))
+    if POSITION_TRADE_MODE:
+        try:
+            perf = load_rows("wallet_position_performance", run_id)
+            pc: Dict[str, int] = defaultdict(int)
+            for r in perf:
+                pc[r.get("position_grade") or "P-N"] += 1
+            lines.append("【仓位生命周期收益】")
+            lines.append(
+                f"统计窗口：最近{POSITION_PERF_WINDOW_DAYS}天 | "
+                f"P-S:{pc.get('P-S',0)} P-A:{pc.get('P-A',0)} P-B:{pc.get('P-B',0)} "
+                f"P-C:{pc.get('P-C',0)} P-R:{pc.get('P-R',0)} P-G:{pc.get('P-G',0)} P-N:{pc.get('P-N',0)}"
+            )
+            goodp = [r for r in perf if r.get("position_grade") in ("P-S", "P-A")]
+            goodp.sort(key=lambda r: safe_float(r.get("position_score")) or 0.0, reverse=True)
+            if goodp:
+                lines.append("仓位收益优质Top：" + "；".join([f"{short_addr(r['address'])} {r['position_grade']} 收益{fmt_pct(r.get('avg_final_return'))}" for r in goodp[:5]]))
+        except Exception:
+            pass
     lines.append("")
     lines.append("【大盘环境】")
     lines.append(f"BTC: 1h {fmt_pct(btc.get('pct_1h'))} | 4h {fmt_pct(btc.get('pct_4h'))} | 24h {fmt_pct(btc.get('pct_24h'))} | regime={btc.get('regime')}")
@@ -2577,7 +3371,15 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
             lev_txt = ""
             if a.get("market") == "perp":
                 lev_txt = f" | 杠杆={fmt_num(a.get('leverage'))}x | {a.get('leverage_style') or ''} | 强平距={fmt_pct(a.get('liq_distance_pct'))}"
-            lines.append(f"{a['coin']} {a['market']} {dir_cn(a['direction'])} {short_addr(a['address'])} [{a.get('groups','')}] | 主动={fmt_money(a['active_delta'])} | 价格影响={fmt_money(a['price_effect'])}{lev_txt}")
+            if a.get("market") == "spot":
+                if a.get("active_delta", 0) >= 0:
+                    op_txt = f" | 增持现货={a.get('spot_increases','-')}"
+                else:
+                    op_txt = f" | 减持现货={a.get('spot_decreases','-')}"
+            else:
+                op_txt = f" | 合约操作={a.get('perp_operations','-')}"
+            pos_txt = f" | 当前合约={a.get('current_perp_positions','-')} | 当前现货Top={a.get('current_spot_holdings','-')}"
+            lines.append(f"{a['coin']} {a['market']} {dir_cn(a['direction'])} {short_addr(a['address'])} [{a.get('groups','')}] | 主动={fmt_money(a['active_delta'])} | 价格影响={fmt_money(a['price_effect'])}{lev_txt}{op_txt}{pos_txt}")
     lines.append("")
     lines.append("【资金流 Lite】")
     lines.append("说明：基于钱包 USDC 和现货余额变化推断，不是外部链上充值提现标签。")
@@ -2585,20 +3387,20 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
         lines.append("暂无明显 USDC/现货资金流变化。")
     else:
         for c in cashflows[:TOP_N]:
-            lines.append(f"{short_addr(c['address'])} [{c['groups']}] | USDC={fmt_money(c['usdc_delta'])} | 现货={fmt_money(c['spot_delta'])} | {c['flow_type']}")
+            lines.append(f"{short_addr(c['address'])} [{c['groups']}] | USDC={fmt_money(c['usdc_delta'])} | 现货={fmt_money(c['spot_delta'])} | {c['flow_type']} | 增持现货={c.get('spot_increases','-')} | 减持现货={c.get('spot_decreases','-')} | 当前合约={c.get('current_perp_positions','-')}")
     lines.append("")
-    lines.append("【过去24h 信号复盘】")
-    summary = recent_24h_signal_summary()
+    lines.append(f"【过去{REPORT_REVIEW_WINDOW_DAYS}天 信号复盘】")
+    summary = recent_signal_summary(REPORT_REVIEW_WINDOW_DAYS)
     if not summary:
-        lines.append("暂无24h信号数据。")
+        lines.append(f"暂无{REPORT_REVIEW_WINDOW_DAYS}天信号数据。")
     else:
         for r in summary[:TOP_N]:
             lines.append(f"{r['coin']} {dir_cn(r['direction'])} | 次数={r['n']} | 均分={r['avg_score']:+.2f} | 最高={r['max_abs_score']:.2f}")
     lines.append("")
-    lines.append("【过去24h 钱包主动资金流】")
-    flow = recent_24h_wallet_flow()
+    lines.append(f"【过去{REPORT_REVIEW_WINDOW_DAYS}天 钱包主动资金流】")
+    flow = recent_wallet_flow(REPORT_REVIEW_WINDOW_DAYS)
     if not flow:
-        lines.append("暂无24h钱包动作数据。")
+        lines.append(f"暂无{REPORT_REVIEW_WINDOW_DAYS}天钱包动作数据。")
     else:
         for r in flow[:TOP_N]:
             lines.append(f"{r['coin']} {r['market']} {dir_cn(r['direction'])} | 次数={r['n']} | 主动变化={fmt_money(r['active_sum'])}")
@@ -2717,6 +3519,11 @@ def save_daily_archive(run_id: int, report: str) -> None:
         "wallet_leverage_profile_latest.csv",
         "coin_leverage_summary_latest.csv",
         "leverage_quality_report.txt",
+        "wallet_position_trades_latest.csv",
+        "wallet_position_performance_latest.csv",
+        "wallet_position_report.txt",
+        "active_changes_all_latest.csv",
+        "fund_flow_lite_all_latest.csv",
     ]
     for name in copy_files:
         src = os.path.join(REPORT_DIR, name)
@@ -2792,6 +3599,7 @@ async def run_once(args: argparse.Namespace) -> None:
 
     wallet_rows, perp_rows, spot_rows, mid_prices, _token_price, spot_coin_price = await fetch_all(addresses, args.rpm, args.concurrency)
     save_snapshot(run_id, wallet_rows, perp_rows, spot_rows)
+    update_position_trades(run_id, {**spot_coin_price, **mid_prices})
     export_leverage_quality_files(run_id)
     prev_id = get_previous_run_id(run_id)
 
@@ -2814,7 +3622,8 @@ async def run_once(args: argparse.Namespace) -> None:
             f"监控钱包：{stats['total']} | 成功：{stats['ok']} | "
             f"partial：{stats['partial']} | failed：{stats['failed']} | "
             f"成功率：{stats['ok_rate']*100:.2f}%\n\n"
-            f"钱包质量分类已导出：reports/wallet_quality_latest.csv / wallet_quality_report.txt\n\n"
+            f"钱包质量分类已导出：reports/wallet_quality_latest.csv / wallet_quality_report.txt\n"
+            f"仓位生命周期追踪已导出：reports/wallet_position_trades_latest.csv / wallet_position_report.txt\n\n"
             f"第一次运行，已建立快照。第二次开始才有趋势对比。"
         )
         with open(os.path.join(REPORT_DIR, "final_latest_report.txt"), "w", encoding="utf-8") as f:
@@ -2834,6 +3643,7 @@ async def run_once(args: argparse.Namespace) -> None:
         return
 
     preliminary, actions, cashflows = compute_preliminary(run_id, prev_id, thresholds, quality_map)
+    export_operation_detail_files(actions, cashflows)
     inserted_actions = 0
     if ok_rate >= MIN_OK_RATE:
         inserted_actions = save_wallet_actions(run_id, actions)
