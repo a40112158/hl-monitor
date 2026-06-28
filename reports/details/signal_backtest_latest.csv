@@ -1,1 +1,2 @@
-﻿empty
+﻿event_id,run_id,created_at,coin,direction,score,entry_px,ret_1h,ret_4h,ret_24h,ret_72h,ret_7d,ret_15d,ret_30d,reason,direction_win_24h,hurdle_win_24h,hurdle_24h_pct,direction_win_72h,hurdle_win_72h,hurdle_72h_pct,direction_win_7d,hurdle_win_7d,hurdle_7d_pct,direction_win_15d,hurdle_win_15d,hurdle_15d_pct,direction_win_30d,hurdle_win_30d,hurdle_30d_pct
+1,15,2026-06-28 12:11:53,SOL,bearish,-5.4,71.8835,,,,,,,,合约主动变化-$3.37M；钱包质量加权资金流-$5.62M；历史样本不足；同方向平均强平距离358.9%较安全；资金费率中性：+0.0007%；流动性可接受：24h成交额$183.08M,,,1.0,,,2.0,,,4.0,,,6.0,,,8.0
