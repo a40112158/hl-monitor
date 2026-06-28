@@ -49,9 +49,9 @@ jobs:
 
       - name: Run one-time migration
         run: |
-          python -u scripts/migrate_sqlite_to_turso.py
+          python -u migrate_sqlite_to_turso.py
 
       - name: Verify migration again
         if: success()
         run: |
-          python -u scripts/migrate_sqlite_to_turso.py --verify-only
+          python -u migrate_sqlite_to_turso.py --verify-only
