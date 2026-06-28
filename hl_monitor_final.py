@@ -39,6 +39,10 @@ import aiohttp
 
 HL_INFO_URL = "https://api.hyperliquid.xyz/info"
 DB_FILE = os.getenv("HL_DB_FILE", "hl_monitor.db")
+DB_BACKEND = os.getenv("DB_BACKEND", "sqlite").strip().lower()
+TURSO_DATABASE_URL = os.getenv("TURSO_DATABASE_URL", "").strip()
+TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN", "").strip()
+USE_TURSO = (DB_BACKEND == "turso") or (bool(TURSO_DATABASE_URL) and bool(TURSO_AUTH_TOKEN))
 REPORT_DIR = os.getenv("REPORT_DIR", "reports")
 # 精简报告结构：根目录只放每天要看的核心报告；全量 CSV 和辅助报告放 reports/details/
 DETAILS_DIR = os.getenv("DETAILS_DIR", os.path.join(REPORT_DIR, "details"))
@@ -409,7 +413,31 @@ def ensure_dirs() -> None:
     os.makedirs(DETAILS_DIR, exist_ok=True)
 
 
-def db_conn() -> sqlite3.Connection:
+def db_conn():
+    """Return a DB-API connection.
+
+    Default: local SQLite file.
+    Turso mode: set DB_BACKEND=turso plus TURSO_DATABASE_URL and TURSO_AUTH_TOKEN.
+    The rest of the script keeps using SQLite-style SQL/placeholders.
+    """
+    if USE_TURSO:
+        try:
+            import libsql  # pip install libsql
+        except Exception as e:
+            raise RuntimeError(
+                "DB_BACKEND=turso but Python package 'libsql' is not installed. "
+                "Add libsql to requirements.txt and rerun GitHub Actions."
+            ) from e
+        if not TURSO_DATABASE_URL or not TURSO_AUTH_TOKEN:
+            raise RuntimeError("Turso mode requires TURSO_DATABASE_URL and TURSO_AUTH_TOKEN secrets.")
+        conn = libsql.connect(TURSO_DATABASE_URL, auth_token=TURSO_AUTH_TOKEN)
+        # libsql Python SDK is SQLite-compatible. Some versions support row_factory; set it when available.
+        try:
+            conn.row_factory = sqlite3.Row
+        except Exception:
+            pass
+        return conn
+
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
@@ -4525,7 +4553,7 @@ def save_daily_archive(run_id: int, report: str) -> None:
         f"updated_at_utc: {now_str()}\n\n"
         f"主要看：final_report.txt、long_term_plan.txt、signal_explain_report.txt、coin_risk_report.txt\n"
         f"关键 CSV：coin_signals.csv、wallet_quality.csv、wallet_position_performance.csv、signal_backtest.csv、longterm_backtest.csv、signal_lifecycle.csv\n"
-        f"全量明细请看仓库 reports/details/，长期历史保存在 hl_monitor.db。\n"
+        f"全量明细请看仓库 reports/details/，长期历史保存在数据库（Turso 或本地 SQLite）。\n"
     )
     with open(os.path.join(day_dir, "README.txt"), "w", encoding="utf-8") as f:
         f.write(index)
@@ -4682,6 +4710,8 @@ async def run_once(args: argparse.Namespace) -> None:
 
 
 def db_file_size_mb() -> float:
+    if USE_TURSO:
+        return 0.0
     try:
         if not os.path.exists(DB_FILE):
             return 0.0
@@ -4691,7 +4721,10 @@ def db_file_size_mb() -> float:
 
 
 def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: bool = False, emergency: bool = False) -> None:
-    """控制 hl_monitor.db 体积，避免 GitHub 100MB 单文件限制。
+    """控制数据库体积。
+
+    SQLite 模式：裁剪原始快照并 VACUUM，避免 GitHub 100MB 单文件限制。
+    Turso 模式：只裁剪历史行，不执行本地文件大小检查 / VACUUM。
 
     设计原则：
     - wallet_states / perp_positions / spot_balances 这类逐轮原始快照最占空间，只保留最近 N 轮。
@@ -4699,7 +4732,9 @@ def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: 
     - position_trades / signal_lifecycles 保留未结束记录和最近窗口内已结束记录。
     - 最后 VACUUM 真正收缩 sqlite 文件大小。
     """
-    if not DB_PRUNE_MODE or not os.path.exists(DB_FILE):
+    if not DB_PRUNE_MODE:
+        return
+    if (not USE_TURSO) and (not os.path.exists(DB_FILE)):
         return
 
     before = db_file_size_mb()
@@ -4780,7 +4815,12 @@ def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: 
     finally:
         conn.close()
 
-    # VACUUM 必须在事务外执行，才能真正缩小文件。
+    if USE_TURSO:
+        mode = "emergency" if emergency else ("aggressive" if aggressive else "normal")
+        print(f"Turso 数据库裁剪({mode})完成 | raw_keep={raw_keep} | history_days={history_days}", flush=True)
+        return
+
+    # VACUUM 必须在事务外执行，才能真正缩小 SQLite 文件。
     try:
         conn = db_conn()
         conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")

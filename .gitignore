@@ -1,3 +1,7 @@
 __pycache__/
 *.pyc
 .env
+hl_monitor.db
+hl_monitor.db.gz
+*.db
+*.db.gz
