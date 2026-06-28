@@ -126,6 +126,13 @@ LIQUIDITY_LOW_DAY_VOLUME = float(os.getenv("LIQUIDITY_LOW_DAY_VOLUME", "20000000
 LIQUIDITY_MIN_DAY_VOLUME = float(os.getenv("LIQUIDITY_MIN_DAY_VOLUME", "5000000"))
 HEALTH_STALE_HOURS = float(os.getenv("HEALTH_STALE_HOURS", "2"))
 
+# 数据异常保护：API 成功率低时不更新信号生命周期，避免把 API 抽风误判成信号消失/平仓。
+DATA_ANOMALY_PROTECT_MODE = os.getenv("DATA_ANOMALY_PROTECT_MODE", "1") == "1"
+
+# 主导钱包名单：每个强信号/长期单标出主要推动的钱包，方便判断信号质量。
+DOMINANT_WALLETS_MODE = os.getenv("DOMINANT_WALLETS_MODE", "1") == "1"
+DOMINANT_WALLET_TOP_N = int(os.getenv("DOMINANT_WALLET_TOP_N", "5"))
+
 # 默认阈值，可被 coin_thresholds.json 覆盖
 DEFAULT_THRESHOLDS = {
     "score_push": 8.0,
@@ -2971,6 +2978,7 @@ def export_signal_explain_files(run_id: int, signals: List[Dict[str, Any]]) -> N
             "liquidity_risk": s.get("liquidity_risk"),
             "risk": s.get("risk"),
             "reason": s.get("reason"),
+            "dominant_wallets": s.get("dominant_wallets", "-"),
         }
         rows.append(row)
     if rows:
@@ -2993,6 +3001,128 @@ def export_signal_explain_files(run_id: int, signals: List[Dict[str, Any]]) -> N
             f.write(f"  风险：{s.get('risk')}\n")
             f.write(f"  原因：{s.get('reason')}\n\n")
 
+
+
+def _dominant_action_text(a: Dict[str, Any]) -> str:
+    """把单个钱包动作格式化成信号主导钱包说明。"""
+    addr = short_addr(a.get("address") or "")
+    groups = a.get("groups") or ""
+    market = a.get("market") or ""
+    coin = a.get("coin") or ""
+    active = fmt_money(a.get("active_delta"))
+    action = action_type_cn(a.get("action_type") or "", a.get("side") or "")
+    if market == "perp":
+        lev = a.get("leverage")
+        lev_txt = f" {fmt_num(lev)}x" if lev is not None else ""
+        mm = a.get("margin_mode") or ""
+        liq = a.get("liq_distance_pct")
+        liq_txt = f" 强平距={fmt_pct(liq)}" if liq is not None else ""
+        style = a.get("leverage_style") or ""
+        return f"{addr}[{groups}] {coin}合约{side_cn(a.get('side'))}{lev_txt} {action} {active} {mm}{liq_txt} {style}".strip()
+    if market == "spot":
+        detail = a.get("spot_increases") if (safe_float(a.get("active_delta")) or 0) >= 0 else a.get("spot_decreases")
+        if not detail or detail == "-":
+            detail = f"{coin} {active}"
+        return f"{addr}[{groups}] 现货{action} {detail}".strip()
+    return f"{addr}[{groups}] {coin} {market} {action} {active}".strip()
+
+
+def build_dominant_wallets_by_coin(actions: List[Dict[str, Any]], limit: int = DOMINANT_WALLET_TOP_N) -> Dict[str, str]:
+    """按币种列出本轮对信号贡献最大的几个钱包动作。"""
+    if not DOMINANT_WALLETS_MODE:
+        return {}
+    by_coin: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for a in actions or []:
+        coin = a.get("coin")
+        if not coin:
+            continue
+        active = safe_float(a.get("active_delta")) or 0.0
+        if active == 0:
+            continue
+        by_coin[coin].append(a)
+    out: Dict[str, str] = {}
+    for coin, rows in by_coin.items():
+        rows = sorted(rows, key=lambda x: abs(safe_float(x.get("active_delta")) or 0.0), reverse=True)
+        out[coin] = compact_join([_dominant_action_text(r) for r in rows[:limit]], limit)
+    return out
+
+
+def attach_dominant_wallets(signals: List[Dict[str, Any]], actions: List[Dict[str, Any]]) -> None:
+    """把主导钱包名单挂到每个信号上，不改变评分，只增强解释性。"""
+    dom = build_dominant_wallets_by_coin(actions)
+    for s in signals or []:
+        s["dominant_wallets"] = dom.get(s.get("coin"), "-")
+
+
+def write_data_quality_report(run_id: int, ok_rate: float, wallet_rows: List[Dict[str, Any]], note: str = "") -> None:
+    """导出本轮数据质量报告。低成功率时用于提醒：本轮信号/生命周期不应被过度解读。"""
+    ensure_dirs()
+    total = len(wallet_rows or [])
+    ok = sum(1 for w in wallet_rows if w.get("status") == "ok")
+    partial = sum(1 for w in wallet_rows if w.get("status") == "partial")
+    failed = sum(1 for w in wallet_rows if w.get("status") == "failed")
+    bad_examples = [w for w in wallet_rows if w.get("status") != "ok"][:20]
+    path = os.path.join(DETAILS_DIR, "data_quality_report.txt")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("【数据质量 / API异常保护】\n")
+        f.write(f"run_id={run_id} | UTC={now_str()} | note={note}\n")
+        f.write(f"监控钱包={total} | ok={ok} | partial={partial} | failed={failed} | 成功率={ok_rate*100:.2f}% | 最低要求={MIN_OK_RATE*100:.2f}%\n")
+        if DATA_ANOMALY_PROTECT_MODE and ok_rate < MIN_OK_RATE:
+            f.write("\n⚠️ 本轮成功率低于阈值：脚本会跳过新信号生成/生命周期结算，避免把 API 抽风误判成信号消失或钱包平仓。\n")
+        else:
+            f.write("\n本轮数据质量通过，可以正常参考信号。\n")
+        if bad_examples:
+            f.write("\n异常钱包样例：\n")
+            for w in bad_examples:
+                f.write(f"  {short_addr(w.get('address') or '')} status={w.get('status')} err={w.get('error') or '-'}\n")
+
+
+def _signals_by_coin(signals: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+    by: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for s in signals or []:
+        if s.get("coin"):
+            by[s.get("coin")].append(s)
+    for coin in by:
+        by[coin].sort(key=lambda x: abs(safe_float(x.get("final_score")) or 0.0), reverse=True)
+    return by
+
+
+def _lifecycle_missing_reason(row: Dict[str, Any], current_signals: List[Dict[str, Any]], current_longterms: List[Dict[str, Any]]) -> str:
+    """给信号消失/长期单失效提供更细原因，而不是只写“消失”。"""
+    typ = row.get("lifecycle_type")
+    coin = row.get("coin")
+    direction = row.get("direction")
+    by_coin = _signals_by_coin(current_signals)
+    sigs = by_coin.get(coin, [])
+    same = [s for s in sigs if s.get("direction") == direction]
+    opp = [s for s in sigs if s.get("direction") and s.get("direction") != direction]
+    if typ == "strong":
+        if same:
+            s0 = same[0]
+            return (
+                f"同方向信号降级：final_score={safe_float(s0.get('final_score')) or 0:+.2f}，"
+                f"强信号阈值={safe_float(s0.get('threshold_score')) or 0:.1f}；"
+                f"当前状态={s0.get('signal_state')}；风险={s0.get('risk')}"
+            )
+        if opp:
+            o = opp[0]
+            return f"同币种出现反向结构：当前{o.get('coin')} {dir_cn(o.get('direction'))} final={safe_float(o.get('final_score')) or 0:+.2f}"
+        return "本轮跌出强信号/观察列表：可能是资金流减弱、主导钱包撤退、价格/杠杆/资金费率条件变差。"
+    # longterm
+    matching_lt = [c for c in current_longterms or [] if c.get("coin") == coin and c.get("direction") == direction]
+    if matching_lt:
+        c = matching_lt[0]
+        return f"长期单降级：当前动作={c.get('action')}；final={c.get('final_score')}；连续={c.get('streak')}；状态={c.get('signal_state')}"
+    if same:
+        s0 = same[0]
+        return (
+            f"仍有同方向普通信号，但不再满足长期单：final={safe_float(s0.get('final_score')) or 0:+.2f}；"
+            f"状态={s0.get('signal_state')}；类型={s0.get('signal_type')}；风险={s0.get('risk')}"
+        )
+    if opp:
+        o = opp[0]
+        return f"长期方向被反向信号压制：当前{dir_cn(o.get('direction'))} final={safe_float(o.get('final_score')) or 0:+.2f}"
+    return "长期单条件消失：连续性/钱包质量/杠杆结构/价格位置/费率流动性中至少一项不再满足。"
 
 
 def _signal_dir_return_pct(direction: str, entry_px: Optional[float], exit_px: Optional[float]) -> Optional[float]:
@@ -3044,9 +3174,13 @@ def _active_lifecycle_longterm_rows(candidates: List[Dict[str, Any]]) -> List[Di
     return [r for r in rows if r.get("coin") and r.get("direction")]
 
 
-def update_signal_lifecycles(run_id: int, signals: List[Dict[str, Any]], longterm_candidates: List[Dict[str, Any]], prices: Dict[str, float]) -> List[Dict[str, Any]]:
+def update_signal_lifecycles(run_id: int, signals: List[Dict[str, Any]], longterm_candidates: List[Dict[str, Any]], prices: Dict[str, float], data_quality_ok: bool = True, skip_reason: str = "") -> List[Dict[str, Any]]:
     """按提示逻辑追踪信号生命周期。\n\n    固定周期回测回答“信号出现后未来 24h/7d/30d 怎么样”。\n    生命周期追踪回答“你按提示看，从信号出现到消失/反转，真实表现怎么样”。\n    """
     if not SIGNAL_LIFECYCLE_MODE:
+        return []
+    if DATA_ANOMALY_PROTECT_MODE and not data_quality_ok:
+        print(f"数据质量异常，跳过信号生命周期更新：{skip_reason}", flush=True)
+        export_signal_lifecycle_files()
         return []
     now = now_str()
     active_rows = _active_lifecycle_signal_rows(signals) + _active_lifecycle_longterm_rows(longterm_candidates)
@@ -3122,10 +3256,11 @@ def update_signal_lifecycles(run_id: int, signals: List[Dict[str, Any]], longter
 
         miss = safe_int(row.get("missing_count"), 0) + 1
         cur.execute("UPDATE signal_lifecycles SET missing_count=? WHERE lifecycle_id=?", (miss, row["lifecycle_id"]))
-        _log(row["lifecycle_id"], typ, "missing", coin, direction, px, row.get("last_score"), miss, _signal_dir_return_pct(direction, row.get("entry_px"), px), "本轮不再满足该信号条件")
+        miss_reason = _lifecycle_missing_reason(row, signals, longterm_candidates)
+        _log(row["lifecycle_id"], typ, "missing", coin, direction, px, row.get("last_score"), miss, _signal_dir_return_pct(direction, row.get("entry_px"), px), miss_reason)
         max_miss = STRONG_SIGNAL_MISSING_ROUNDS if typ == "strong" else LONGTERM_SIGNAL_MISSING_ROUNDS
         if miss >= max_miss:
-            _close(row, px, f"连续{miss}轮信号消失")
+            _close(row, px, f"连续{miss}轮信号消失｜{miss_reason}")
 
     # 2) 再开新生命周期。若同币同类型反方向 open 还存在，会先关闭反方向。
     for key, sig in active_map.items():
@@ -4042,7 +4177,7 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
     eth = ctx_map.get("ETH", {})
     lines: List[str] = []
     lines.append("🧠 Hyperliquid 钱包监控 FINAL")
-    lines.append("币种阈值 + 钱包主动变化 + 信号解释 + 回测 + 资金费率/流动性过滤 + TG 推送")
+    lines.append("币种阈值 + 钱包主动变化 + 主导钱包 + 信号解释 + 回测 + 生命周期 + API异常保护 + TG 推送")
     lines.append(f"UTC时间：{now_str()}")
     lines.append(f"run_id：{run_id}")
     stats = run_wallet_stats(run_id)
@@ -4053,6 +4188,8 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
         f"成功率：{stats['ok_rate']*100:.2f}%"
     )
     lines.append(f"新信号追踪：{new_signal_events} | 更新动作收益：{updated_actions} | 更新信号收益：{updated_signals}")
+    if DATA_ANOMALY_PROTECT_MODE and ok_rate < MIN_OK_RATE:
+        lines.append(f"⚠️ 数据质量异常：成功率低于 {MIN_OK_RATE*100:.1f}%，本轮不生成新信号/不结算生命周期，避免误判。")
     if WALLET_QUALITY_MODE:
         qs = wallet_quality_summary(run_id)
         qc = qs.get("counts", {})
@@ -4109,6 +4246,7 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
             parts = s.get("score_parts") or {}
             lines.append(f"  分解：资金{parts.get('base_flow',0):+.1f} / 历史{parts.get('confidence',0):+.1f} / 市场{parts.get('market',0):+.1f} / 位置{parts.get('price_position',0):+.1f} / 杠杆{parts.get('leverage',0):+.1f} / 费率流动性{parts.get('funding_liquidity',0):+.1f}")
             lines.append(f"  风险：{s['risk']}")
+            lines.append(f"  主导钱包：{s.get('dominant_wallets', '-')}")
             lines.append(f"  原因：{s['reason']}")
     lines.append("")
     lines.append("【做多观察】")
@@ -4351,6 +4489,7 @@ def save_daily_archive(run_id: int, report: str) -> None:
         "signal_backtest_latest.csv",
         "longterm_backtest_latest.csv",
         "signal_lifecycle_latest.csv",
+        "data_quality_report.txt",
     ]
 
     def _copy(src_dir: str, name: str) -> None:
@@ -4439,6 +4578,8 @@ async def run_once(args: argparse.Namespace) -> None:
     ok = sum(1 for w in wallet_rows if w.get("status") == "ok")
     partial = sum(1 for w in wallet_rows if w.get("status") == "partial")
     ok_rate = (ok + partial * 0.5) / total if total else 0.0
+    data_quality_ok = ok_rate >= MIN_OK_RATE
+    write_data_quality_report(run_id, ok_rate, wallet_rows, args.note)
 
     updated_actions, updated_signals = evaluate_events({**spot_coin_price, **mid_prices})
     quality_rows = refresh_wallet_quality(run_id, addresses) if WALLET_QUALITY_MODE else []
@@ -4479,17 +4620,18 @@ async def run_once(args: argparse.Namespace) -> None:
     preliminary, actions, cashflows = compute_preliminary(run_id, prev_id, thresholds, quality_map)
     export_operation_detail_files(actions, cashflows)
     inserted_actions = 0
-    if ok_rate >= MIN_OK_RATE:
+    if data_quality_ok:
         inserted_actions = save_wallet_actions(run_id, actions)
     else:
-        print(f"成功率 {ok_rate*100:.2f}% 低于阈值 {MIN_OK_RATE*100:.2f}%，不记录本轮钱包动作。")
+        print(f"成功率 {ok_rate*100:.2f}% 低于阈值 {MIN_OK_RATE*100:.2f}%，不记录本轮钱包动作/信号/生命周期。")
 
     candidate_coins = sorted(preliminary.keys(), key=lambda c: abs(preliminary[c].get("weighted_flow") or 0), reverse=True)[:25]
     ctx_map = await build_market_context(run_id, candidate_coins, {**spot_coin_price, **mid_prices})
     risk_map = await build_coin_risk_metrics(run_id, candidate_coins)
-    signals = build_signals(run_id, preliminary, ctx_map, thresholds, risk_map) if ok_rate >= MIN_OK_RATE else []
+    signals = build_signals(run_id, preliminary, ctx_map, thresholds, risk_map) if data_quality_ok else []
+    attach_dominant_wallets(signals, actions)
     export_signal_explain_files(run_id, signals)
-    new_signal_events = create_signal_events(run_id, signals, {**spot_coin_price, **mid_prices}, thresholds) if ok_rate >= MIN_OK_RATE else 0
+    new_signal_events = create_signal_events(run_id, signals, {**spot_coin_price, **mid_prices}, thresholds) if data_quality_ok else 0
 
     write_watchlists(signals)
     lt_candidates: List[Dict[str, Any]] = []
@@ -4497,7 +4639,11 @@ async def run_once(args: argparse.Namespace) -> None:
         lt_candidates = build_long_term_candidates(run_id, signals, ctx_map)
         write_long_term_plan(lt_candidates)
         create_longterm_events(run_id, lt_candidates, {**spot_coin_price, **mid_prices})
-    closed_lifecycle_events = update_signal_lifecycles(run_id, signals, lt_candidates, {**spot_coin_price, **mid_prices})
+    closed_lifecycle_events = update_signal_lifecycles(
+        run_id, signals, lt_candidates, {**spot_coin_price, **mid_prices},
+        data_quality_ok=data_quality_ok,
+        skip_reason=f"ok_rate={ok_rate*100:.2f}% < MIN_OK_RATE={MIN_OK_RATE*100:.2f}%"
+    )
     export_backtest_files()
     export_latest_csv(run_id)
 
