@@ -1,6 +1,6 @@
 {
-  "last_run_utc": "2026-06-28 22:59:50",
-  "run_id": 13,
+  "last_run_utc": "2026-06-28 23:29:09",
+  "run_id": 14,
   "trigger_note": "github hourly",
   "wallet_count": 2421,
   "ok": 2421,
@@ -8,7 +8,7 @@
   "failed": 0,
   "success_rate": 1.0,
   "perp_rows": 10965,
-  "spot_rows": 12038,
+  "spot_rows": 12037,
   "tg_sent": false,
   "duration_minutes": null,
   "health_stale_hours_threshold": 2.0
