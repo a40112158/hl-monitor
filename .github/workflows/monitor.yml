@@ -58,6 +58,11 @@ jobs:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
 
+          # Turso 外部数据库：GitHub Secrets 里添加这两个即可启用
+          DB_BACKEND: "turso"
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+
           # 0 = 只有强信号或每日复盘才推送；1 = 每次运行都推送
           PUSH_EVERY_RUN: "0"
 
@@ -145,23 +150,6 @@ jobs:
         run: |
           python -u hl_monitor_final.py --rpm 200 --concurrency 5 --note "github hourly"
 
-      - name: Force database size guard
-        env:
-          DB_PRUNE_MODE: "1"
-          DB_RAW_KEEP_RUNS: "24"
-          DB_HISTORY_KEEP_DAYS: "35"
-          DB_MAX_MB: "85"
-          PYTHONUNBUFFERED: "1"
-        run: |
-          python - <<'PY'
-          import os
-          import hl_monitor_final as h
-          h.prune_database_for_github(current_run_id=None, aggressive=True, emergency=True)
-          size = os.path.getsize('hl_monitor.db') / 1024 / 1024 if os.path.exists('hl_monitor.db') else 0
-          print(f'final db size before commit: {size:.2f}MB')
-          if size >= 99:
-              raise SystemExit(f'hl_monitor.db still too large for GitHub: {size:.2f}MB')
-          PY
 
       - name: Clean report archives
         run: |
@@ -183,7 +171,11 @@ jobs:
           git fetch origin main
           git pull --rebase origin main || true
 
-          git add hl_monitor.db reports coin_thresholds.json || true
+          # Turso 版不再把数据库文件提交到 GitHub，避免 100MB 限制。
+          git rm --cached -f hl_monitor.db hl_monitor.db.gz 2>/dev/null || true
+          rm -f hl_monitor.db hl_monitor.db.gz || true
+
+          git add reports coin_thresholds.json .gitignore || true
 
           if git diff --cached --quiet; then
             echo "No changes to commit."
