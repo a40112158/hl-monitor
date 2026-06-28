@@ -2,11 +2,8 @@ name: Hyperliquid Wallet Monitor FINAL
 
 on:
   workflow_dispatch:
-
   schedule:
-    # 每小时第17分钟运行一次，UTC时间。
-    # UTC 00:17 对应北京时间 08:17 / 日本时间 09:17。
-    - cron: "17 * * * *"
+    - cron: "53 */6 * * *"
 
 permissions:
   contents: write
