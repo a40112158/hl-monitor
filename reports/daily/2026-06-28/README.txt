@@ -1,7 +1,8 @@
 Hyperliquid Monitor Daily Archive
 date_utc: 2026-06-28
-run_id: 11
-updated_at_utc: 2026-06-28 04:03:23
+run_id: 12
+updated_at_utc: 2026-06-28 06:24:48
 
-主要看：final_report.txt 和 long_term_plan.txt
-CSV 用来复盘当天最后一次扫描的钱包、合约、现货和币种信号。
+主要看：final_report.txt、long_term_plan.txt、signal_explain_report.txt、coin_risk_report.txt
+关键 CSV：coin_signals.csv、wallet_quality.csv、wallet_position_performance.csv、signal_backtest.csv、longterm_backtest.csv、signal_lifecycle.csv
+全量明细请看仓库 reports/details/，长期历史保存在 hl_monitor.db。
