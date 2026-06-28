@@ -927,7 +927,7 @@ def get_previous_run_id(run_id: int) -> Optional[int]:
 
 
 def load_rows(table: str, run_id: int) -> List[Dict[str, Any]]:
-    allowed = {"wallet_states", "perp_positions", "spot_balances", "wallet_actions", "coin_signals", "market_context", "wallet_quality", "position_trades", "position_trade_events", "wallet_position_performance"}
+    allowed = {"wallet_states", "perp_positions", "spot_balances", "wallet_actions", "coin_signals", "market_context", "wallet_quality", "position_trades", "position_trade_events", "wallet_position_performance", "coin_risk_metrics"}
     if table not in allowed:
         raise ValueError("bad table")
     conn = db_conn()
@@ -4605,6 +4605,7 @@ async def run_once(args: argparse.Namespace) -> None:
             f.write("第一次运行，已建立快照。第二次开始生成低杠杆长期单观察计划。\n")
         export_latest_csv(run_id)
         export_signal_lifecycle_files()
+        prune_reports()
         save_daily_archive(run_id, report)
         daily_due = should_push_daily()
         pushed = False
