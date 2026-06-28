@@ -137,9 +137,9 @@ DOMINANT_WALLET_TOP_N = int(os.getenv("DOMINANT_WALLET_TOP_N", "5"))
 # 数据库体积控制：GitHub 单文件硬限制 100MB，必须定期裁剪原始快照并 VACUUM。
 # 只裁剪最占空间的逐轮原始表；钱包动作、信号、仓位生命周期保留足够窗口用于 30d 回测。
 DB_PRUNE_MODE = os.getenv("DB_PRUNE_MODE", "1") == "1"
-DB_RAW_KEEP_RUNS = int(os.getenv("DB_RAW_KEEP_RUNS", "72"))
-DB_HISTORY_KEEP_DAYS = int(os.getenv("DB_HISTORY_KEEP_DAYS", "45"))
-DB_MAX_MB = float(os.getenv("DB_MAX_MB", "95"))
+DB_RAW_KEEP_RUNS = int(os.getenv("DB_RAW_KEEP_RUNS", "24"))
+DB_HISTORY_KEEP_DAYS = int(os.getenv("DB_HISTORY_KEEP_DAYS", "35"))
+DB_MAX_MB = float(os.getenv("DB_MAX_MB", "85"))
 
 # 默认阈值，可被 coin_thresholds.json 覆盖
 DEFAULT_THRESHOLDS = {
@@ -4690,7 +4690,7 @@ def db_file_size_mb() -> float:
         return 0.0
 
 
-def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: bool = False) -> None:
+def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: bool = False, emergency: bool = False) -> None:
     """控制 hl_monitor.db 体积，避免 GitHub 100MB 单文件限制。
 
     设计原则：
@@ -4703,11 +4703,16 @@ def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: 
         return
 
     before = db_file_size_mb()
-    raw_keep = max(12, int(DB_RAW_KEEP_RUNS))
-    history_days = max(31, int(DB_HISTORY_KEEP_DAYS))
+    raw_keep = max(6, int(DB_RAW_KEEP_RUNS))
+    history_days = max(30, int(DB_HISTORY_KEEP_DAYS))
     if aggressive:
-        raw_keep = max(12, min(raw_keep, 24))
-        history_days = max(31, min(history_days, 35))
+        raw_keep = max(6, min(raw_keep, 12))
+        history_days = max(30, min(history_days, 31))
+    if emergency:
+        # GitHub 单文件硬限制是 100MB；紧急模式只保留最少原始快照，
+        # 但仍保留 30 天核心信号/生命周期/仓位结果，保证后续分析不断档。
+        raw_keep = 3
+        history_days = 30
 
     cutoff_dt = utc_now() - dt.timedelta(days=history_days)
     cutoff_str = cutoff_dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -4755,6 +4760,22 @@ def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: 
         except sqlite3.OperationalError:
             pass
 
+        # 紧急模式：进一步清理最占空间的历史明细，只保留当前分析必需的 30 天窗口。
+        if emergency:
+            try:
+                cur.execute("DELETE FROM final_reports WHERE created_at < ?", ((utc_now() - dt.timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S"),))
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cur.execute("DELETE FROM push_log WHERE created_at < ?", ((utc_now() - dt.timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S"),))
+            except sqlite3.OperationalError:
+                pass
+            try:
+                # runs 表本身不大，但清掉久远 run 记录可避免外键外的历史索引继续膨胀。
+                cur.execute("DELETE FROM runs WHERE run_id < ?", (cutoff_run,))
+            except sqlite3.OperationalError:
+                pass
+
         conn.commit()
     finally:
         conn.close()
@@ -4769,12 +4790,14 @@ def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: 
         print(f"数据库 VACUUM 失败：{e}", flush=True)
 
     after = db_file_size_mb()
-    mode = "aggressive" if aggressive else "normal"
+    mode = "emergency" if emergency else ("aggressive" if aggressive else "normal")
     print(f"数据库体积控制({mode})：{before:.2f}MB -> {after:.2f}MB | raw_keep={raw_keep} | history_days={history_days}", flush=True)
 
-    # 如果仍接近 GitHub 单文件限制，再做一次更激进裁剪。
-    if not aggressive and after > DB_MAX_MB:
-        prune_database_for_github(current_run_id=current_run_id, aggressive=True)
+    # 如果仍接近 GitHub 单文件限制，逐级加大裁剪。
+    if not aggressive and not emergency and after > DB_MAX_MB:
+        prune_database_for_github(current_run_id=current_run_id, aggressive=True, emergency=False)
+    elif aggressive and not emergency and after > DB_MAX_MB:
+        prune_database_for_github(current_run_id=current_run_id, aggressive=True, emergency=True)
 
 
 def parse_args() -> argparse.Namespace:
