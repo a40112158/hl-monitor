@@ -123,9 +123,9 @@ jobs:
 
           # GitHub 单文件 100MB 限制：自动裁剪数据库原始快照并 VACUUM，避免 hl_monitor.db 过大无法 push
           DB_PRUNE_MODE: "1"
-          DB_RAW_KEEP_RUNS: "72"
-          DB_HISTORY_KEEP_DAYS: "45"
-          DB_MAX_MB: "95"
+          DB_RAW_KEEP_RUNS: "24"
+          DB_HISTORY_KEEP_DAYS: "35"
+          DB_MAX_MB: "85"
 
           BACKTEST_HURDLE_24H: "1"
           BACKTEST_HURDLE_72H: "2"
@@ -144,6 +144,24 @@ jobs:
 
         run: |
           python -u hl_monitor_final.py --rpm 200 --concurrency 5 --note "github hourly"
+
+      - name: Force database size guard
+        env:
+          DB_PRUNE_MODE: "1"
+          DB_RAW_KEEP_RUNS: "24"
+          DB_HISTORY_KEEP_DAYS: "35"
+          DB_MAX_MB: "85"
+          PYTHONUNBUFFERED: "1"
+        run: |
+          python - <<'PY'
+          import os
+          import hl_monitor_final as h
+          h.prune_database_for_github(current_run_id=None, aggressive=True, emergency=True)
+          size = os.path.getsize('hl_monitor.db') / 1024 / 1024 if os.path.exists('hl_monitor.db') else 0
+          print(f'final db size before commit: {size:.2f}MB')
+          if size >= 99:
+              raise SystemExit(f'hl_monitor.db still too large for GitHub: {size:.2f}MB')
+          PY
 
       - name: Clean report archives
         run: |
