@@ -3036,7 +3036,17 @@ def mark_pushed(push_type: str) -> None:
 
 
 def should_push_daily() -> bool:
-    return utc_now().hour == DAILY_PUSH_HOUR_UTC and not already_pushed_today("daily")
+    """每日复盘推送判断。
+
+    旧逻辑是必须刚好在 DAILY_PUSH_HOUR_UTC 这个小时运行才推送。
+    如果 GitHub Actions 那一小时失败/排队/手动运行错过，就会出现：
+    今天报告已经生成，但 TG 没有收到。
+
+    新逻辑：到达设定小时之后，只要今天还没成功推送过，
+    第一轮成功生成报告就会补推一次。
+    """
+    now = utc_now()
+    return now.hour >= DAILY_PUSH_HOUR_UTC and not already_pushed_today("daily")
 
 
 
