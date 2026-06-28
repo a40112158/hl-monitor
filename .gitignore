@@ -1,7 +1,12 @@
 __pycache__/
 *.pyc
 .env
+
+# 本地 SQLite 不提交，避免超过 GitHub 100MB 单文件限制
 hl_monitor.db
-hl_monitor.db.gz
 *.db
-*.db.gz
+*.db-wal
+*.db-shm
+
+# 只提交压缩后的主数据库
+!hl_monitor.db.gz

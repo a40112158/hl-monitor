@@ -43,6 +43,8 @@ DB_BACKEND = os.getenv("DB_BACKEND", "sqlite").strip().lower()
 TURSO_DATABASE_URL = os.getenv("TURSO_DATABASE_URL", "").strip()
 TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN", "").strip()
 USE_TURSO = (DB_BACKEND == "turso") or (bool(TURSO_DATABASE_URL) and bool(TURSO_AUTH_TOKEN))
+DB_INSERT_CHUNK = int(os.getenv("DB_INSERT_CHUNK", "500"))
+RUN_STEP_LOG = os.getenv("RUN_STEP_LOG", "1") == "1"
 REPORT_DIR = os.getenv("REPORT_DIR", "reports")
 # 精简报告结构：根目录只放每天要看的核心报告；全量 CSV 和辅助报告放 reports/details/
 DETAILS_DIR = os.getenv("DETAILS_DIR", os.path.join(REPORT_DIR, "details"))
@@ -411,6 +413,11 @@ def leverage_style_and_weight(leverage: Optional[float], liq_distance_pct: Optio
 def ensure_dirs() -> None:
     os.makedirs(REPORT_DIR, exist_ok=True)
     os.makedirs(DETAILS_DIR, exist_ok=True)
+
+
+def step_log(msg: str) -> None:
+    if RUN_STEP_LOG:
+        print(f"[STEP] {now_str()} | {msg}", flush=True)
 
 
 def db_conn():
@@ -1355,41 +1362,80 @@ async def fetch_all(addresses: Dict[str, List[str]], rpm: int, concurrency: int)
     return wallet_rows, perp_rows, spot_rows, mid_prices, token_price, coin_price
 
 
+def _chunks(seq: List[Any], size: int):
+    size = max(1, int(size or 500))
+    for i in range(0, len(seq), size):
+        yield i, seq[i:i + size]
+
+
 def save_snapshot(run_id: int, wallet_rows: List[Dict[str, Any]], perp_rows: List[Dict[str, Any]], spot_rows: List[Dict[str, Any]]) -> None:
+    """保存本轮快照。
+
+    Turso 是远程数据库，单次大事务在 GitHub Actions 里可能长时间无输出，
+    也可能在 commit 前 SQL Console 看不到变化。这里改成分表/分块提交，
+    并打印进度，方便确认到底卡在哪一步。
+    """
+    step_log(
+        f"开始写入快照 run_id={run_id} | backend={'turso' if USE_TURSO else 'sqlite'} | "
+        f"wallet={len(wallet_rows)} perp={len(perp_rows)} spot={len(spot_rows)} | chunk={DB_INSERT_CHUNK}"
+    )
+    t0 = time.time()
     conn = db_conn()
     cur = conn.cursor()
-    cur.executemany("""
-    INSERT INTO wallet_states (
-        run_id, address, groups, status, error,
-        perp_account_value, perp_total_ntl_pos, perp_withdrawable, perp_account_leverage, perp_position_count,
-        spot_total_value, spot_usdc_value, spot_token_count
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, [(
-        run_id, w.get("address"), w.get("groups"), w.get("status"), w.get("error"),
-        w.get("perp_account_value"), w.get("perp_total_ntl_pos"), w.get("perp_withdrawable"), w.get("perp_account_leverage"), w.get("perp_position_count"),
-        w.get("spot_total_value"), w.get("spot_usdc_value"), w.get("spot_token_count")
-    ) for w in wallet_rows])
-    cur.executemany("""
-    INSERT INTO perp_positions (
-        run_id, address, groups, coin, side, szi, abs_szi, mark_px, position_value,
-        entry_px, unrealized_pnl, roe, leverage, liquidation_px,
-        margin_mode, margin_used, liq_distance_pct, account_leverage, leverage_style, leverage_weight, leverage_risk_score, leverage_note
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, [(
-        run_id, p.get("address"), p.get("groups"), p.get("coin"), p.get("side"), p.get("szi"), p.get("abs_szi"), p.get("mark_px"), p.get("position_value"),
-        p.get("entry_px"), p.get("unrealized_pnl"), p.get("roe"), p.get("leverage"), p.get("liquidation_px"),
-        p.get("margin_mode"), p.get("margin_used"), p.get("liq_distance_pct"), p.get("account_leverage"), p.get("leverage_style"), p.get("leverage_weight"), p.get("leverage_risk_score"), p.get("leverage_note")
-    ) for p in perp_rows])
-    cur.executemany("""
-    INSERT INTO spot_balances (
-        run_id, address, groups, coin, token, total, hold, free, entry_ntl, mark_px, current_value
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, [(
-        run_id, s.get("address"), s.get("groups"), s.get("coin"), s.get("token"), s.get("total"), s.get("hold"), s.get("free"), s.get("entry_ntl"), s.get("mark_px"), s.get("current_value")
-    ) for s in spot_rows])
-    conn.commit()
-    conn.close()
+    try:
+        wallet_payload = [(
+            run_id, w.get("address"), w.get("groups"), w.get("status"), w.get("error"),
+            w.get("perp_account_value"), w.get("perp_total_ntl_pos"), w.get("perp_withdrawable"), w.get("perp_account_leverage"), w.get("perp_position_count"),
+            w.get("spot_total_value"), w.get("spot_usdc_value"), w.get("spot_token_count")
+        ) for w in wallet_rows]
+        cur.executemany("""
+        INSERT INTO wallet_states (
+            run_id, address, groups, status, error,
+            perp_account_value, perp_total_ntl_pos, perp_withdrawable, perp_account_leverage, perp_position_count,
+            spot_total_value, spot_usdc_value, spot_token_count
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, wallet_payload)
+        conn.commit()
+        step_log(f"wallet_states 写入完成：{len(wallet_payload)} 行 | elapsed={time.time()-t0:.1f}s")
 
+        perp_payload = [(
+            run_id, p.get("address"), p.get("groups"), p.get("coin"), p.get("side"), p.get("szi"), p.get("abs_szi"), p.get("mark_px"), p.get("position_value"),
+            p.get("entry_px"), p.get("unrealized_pnl"), p.get("roe"), p.get("leverage"), p.get("liquidation_px"),
+            p.get("margin_mode"), p.get("margin_used"), p.get("liq_distance_pct"), p.get("account_leverage"), p.get("leverage_style"), p.get("leverage_weight"), p.get("leverage_risk_score"), p.get("leverage_note")
+        ) for p in perp_rows]
+        inserted = 0
+        for _, chunk in _chunks(perp_payload, DB_INSERT_CHUNK):
+            cur.executemany("""
+            INSERT INTO perp_positions (
+                run_id, address, groups, coin, side, szi, abs_szi, mark_px, position_value,
+                entry_px, unrealized_pnl, roe, leverage, liquidation_px,
+                margin_mode, margin_used, liq_distance_pct, account_leverage, leverage_style, leverage_weight, leverage_risk_score, leverage_note
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, chunk)
+            conn.commit()
+            inserted += len(chunk)
+            step_log(f"perp_positions 写入进度：{inserted}/{len(perp_payload)} 行 | elapsed={time.time()-t0:.1f}s")
+
+        spot_payload = [(
+            run_id, srow.get("address"), srow.get("groups"), srow.get("coin"), srow.get("token"), srow.get("total"), srow.get("hold"), srow.get("free"), srow.get("entry_ntl"), srow.get("mark_px"), srow.get("current_value")
+        ) for srow in spot_rows]
+        inserted = 0
+        for _, chunk in _chunks(spot_payload, DB_INSERT_CHUNK):
+            cur.executemany("""
+            INSERT INTO spot_balances (
+                run_id, address, groups, coin, token, total, hold, free, entry_ntl, mark_px, current_value
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, chunk)
+            conn.commit()
+            inserted += len(chunk)
+            step_log(f"spot_balances 写入进度：{inserted}/{len(spot_payload)} 行 | elapsed={time.time()-t0:.1f}s")
+
+        step_log(f"本轮快照写入完成 run_id={run_id} | total_elapsed={time.time()-t0:.1f}s")
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 def export_latest_csv(run_id: int) -> None:
     ensure_dirs()
@@ -4587,7 +4633,9 @@ def prune_daily_archives(keep_days: int) -> None:
 
 async def run_once(args: argparse.Namespace) -> None:
     ensure_dirs()
+    step_log(f"启动脚本 | backend={'turso' if USE_TURSO else 'sqlite'} | DB_BACKEND={DB_BACKEND} | USE_TURSO={USE_TURSO}")
     init_db()
+    step_log("数据库初始化完成")
     thresholds = load_thresholds()
     addresses = load_wallet_addresses()
     if len(addresses) < MIN_WALLET_COUNT:
@@ -4605,9 +4653,13 @@ async def run_once(args: argparse.Namespace) -> None:
     print(f"开始 run_id={run_id}", flush=True)
 
     wallet_rows, perp_rows, spot_rows, mid_prices, _token_price, spot_coin_price = await fetch_all(addresses, args.rpm, args.concurrency)
+    step_log("钱包扫描完成，准备写入快照")
     save_snapshot(run_id, wallet_rows, perp_rows, spot_rows)
+    step_log("快照写入完成，开始更新仓位生命周期")
     update_position_trades(run_id, {**spot_coin_price, **mid_prices})
+    step_log("仓位生命周期完成，开始导出杠杆质量")
     export_leverage_quality_files(run_id)
+    step_log("杠杆质量导出完成")
     prev_id = get_previous_run_id(run_id)
 
     total = len(wallet_rows)
@@ -4616,8 +4668,11 @@ async def run_once(args: argparse.Namespace) -> None:
     ok_rate = (ok + partial * 0.5) / total if total else 0.0
     data_quality_ok = ok_rate >= MIN_OK_RATE
     write_data_quality_report(run_id, ok_rate, wallet_rows, args.note)
+    step_log(f"数据质量报告完成 | ok_rate={ok_rate*100:.2f}%")
 
+    step_log("开始更新回测事件")
     updated_actions, updated_signals = evaluate_events({**spot_coin_price, **mid_prices})
+    step_log("回测事件更新完成，开始刷新钱包质量")
     quality_rows = refresh_wallet_quality(run_id, addresses) if WALLET_QUALITY_MODE else []
     quality_map = get_wallet_quality_map(run_id) if quality_rows else {}
 
@@ -4655,8 +4710,11 @@ async def run_once(args: argparse.Namespace) -> None:
         print(report, flush=True)
         return
 
+    step_log("开始计算主动变化/资金流")
     preliminary, actions, cashflows = compute_preliminary(run_id, prev_id, thresholds, quality_map)
+    step_log(f"主动变化计算完成 | actions={len(actions)} cashflows={len(cashflows)} coins={len(preliminary)}")
     export_operation_detail_files(actions, cashflows)
+    step_log("主动变化明细导出完成")
     inserted_actions = 0
     if data_quality_ok:
         inserted_actions = save_wallet_actions(run_id, actions)
@@ -4664,8 +4722,10 @@ async def run_once(args: argparse.Namespace) -> None:
         print(f"成功率 {ok_rate*100:.2f}% 低于阈值 {MIN_OK_RATE*100:.2f}%，不记录本轮钱包动作/信号/生命周期。")
 
     candidate_coins = sorted(preliminary.keys(), key=lambda c: abs(preliminary[c].get("weighted_flow") or 0), reverse=True)[:25]
+    step_log(f"开始构建市场上下文/风险指标 | candidate_coins={len(candidate_coins)}")
     ctx_map = await build_market_context(run_id, candidate_coins, {**spot_coin_price, **mid_prices})
     risk_map = await build_coin_risk_metrics(run_id, candidate_coins)
+    step_log("市场上下文/风险指标完成，开始构建信号")
     signals = build_signals(run_id, preliminary, ctx_map, thresholds, risk_map) if data_quality_ok else []
     attach_dominant_wallets(signals, actions)
     export_signal_explain_files(run_id, signals)
@@ -4682,8 +4742,11 @@ async def run_once(args: argparse.Namespace) -> None:
         data_quality_ok=data_quality_ok,
         skip_reason=f"ok_rate={ok_rate*100:.2f}% < MIN_OK_RATE={MIN_OK_RATE*100:.2f}%"
     )
+    step_log("开始导出回测文件")
     export_backtest_files()
+    step_log("回测文件导出完成，开始导出 latest CSV")
     export_latest_csv(run_id)
+    step_log("latest CSV 导出完成")
 
     report = build_report(run_id, signals, ctx_map, actions, cashflows, ok_rate, new_signal_events, updated_actions, updated_signals)
     save_report(run_id, signals, report)
@@ -4701,9 +4764,11 @@ async def run_once(args: argparse.Namespace) -> None:
     else:
         print("无强信号，也不是每日推送时间，不推送 TG。")
 
+    step_log("开始 finish_run / last_run_status / prune")
     finish_run(run_id, wallet_rows, perp_rows, spot_rows, pushed)
     write_last_run_status(run_id, wallet_rows, perp_rows, spot_rows, pushed, args.note)
     prune_database_for_github(run_id)
+    step_log("finish/prune 完成")
     print(f"新增钱包动作：{inserted_actions} | 强信号：{len(strong)}", flush=True)
     print(report, flush=True)
 
