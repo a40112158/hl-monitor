@@ -2,7 +2,9 @@ name: Hyperliquid Wallet Monitor FINAL
 
 on:
   workflow_dispatch:
+
   schedule:
+    # GitHub 自带定时改成每6小时兜底一次；主触发建议用 Cloudflare Worker Cron。
     - cron: "53 */6 * * *"
 
 permissions:
@@ -15,7 +17,7 @@ concurrency:
 jobs:
   monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
 
     steps:
       - name: Checkout repository
@@ -105,16 +107,40 @@ jobs:
           # 报告底部复盘窗口：过去30天信号复盘 + 过去30天钱包主动资金流
           REPORT_REVIEW_WINDOW_DAYS: "30"
 
+          # 信号解释 / 回测 / 资金费率与流动性过滤 / 健康状态
+          SIGNAL_EXPLAIN_MODE: "1"
+          BACKTEST_MODE: "1"
+          SIGNAL_BACKTEST_WINDOW_DAYS: "30"
+          # 回测门槛胜率：普通胜率只看方向，门槛胜率要求达到最低收益幅度
+          # 信号生命周期：按提示从出现到消失/反转结算
+          SIGNAL_LIFECYCLE_MODE: "1"
+          STRONG_SIGNAL_MISSING_ROUNDS: "1"
+          LONGTERM_SIGNAL_MISSING_ROUNDS: "2"
+          BACKTEST_HURDLE_24H: "1"
+          BACKTEST_HURDLE_72H: "2"
+          BACKTEST_HURDLE_7D: "4"
+          BACKTEST_HURDLE_15D: "6"
+          BACKTEST_HURDLE_30D: "8"
+          RISK_FILTER_MODE: "1"
+          FUNDING_WARN_ABS_PCT: "0.03"
+          FUNDING_DANGER_ABS_PCT: "0.08"
+          LIQUIDITY_LOW_DAY_VOLUME: "20000000"
+          LIQUIDITY_MIN_DAY_VOLUME: "5000000"
+          HEALTH_STALE_HOURS: "2"
+
           PYTHONUNBUFFERED: "1"
+          DETAILS_DIR: "reports/details"
 
         run: |
           python -u hl_monitor_final.py --rpm 200 --concurrency 5 --note "github hourly"
 
       - name: Clean report archives
         run: |
-          mkdir -p reports
+          mkdir -p reports/details
           # 新版不再保留小时级 final_report_run_x.txt，历史遗留文件也删除
           rm -f reports/final_report_run_*.txt
+          # 精简版：根目录只保留核心报告，旧版遗留的全量 CSV / 辅助报告从根目录清掉
+          rm -f             reports/wallet_states_latest.csv             reports/perp_positions_latest.csv             reports/spot_balances_latest.csv             reports/coin_signals_latest.csv             reports/active_changes_all_latest.csv             reports/fund_flow_lite_all_latest.csv             reports/wallet_quality_latest.csv             reports/wallet_quality_report.txt             reports/leverage_quality_latest.csv             reports/wallet_leverage_profile_latest.csv             reports/coin_leverage_summary_latest.csv             reports/leverage_quality_report.txt             reports/wallet_position_trades_latest.csv             reports/wallet_position_performance_latest.csv             reports/wallet_position_report.txt             reports/signal_explain_latest.csv             reports/coin_risk_latest.csv             reports/signal_backtest_latest.csv             reports/signal_backtest_latest_report.txt             reports/longterm_backtest_latest.csv             reports/longterm_backtest_latest_report.txt             reports/signal_lifecycle_latest.csv             reports/signal_lifecycle_report.txt             reports/long_term_candidates.csv             reports/watchlist_long.txt             reports/watchlist_short.txt             reports/watchlist_observe.txt
           # 每日归档只保留最近 30 天
           if [ -d reports/daily ]; then
             find reports/daily -mindepth 1 -maxdepth 1 -type d | sort | head -n -30 | xargs -r rm -rf
