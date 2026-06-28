@@ -13,6 +13,7 @@ Hyperliquid Wallet Monitor FINAL
 - 合约杠杆质量过滤：杠杆倍数 / cross-isolated / 强平距离 / 钱包杠杆风格
 - 仓位生命周期追踪：开仓 / 加仓 / 减仓 / 平仓 / 真实仓位收益
 - 观察列表和 Telegram 推送
+- 信号生命周期追踪：强信号/长期单从出现到消失/反转的真实表现
 - 适配 GitHub Actions 定时运行
 
 注意：
@@ -39,6 +40,8 @@ import aiohttp
 HL_INFO_URL = "https://api.hyperliquid.xyz/info"
 DB_FILE = os.getenv("HL_DB_FILE", "hl_monitor.db")
 REPORT_DIR = os.getenv("REPORT_DIR", "reports")
+# 精简报告结构：根目录只放每天要看的核心报告；全量 CSV 和辅助报告放 reports/details/
+DETAILS_DIR = os.getenv("DETAILS_DIR", os.path.join(REPORT_DIR, "details"))
 THRESHOLD_FILE = os.getenv("THRESHOLD_FILE", "coin_thresholds.json")
 
 ADDRESS_SOURCES = {
@@ -95,6 +98,33 @@ SPOT_DETAIL_MIN_USD = float(os.getenv("SPOT_DETAIL_MIN_USD", "1000"))
 
 # 报告底部复盘窗口：默认看过去30天，而不是过去24h
 REPORT_REVIEW_WINDOW_DAYS = int(os.getenv("REPORT_REVIEW_WINDOW_DAYS", "30"))
+
+# 可解释性、回测、资金费率/流动性过滤、运行健康状态
+SIGNAL_EXPLAIN_MODE = os.getenv("SIGNAL_EXPLAIN_MODE", "1") == "1"
+BACKTEST_MODE = os.getenv("BACKTEST_MODE", "1") == "1"
+RISK_FILTER_MODE = os.getenv("RISK_FILTER_MODE", "1") == "1"
+SIGNAL_BACKTEST_WINDOW_DAYS = int(os.getenv("SIGNAL_BACKTEST_WINDOW_DAYS", "30"))
+# 信号/长期单回测的门槛胜率。单位是方向收益百分比。
+# 普通胜率 = 方向收益 > 0；门槛胜率 = 方向收益达到下面门槛，长期单更应该看门槛胜率。
+BACKTEST_HURDLE_24H = float(os.getenv("BACKTEST_HURDLE_24H", "1"))
+BACKTEST_HURDLE_72H = float(os.getenv("BACKTEST_HURDLE_72H", "2"))
+BACKTEST_HURDLE_7D = float(os.getenv("BACKTEST_HURDLE_7D", "4"))
+BACKTEST_HURDLE_15D = float(os.getenv("BACKTEST_HURDLE_15D", "6"))
+BACKTEST_HURDLE_30D = float(os.getenv("BACKTEST_HURDLE_30D", "8"))
+
+# 信号生命周期：按提示从出现到消失/反转结算，补充固定周期回测。
+# 强信号默认连续 1 轮消失就结算；长期单默认连续 2 轮消失才失效，避免单轮抖动。
+SIGNAL_LIFECYCLE_MODE = os.getenv("SIGNAL_LIFECYCLE_MODE", "1") == "1"
+STRONG_SIGNAL_MISSING_ROUNDS = int(os.getenv("STRONG_SIGNAL_MISSING_ROUNDS", "1"))
+LONGTERM_SIGNAL_MISSING_ROUNDS = int(os.getenv("LONGTERM_SIGNAL_MISSING_ROUNDS", "2"))
+
+# funding 用百分比表达。例如 0.03 表示 0.03%，超过后长期单会降权。
+FUNDING_WARN_ABS_PCT = float(os.getenv("FUNDING_WARN_ABS_PCT", "0.03"))
+FUNDING_DANGER_ABS_PCT = float(os.getenv("FUNDING_DANGER_ABS_PCT", "0.08"))
+# 24h成交额低于这些阈值时，长期单降权。
+LIQUIDITY_LOW_DAY_VOLUME = float(os.getenv("LIQUIDITY_LOW_DAY_VOLUME", "20000000"))
+LIQUIDITY_MIN_DAY_VOLUME = float(os.getenv("LIQUIDITY_MIN_DAY_VOLUME", "5000000"))
+HEALTH_STALE_HOURS = float(os.getenv("HEALTH_STALE_HOURS", "2"))
 
 # 默认阈值，可被 coin_thresholds.json 覆盖
 DEFAULT_THRESHOLDS = {
@@ -162,6 +192,14 @@ def safe_float(x: Any) -> Optional[float]:
         except Exception:
             return None
     return None
+
+def safe_int(x: Any, default: int = 0) -> int:
+    try:
+        if x is None:
+            return default
+        return int(float(x))
+    except Exception:
+        return default
 
 
 def fmt_money(x: Optional[float]) -> str:
@@ -353,6 +391,7 @@ def leverage_style_and_weight(leverage: Optional[float], liq_distance_pct: Optio
 
 def ensure_dirs() -> None:
     os.makedirs(REPORT_DIR, exist_ok=True)
+    os.makedirs(DETAILS_DIR, exist_ok=True)
 
 
 def db_conn() -> sqlite3.Connection:
@@ -692,6 +731,90 @@ def init_db() -> None:
     """)
 
     cur.execute("""
+    CREATE TABLE IF NOT EXISTS coin_risk_metrics (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        run_id INTEGER,
+        coin TEXT,
+        funding_rate REAL,
+        funding_rate_pct REAL,
+        day_volume_usd REAL,
+        open_interest_usd REAL,
+        liquidity_risk TEXT,
+        funding_risk TEXT,
+        funding_note TEXT,
+        liquidity_note TEXT,
+        created_at TEXT,
+        UNIQUE(run_id, coin)
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS longterm_events (
+        event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        run_id INTEGER,
+        created_at TEXT,
+        coin TEXT,
+        direction TEXT,
+        score REAL,
+        entry_px REAL,
+        reason TEXT,
+        ret_1h REAL,
+        ret_4h REAL,
+        ret_24h REAL,
+        ret_72h REAL,
+        ret_7d REAL,
+        ret_15d REAL,
+        ret_30d REAL,
+        evaluated_at TEXT,
+        UNIQUE(run_id, coin, direction)
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS signal_lifecycles (
+        lifecycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        lifecycle_type TEXT,
+        coin TEXT,
+        direction TEXT,
+        status TEXT,
+        entry_run_id INTEGER,
+        entry_time TEXT,
+        entry_px REAL,
+        entry_score REAL,
+        max_score REAL,
+        last_seen_run_id INTEGER,
+        last_seen_at TEXT,
+        last_score REAL,
+        missing_count INTEGER DEFAULT 0,
+        exit_run_id INTEGER,
+        exit_time TEXT,
+        exit_px REAL,
+        exit_reason TEXT,
+        lifecycle_return_pct REAL,
+        holding_hours REAL,
+        note TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS signal_lifecycle_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        lifecycle_id INTEGER,
+        run_id INTEGER,
+        created_at TEXT,
+        lifecycle_type TEXT,
+        event_type TEXT,
+        coin TEXT,
+        direction TEXT,
+        px REAL,
+        score REAL,
+        missing_count INTEGER,
+        return_pct REAL,
+        reason TEXT
+    )
+    """)
+
+    cur.execute("""
     CREATE TABLE IF NOT EXISTS final_reports (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         run_id INTEGER,
@@ -720,7 +843,7 @@ def init_db() -> None:
         if col not in cols:
             cur.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
 
-    for t in ("wallet_actions", "signal_events"):
+    for t in ("wallet_actions", "signal_events", "longterm_events"):
         add_col_if_missing(t, "ret_72h", "REAL")
         add_col_if_missing(t, "ret_7d", "REAL")
         add_col_if_missing(t, "ret_15d", "REAL")
@@ -748,6 +871,11 @@ def init_db() -> None:
     cur.execute("CREATE INDEX IF NOT EXISTS idx_quality_addr ON wallet_quality(address)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_coin ON signal_events(coin)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_coin_signal_run ON coin_signals(run_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_risk_run_coin ON coin_risk_metrics(run_id, coin)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_longterm_coin ON longterm_events(coin)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_lifecycles_status ON signal_lifecycles(lifecycle_type, status, coin, direction)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_lifecycles_exit_run ON signal_lifecycles(exit_run_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_lifecycle_events_run ON signal_lifecycle_events(run_id)")
 
     conn.commit()
     conn.close()
@@ -1229,11 +1357,12 @@ def export_latest_csv(run_id: int) -> None:
         ("coin_signals", "coin_signals_latest.csv"),
         ("wallet_quality", "wallet_quality_latest.csv"),
         ("wallet_position_performance", "wallet_position_performance_latest.csv"),
+        ("coin_risk_metrics", "coin_risk_latest.csv"),
     ]:
         rows = load_rows(table, run_id)
         if not rows:
             continue
-        path = os.path.join(REPORT_DIR, filename)
+        path = os.path.join(DETAILS_DIR, filename)
         with open(path, "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
             writer.writeheader()
@@ -1250,7 +1379,7 @@ def export_operation_detail_files(actions: List[Dict[str, Any]], cashflows: List
     ensure_dirs()
 
     def write_csv(filename: str, rows: List[Dict[str, Any]], preferred: List[str]) -> None:
-        path = os.path.join(REPORT_DIR, filename)
+        path = os.path.join(DETAILS_DIR, filename)
         if not rows:
             with open(path, "w", encoding="utf-8-sig", newline="") as f:
                 f.write("empty\n")
@@ -1704,6 +1833,10 @@ def evaluate_events(prices: Dict[str, float]) -> Tuple[int, int]:
 
     updated_actions = eval_table("wallet_actions", "action_id")
     updated_signals = eval_table("signal_events", "event_id")
+    try:
+        updated_signals += eval_table("longterm_events", "event_id")
+    except Exception as e:
+        print(f"更新长期单回测失败：{e}", flush=True)
     conn.commit()
     conn.close()
     return updated_actions, updated_signals
@@ -2245,7 +2378,7 @@ def export_position_trade_files(run_id: int) -> None:
     trade_rows = [dict(x) for x in cur.fetchall()]
 
     if trade_rows:
-        with open(os.path.join(REPORT_DIR, "wallet_position_trades_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
+        with open(os.path.join(DETAILS_DIR, "wallet_position_trades_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(trade_rows[0].keys()))
             writer.writeheader()
             writer.writerows(trade_rows)
@@ -2328,12 +2461,12 @@ def export_position_trade_files(run_id: int) -> None:
 
     if perf_rows:
         perf_rows.sort(key=lambda x: safe_float(x.get("position_score")) or 0.0, reverse=True)
-        with open(os.path.join(REPORT_DIR, "wallet_position_performance_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
+        with open(os.path.join(DETAILS_DIR, "wallet_position_performance_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(perf_rows[0].keys()))
             writer.writeheader()
             writer.writerows(perf_rows)
 
-    with open(os.path.join(REPORT_DIR, "wallet_position_report.txt"), "w", encoding="utf-8") as f:
+    with open(os.path.join(DETAILS_DIR, "wallet_position_report.txt"), "w", encoding="utf-8") as f:
         f.write("【仓位生命周期收益报告】\n")
         f.write(f"更新时间 UTC：{now_str()}\n")
         f.write(f"统计窗口：最近 {POSITION_PERF_WINDOW_DAYS} 天\n")
@@ -2392,7 +2525,7 @@ def export_leverage_quality_files(run_id: int) -> None:
         "leverage", "margin_mode", "margin_used", "liquidation_px", "liq_distance_pct",
         "account_leverage", "leverage_style", "leverage_weight", "leverage_risk_score", "leverage_note",
     ]
-    with open(os.path.join(REPORT_DIR, "leverage_quality_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
+    with open(os.path.join(DETAILS_DIR, "leverage_quality_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=pos_fields)
         writer.writeheader()
         for r in rows:
@@ -2469,7 +2602,7 @@ def export_leverage_quality_files(run_id: int) -> None:
         })
     wallet_rows.sort(key=lambda x: (safe_float(x.get("high_risk_ratio")) or 0.0, safe_float(x.get("total_position_value")) or 0.0), reverse=True)
     if wallet_rows:
-        with open(os.path.join(REPORT_DIR, "wallet_leverage_profile_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
+        with open(os.path.join(DETAILS_DIR, "wallet_leverage_profile_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(wallet_rows[0].keys()))
             writer.writeheader()
             writer.writerows(wallet_rows)
@@ -2495,12 +2628,12 @@ def export_leverage_quality_files(run_id: int) -> None:
         })
     coin_rows.sort(key=lambda x: (abs(safe_float(x.get("long_value")) or 0.0) + abs(safe_float(x.get("short_value")) or 0.0)), reverse=True)
     if coin_rows:
-        with open(os.path.join(REPORT_DIR, "coin_leverage_summary_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
+        with open(os.path.join(DETAILS_DIR, "coin_leverage_summary_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(coin_rows[0].keys()))
             writer.writeheader()
             writer.writerows(coin_rows)
 
-    with open(os.path.join(REPORT_DIR, "leverage_quality_report.txt"), "w", encoding="utf-8") as f:
+    with open(os.path.join(DETAILS_DIR, "leverage_quality_report.txt"), "w", encoding="utf-8") as f:
         f.write("【合约杠杆质量报告】\n")
         f.write(f"更新时间 UTC：{now_str()}\n")
         f.write("说明：低杠杆长期型会略加权；高杠杆短线/爆仓边缘会降权，避免影响低杠杆长期单判断。\n\n")
@@ -2523,7 +2656,164 @@ def export_leverage_quality_files(run_id: int) -> None:
     print(f"杠杆质量报告已导出：{len(rows)} 个合约仓位", flush=True)
 
 
-def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: Dict[str, Dict[str, Any]], thresholds: Dict[str, Dict[str, float]]) -> List[Dict[str, Any]]:
+
+async def fetch_perp_asset_contexts(session: aiohttp.ClientSession, limiter: Optional[RateLimiter]) -> Dict[str, Dict[str, Any]]:
+    """读取 Hyperliquid 合约资产上下文，主要用于资金费率和24h成交额过滤。"""
+    ok, data = await post_info(session, limiter, {"type": "metaAndAssetCtxs"})
+    out: Dict[str, Dict[str, Any]] = {}
+    if not ok:
+        print("获取 metaAndAssetCtxs 失败：", data, flush=True)
+        return out
+    try:
+        meta, ctxs = data
+        universe = meta.get("universe") or []
+        for u, ctx in zip(universe, ctxs):
+            coin = str(u.get("name") or ctx.get("coin") or "")
+            if not coin:
+                continue
+            funding = safe_float(ctx.get("funding"))
+            day_vlm = safe_float(ctx.get("dayNtlVlm")) or safe_float(ctx.get("dayBaseVlm"))
+            oi = safe_float(ctx.get("openInterest"))
+            mark = safe_float(ctx.get("markPx")) or safe_float(ctx.get("midPx"))
+            # openInterest 有些场景是币数量，用 mark 粗略换成美元；如果已经是美元，乘法会偏大，所以只做辅助显示。
+            oi_usd = oi * mark if oi is not None and mark is not None else oi
+            out[coin] = {
+                "coin": coin,
+                "funding_rate": funding,
+                "funding_rate_pct": funding * 100 if funding is not None else None,
+                "day_volume_usd": day_vlm,
+                "open_interest_usd": oi_usd,
+                "mark_px": mark,
+            }
+    except Exception as e:
+        print("解析 metaAndAssetCtxs 失败：", e, flush=True)
+    return out
+
+
+def classify_coin_risk(row: Dict[str, Any]) -> Dict[str, Any]:
+    funding_pct = safe_float(row.get("funding_rate_pct"))
+    day_vol = safe_float(row.get("day_volume_usd"))
+    funding_risk = "未知"
+    funding_note = "资金费率未知"
+    if funding_pct is not None:
+        af = abs(funding_pct)
+        if af >= FUNDING_DANGER_ABS_PCT:
+            funding_risk = "高"
+        elif af >= FUNDING_WARN_ABS_PCT:
+            funding_risk = "中"
+        else:
+            funding_risk = "低"
+        funding_note = f"funding={funding_pct:+.4f}%"
+
+    liquidity_risk = "未知"
+    liquidity_note = "24h成交额未知"
+    if day_vol is not None:
+        if day_vol < LIQUIDITY_MIN_DAY_VOLUME:
+            liquidity_risk = "高"
+        elif day_vol < LIQUIDITY_LOW_DAY_VOLUME:
+            liquidity_risk = "中"
+        else:
+            liquidity_risk = "低"
+        liquidity_note = f"24h成交额={fmt_money(day_vol)}"
+    out = dict(row)
+    out.update({
+        "funding_risk": funding_risk,
+        "funding_note": funding_note,
+        "liquidity_risk": liquidity_risk,
+        "liquidity_note": liquidity_note,
+    })
+    return out
+
+
+async def build_coin_risk_metrics(run_id: int, candidate_coins: List[str]) -> Dict[str, Dict[str, Any]]:
+    """导出币种资金费率/流动性风险，用于长期单过滤。"""
+    if not RISK_FILTER_MODE:
+        return {}
+    timeout = aiohttp.ClientTimeout(total=60)
+    limiter = RateLimiter(120)
+    risk_map: Dict[str, Dict[str, Any]] = {}
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        all_ctx = await fetch_perp_asset_contexts(session, limiter)
+    wanted = set([c for c in candidate_coins if c]) | {"BTC", "ETH"}
+    rows: List[Dict[str, Any]] = []
+    for coin in sorted(wanted):
+        if coin not in all_ctx:
+            continue
+        r = classify_coin_risk(all_ctx[coin])
+        risk_map[coin] = r
+        rows.append(r)
+    conn = db_conn()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM coin_risk_metrics WHERE run_id=?", (run_id,))
+    cur.executemany("""
+    INSERT OR REPLACE INTO coin_risk_metrics (
+        run_id, coin, funding_rate, funding_rate_pct, day_volume_usd, open_interest_usd,
+        liquidity_risk, funding_risk, funding_note, liquidity_note, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, [(
+        run_id, r.get("coin"), r.get("funding_rate"), r.get("funding_rate_pct"), r.get("day_volume_usd"), r.get("open_interest_usd"),
+        r.get("liquidity_risk"), r.get("funding_risk"), r.get("funding_note"), r.get("liquidity_note"), now_str()
+    ) for r in rows])
+    conn.commit()
+    conn.close()
+
+    ensure_dirs()
+    if rows:
+        with open(os.path.join(DETAILS_DIR, "coin_risk_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
+            fields = ["coin", "funding_rate_pct", "funding_risk", "day_volume_usd", "liquidity_risk", "open_interest_usd", "funding_note", "liquidity_note"]
+            writer = csv.DictWriter(f, fieldnames=fields)
+            writer.writeheader(); writer.writerows([{k: r.get(k) for k in fields} for r in rows])
+        sorted_rows = sorted(rows, key=lambda r: ((r.get("liquidity_risk") == "高"), abs(safe_float(r.get("funding_rate_pct")) or 0.0)), reverse=True)
+        with open(os.path.join(REPORT_DIR, "coin_risk_report.txt"), "w", encoding="utf-8") as f:
+            f.write("【资金费率 / 流动性风险】\n")
+            f.write(f"run_id={run_id} | 更新时间UTC={now_str()}\n\n")
+            for r in sorted_rows[:50]:
+                f.write(f"{r['coin']} | funding={fmt_pct(r.get('funding_rate_pct'))} 风险={r.get('funding_risk')} | 24h成交额={fmt_money(r.get('day_volume_usd'))} 流动性={r.get('liquidity_risk')} | OI={fmt_money(r.get('open_interest_usd'))}\n")
+    return risk_map
+
+
+def risk_filter_adjust(direction: str, risk: Dict[str, Any]) -> Tuple[float, List[str], List[str], Dict[str, Any]]:
+    """长期单风险过滤：资金费率和流动性。"""
+    if not RISK_FILTER_MODE or not risk:
+        return 0.0, [], [], {}
+    adj = 0.0
+    reasons: List[str] = []
+    risks: List[str] = []
+    funding_pct = safe_float(risk.get("funding_rate_pct"))
+    day_vol = safe_float(risk.get("day_volume_usd"))
+    funding_risk = risk.get("funding_risk") or "未知"
+    liquidity_risk = risk.get("liquidity_risk") or "未知"
+
+    # 简化逻辑：正 funding 通常对做多不利、对做空有利；负 funding 反过来。
+    if funding_pct is not None:
+        direction_cost = funding_pct if direction == "bullish" else -funding_pct
+        af = abs(funding_pct)
+        if direction_cost > 0 and af >= FUNDING_DANGER_ABS_PCT:
+            adj -= 1.2; risks.append(f"资金费率对{dir_cn(direction)}明显不利：{funding_pct:+.4f}%")
+        elif direction_cost > 0 and af >= FUNDING_WARN_ABS_PCT:
+            adj -= 0.5; risks.append(f"资金费率对{dir_cn(direction)}偏不利：{funding_pct:+.4f}%")
+        elif direction_cost < 0 and af >= FUNDING_WARN_ABS_PCT:
+            adj += 0.3; reasons.append(f"资金费率对{dir_cn(direction)}有利：{funding_pct:+.4f}%")
+        else:
+            reasons.append(f"资金费率中性：{funding_pct:+.4f}%")
+
+    if day_vol is not None:
+        if day_vol < LIQUIDITY_MIN_DAY_VOLUME:
+            adj -= 1.5; risks.append(f"流动性高风险：24h成交额仅{fmt_money(day_vol)}")
+        elif day_vol < LIQUIDITY_LOW_DAY_VOLUME:
+            adj -= 0.7; risks.append(f"流动性偏低：24h成交额{fmt_money(day_vol)}")
+        else:
+            reasons.append(f"流动性可接受：24h成交额{fmt_money(day_vol)}")
+
+    return adj, reasons, risks, {
+        "funding_rate_pct": funding_pct,
+        "funding_risk": funding_risk,
+        "day_volume_usd": day_vol,
+        "liquidity_risk": liquidity_risk,
+    }
+
+
+def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: Dict[str, Dict[str, Any]], thresholds: Dict[str, Dict[str, float]], risk_map: Optional[Dict[str, Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     btc_ctx = ctx_map.get("BTC", {})
     lev_map = build_leverage_signal_map(run_id) if LEVERAGE_QUALITY_MODE else {}
     rows: List[Dict[str, Any]] = []
@@ -2554,7 +2844,8 @@ def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: 
         m_adj, m_reasons = market_adjust(direction, btc_ctx, ctx_map.get(coin, {}))
         p_adj, p_reasons, stype = position_adjust(direction, ctx_map.get(coin, {}))
         lev_adj, lev_reasons, lev_risks, lev_fields = leverage_signal_adjust(direction, lev_map.get(coin, {}))
-        final_score = score + conf_adj + m_adj + p_adj + lev_adj
+        risk_adj, risk_reasons, risk_risks, risk_fields = risk_filter_adjust(direction, (risk_map or {}).get(coin, {}))
+        final_score = score + conf_adj + m_adj + p_adj + lev_adj + risk_adj
         state = classify_state(direction, perp_active, spot_active, coin, thresholds, stype)
         th_score = threshold(thresholds, coin, "score_push")
         min_watch = threshold(thresholds, coin, "min_watch_score")
@@ -2572,8 +2863,18 @@ def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: 
         if stype in ("高位追多", "低位追空"):
             risk_parts.append("价格位置有追涨杀跌风险")
         risk_parts.extend(lev_risks)
+        risk_parts.extend(risk_risks)
         risk = "；".join(risk_parts) if risk_parts else "无明显额外风险"
-        reason = "；".join(reasons + [conf_reason] + m_reasons + p_reasons + lev_reasons)
+        reason = "；".join(reasons + [conf_reason] + m_reasons + p_reasons + lev_reasons + risk_reasons)
+        score_parts = {
+            "base_flow": round(score, 4),
+            "confidence": round(conf_adj, 4),
+            "market": round(m_adj, 4),
+            "price_position": round(p_adj, 4),
+            "leverage": round(lev_adj, 4),
+            "funding_liquidity": round(risk_adj, 4),
+            "final_score": round(final_score, 4),
+        }
         ctx = ctx_map.get(coin, {})
         rows.append({
             "run_id": run_id,
@@ -2598,6 +2899,11 @@ def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: 
             "longterm_leverage_ratio": lev_fields.get("longterm_leverage_ratio"),
             "highrisk_leverage_ratio": lev_fields.get("highrisk_leverage_ratio"),
             "leverage_note": lev_fields.get("leverage_note"),
+            "funding_rate_pct": risk_fields.get("funding_rate_pct"),
+            "funding_risk": risk_fields.get("funding_risk"),
+            "day_volume_usd": risk_fields.get("day_volume_usd"),
+            "liquidity_risk": risk_fields.get("liquidity_risk"),
+            "score_parts": score_parts,
             "conclusion": conclusion,
             "risk": risk,
             "reason": reason,
@@ -2626,6 +2932,447 @@ def save_coin_signals(run_id: int, rows: List[Dict[str, Any]]) -> None:
     ) for r in rows])
     conn.commit()
     conn.close()
+
+
+
+def export_signal_explain_files(run_id: int, signals: List[Dict[str, Any]]) -> None:
+    """导出每个信号的加减分来源，解决“为什么出这个信号”的问题。"""
+    if not SIGNAL_EXPLAIN_MODE:
+        return
+    ensure_dirs()
+    rows: List[Dict[str, Any]] = []
+    for s in signals:
+        parts = s.get("score_parts") or {}
+        row = {
+            "run_id": run_id,
+            "coin": s.get("coin"),
+            "direction": s.get("direction"),
+            "direction_cn": dir_cn(s.get("direction")),
+            "final_score": s.get("final_score"),
+            "threshold_score": s.get("threshold_score"),
+            "watchlist": s.get("watchlist"),
+            "confidence": s.get("confidence"),
+            "signal_state": s.get("signal_state"),
+            "signal_type": s.get("signal_type"),
+            "base_flow_score": parts.get("base_flow"),
+            "confidence_adj": parts.get("confidence"),
+            "market_adj": parts.get("market"),
+            "price_position_adj": parts.get("price_position"),
+            "leverage_adj": parts.get("leverage"),
+            "funding_liquidity_adj": parts.get("funding_liquidity"),
+            "perp_active": s.get("perp_active"),
+            "spot_active": s.get("spot_active"),
+            "weighted_flow": s.get("weighted_flow"),
+            "avg_leverage": s.get("avg_leverage"),
+            "avg_liq_distance": s.get("avg_liq_distance"),
+            "funding_rate_pct": s.get("funding_rate_pct"),
+            "funding_risk": s.get("funding_risk"),
+            "day_volume_usd": s.get("day_volume_usd"),
+            "liquidity_risk": s.get("liquidity_risk"),
+            "risk": s.get("risk"),
+            "reason": s.get("reason"),
+        }
+        rows.append(row)
+    if rows:
+        with open(os.path.join(DETAILS_DIR, "signal_explain_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+            writer.writeheader(); writer.writerows(rows)
+    with open(os.path.join(REPORT_DIR, "signal_explain_report.txt"), "w", encoding="utf-8") as f:
+        f.write("【信号解释】\n")
+        f.write(f"run_id={run_id} | 更新时间UTC={now_str()}\n\n")
+        if not signals:
+            f.write("本轮暂无信号。\n")
+        for s in signals[:TOP_N]:
+            parts = s.get("score_parts") or {}
+            f.write(f"{s['coin']} {dir_cn(s['direction'])} final={s['final_score']:+.2f}/阈值{s['threshold_score']:.1f}\n")
+            f.write(
+                f"  资金={parts.get('base_flow',0):+.2f} | 历史={parts.get('confidence',0):+.2f} | "
+                f"市场={parts.get('market',0):+.2f} | 位置={parts.get('price_position',0):+.2f} | "
+                f"杠杆={parts.get('leverage',0):+.2f} | 资金费率/流动性={parts.get('funding_liquidity',0):+.2f}\n"
+            )
+            f.write(f"  风险：{s.get('risk')}\n")
+            f.write(f"  原因：{s.get('reason')}\n\n")
+
+
+
+def _signal_dir_return_pct(direction: str, entry_px: Optional[float], exit_px: Optional[float]) -> Optional[float]:
+    """信号生命周期方向收益，单位百分比。只看信号价格到退出价格，不看账户权益。"""
+    entry = safe_float(entry_px)
+    px = safe_float(exit_px)
+    if entry is None or px is None or entry <= 0 or px <= 0:
+        return None
+    if direction == "bullish":
+        return (px - entry) / entry * 100.0
+    if direction == "bearish":
+        return (entry - px) / entry * 100.0
+    return None
+
+
+def _active_lifecycle_signal_rows(signals: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """强信号生命周期：只跟踪真正达到强信号阈值的币。"""
+    rows: List[Dict[str, Any]] = []
+    for s in signals:
+        try:
+            if abs(safe_float(s.get("final_score")) or 0.0) >= (safe_float(s.get("threshold_score")) or 0.0):
+                rows.append({
+                    "type": "strong",
+                    "coin": s.get("coin"),
+                    "direction": s.get("direction"),
+                    "score": safe_float(s.get("final_score")) or 0.0,
+                    "reason": s.get("reason") or "强信号仍在",
+                })
+        except Exception:
+            continue
+    return [r for r in rows if r.get("coin") and r.get("direction")]
+
+
+def _active_lifecycle_longterm_rows(candidates: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """长期单生命周期：只跟踪明确“可进入低杠杆长期观察”的候选。"""
+    rows: List[Dict[str, Any]] = []
+    for c in candidates:
+        action = str(c.get("action") or "")
+        if "可进入低杠杆长期观察" not in action:
+            continue
+        direction = c.get("direction") or ("bullish" if "多" in str(c.get("direction_cn")) else "bearish")
+        rows.append({
+            "type": "longterm",
+            "coin": c.get("coin"),
+            "direction": direction,
+            "score": safe_float(c.get("long_term_score")) or safe_float(c.get("final_score")) or 0.0,
+            "reason": f"{action} | final={c.get('final_score')} | 连续={c.get('streak')} | {c.get('signal_state')}",
+        })
+    return [r for r in rows if r.get("coin") and r.get("direction")]
+
+
+def update_signal_lifecycles(run_id: int, signals: List[Dict[str, Any]], longterm_candidates: List[Dict[str, Any]], prices: Dict[str, float]) -> List[Dict[str, Any]]:
+    """按提示逻辑追踪信号生命周期。\n\n    固定周期回测回答“信号出现后未来 24h/7d/30d 怎么样”。\n    生命周期追踪回答“你按提示看，从信号出现到消失/反转，真实表现怎么样”。\n    """
+    if not SIGNAL_LIFECYCLE_MODE:
+        return []
+    now = now_str()
+    active_rows = _active_lifecycle_signal_rows(signals) + _active_lifecycle_longterm_rows(longterm_candidates)
+    active_map: Dict[Tuple[str, str, str], Dict[str, Any]] = {(r["type"], r["coin"], r["direction"]): r for r in active_rows}
+    active_coin_type_dirs: Dict[Tuple[str, str], set] = defaultdict(set)
+    for typ, coin, direction in active_map:
+        active_coin_type_dirs[(typ, coin)].add(direction)
+
+    conn = db_conn()
+    cur = conn.cursor()
+    closed: List[Dict[str, Any]] = []
+
+    def _get_px(coin: str) -> Optional[float]:
+        return safe_float(prices.get(coin))
+
+    def _log(lifecycle_id: int, typ: str, event_type: str, coin: str, direction: str, px: Optional[float], score: Optional[float], missing_count: int, ret: Optional[float], reason: str) -> None:
+        cur.execute("""
+        INSERT INTO signal_lifecycle_events(lifecycle_id, run_id, created_at, lifecycle_type, event_type, coin, direction, px, score, missing_count, return_pct, reason)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (lifecycle_id, run_id, now, typ, event_type, coin, direction, px, score, missing_count, ret, reason))
+
+    def _close(row: Dict[str, Any], exit_px: Optional[float], reason: str) -> Optional[Dict[str, Any]]:
+        if exit_px is None or exit_px <= 0:
+            return None
+        ret = _signal_dir_return_pct(row.get("direction"), row.get("entry_px"), exit_px)
+        holding = _hours_between(row.get("entry_time"), now)
+        cur.execute("""
+        UPDATE signal_lifecycles
+        SET status='closed', exit_run_id=?, exit_time=?, exit_px=?, exit_reason=?, lifecycle_return_pct=?, holding_hours=?
+        WHERE lifecycle_id=? AND status='open'
+        """, (run_id, now, exit_px, reason, ret, holding, row["lifecycle_id"]))
+        _log(row["lifecycle_id"], row.get("lifecycle_type"), "close", row.get("coin"), row.get("direction"), exit_px, row.get("last_score"), safe_int(row.get("missing_count"), 0), ret, reason)
+        item = dict(row)
+        item.update({
+            "exit_run_id": run_id,
+            "exit_time": now,
+            "exit_px": exit_px,
+            "exit_reason": reason,
+            "lifecycle_return_pct": ret,
+            "holding_hours": holding,
+        })
+        closed.append(item)
+        return item
+
+    # 1) 先处理已有 open 生命周期：刷新、缺失计数、消失/反向结算。
+    cur.execute("SELECT * FROM signal_lifecycles WHERE status='open'")
+    open_rows = [dict(x) for x in cur.fetchall()]
+    for row in open_rows:
+        typ = row.get("lifecycle_type")
+        coin = row.get("coin")
+        direction = row.get("direction")
+        key = (typ, coin, direction)
+        px = _get_px(coin)
+        if not typ or not coin or not direction:
+            continue
+        if key in active_map:
+            sig = active_map[key]
+            score = safe_float(sig.get("score")) or 0.0
+            cur.execute("""
+            UPDATE signal_lifecycles
+            SET last_seen_run_id=?, last_seen_at=?, last_score=?, max_score=?, missing_count=0
+            WHERE lifecycle_id=?
+            """, (run_id, now, score, max(abs(safe_float(row.get("max_score")) or 0.0), abs(score)), row["lifecycle_id"]))
+            _log(row["lifecycle_id"], typ, "refresh", coin, direction, px, score, 0, _signal_dir_return_pct(direction, row.get("entry_px"), px), sig.get("reason") or "信号持续")
+            continue
+
+        # 同币同类型出现反向信号，直接结算。
+        dirs_now = active_coin_type_dirs.get((typ, coin), set())
+        opposite = "bearish" if direction == "bullish" else "bullish"
+        if opposite in dirs_now:
+            _close(row, px, "出现反向信号")
+            continue
+
+        miss = safe_int(row.get("missing_count"), 0) + 1
+        cur.execute("UPDATE signal_lifecycles SET missing_count=? WHERE lifecycle_id=?", (miss, row["lifecycle_id"]))
+        _log(row["lifecycle_id"], typ, "missing", coin, direction, px, row.get("last_score"), miss, _signal_dir_return_pct(direction, row.get("entry_px"), px), "本轮不再满足该信号条件")
+        max_miss = STRONG_SIGNAL_MISSING_ROUNDS if typ == "strong" else LONGTERM_SIGNAL_MISSING_ROUNDS
+        if miss >= max_miss:
+            _close(row, px, f"连续{miss}轮信号消失")
+
+    # 2) 再开新生命周期。若同币同类型反方向 open 还存在，会先关闭反方向。
+    for key, sig in active_map.items():
+        typ, coin, direction = key
+        px = _get_px(coin)
+        if px is None or px <= 0:
+            continue
+        score = safe_float(sig.get("score")) or 0.0
+        cur.execute("SELECT * FROM signal_lifecycles WHERE lifecycle_type=? AND coin=? AND direction=? AND status='open' LIMIT 1", (typ, coin, direction))
+        if cur.fetchone():
+            continue
+        opposite = "bearish" if direction == "bullish" else "bullish"
+        cur.execute("SELECT * FROM signal_lifecycles WHERE lifecycle_type=? AND coin=? AND direction=? AND status='open'", (typ, coin, opposite))
+        for old in [dict(x) for x in cur.fetchall()]:
+            _close(old, px, "新反向信号出现")
+        cur.execute("""
+        INSERT INTO signal_lifecycles(lifecycle_type, coin, direction, status, entry_run_id, entry_time, entry_px, entry_score, max_score, last_seen_run_id, last_seen_at, last_score, missing_count, note)
+        VALUES (?, ?, ?, 'open', ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+        """, (typ, coin, direction, run_id, now, px, score, abs(score), run_id, now, score, sig.get("reason") or "新信号出现"))
+        lid = cur.lastrowid
+        _log(lid, typ, "open", coin, direction, px, score, 0, 0.0, sig.get("reason") or "新信号出现")
+
+    conn.commit()
+    conn.close()
+    export_signal_lifecycle_files()
+    return closed
+
+
+def export_signal_lifecycle_files(days: int = SIGNAL_BACKTEST_WINDOW_DAYS) -> None:
+    if not SIGNAL_LIFECYCLE_MODE:
+        return
+    ensure_dirs()
+    since = (utc_now() - dt.timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+    conn = db_conn()
+    cur = conn.cursor()
+    cur.execute("""
+    SELECT lifecycle_id, lifecycle_type, coin, direction, status, entry_time, entry_px, entry_score, max_score,
+           last_seen_at, last_score, missing_count, exit_time, exit_px, exit_reason, lifecycle_return_pct, holding_hours, note
+    FROM signal_lifecycles
+    WHERE entry_time >= ? OR status='open'
+    ORDER BY status DESC, COALESCE(exit_time, last_seen_at, entry_time) DESC
+    """, (since,))
+    rows = [dict(x) for x in cur.fetchall()]
+    conn.close()
+
+    csv_path = os.path.join(DETAILS_DIR, "signal_lifecycle_latest.csv")
+    fields = ["lifecycle_id", "lifecycle_type", "coin", "direction", "status", "entry_time", "entry_px", "entry_score", "max_score", "last_seen_at", "last_score", "missing_count", "exit_time", "exit_px", "exit_reason", "lifecycle_return_pct", "holding_hours", "note"]
+    with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
+        writer.writeheader(); writer.writerows(rows)
+
+    report_path = os.path.join(DETAILS_DIR, "signal_lifecycle_report.txt")
+    with open(report_path, "w", encoding="utf-8") as f:
+        f.write("【信号生命周期追踪】\n")
+        f.write(f"窗口：过去{days}天 + 当前未结束信号\n")
+        f.write("说明：固定周期回测看未来 24h/7d/30d；生命周期回测看信号从出现到消失/反转的真实表现。\n")
+        f.write(f"强信号消失结算：连续{STRONG_SIGNAL_MISSING_ROUNDS}轮消失；长期单失效结算：连续{LONGTERM_SIGNAL_MISSING_ROUNDS}轮消失。\n\n")
+        for typ in ("strong", "longterm"):
+            subset = [r for r in rows if r.get("lifecycle_type") == typ]
+            closed = [r for r in subset if r.get("status") == "closed" and safe_float(r.get("lifecycle_return_pct")) is not None]
+            open_rows = [r for r in subset if r.get("status") == "open"]
+            f.write(f"【{'强信号' if typ=='strong' else '长期单'}】未结束={len(open_rows)} | 已结束样本={len(closed)}\n")
+            if closed:
+                vals = [safe_float(r.get("lifecycle_return_pct")) for r in closed if safe_float(r.get("lifecycle_return_pct")) is not None]
+                win = sum(1 for v in vals if v and v > 0) / len(vals) * 100 if vals else 0.0
+                avg = sum(vals) / len(vals) if vals else 0.0
+                med = sorted(vals)[len(vals)//2] if vals else 0.0
+                f.write(f"生命周期普通胜率={win:.1f}% | 平均收益={avg:+.2f}% | 中位={med:+.2f}%\n")
+            if open_rows:
+                f.write("未结束：\n")
+                for r in open_rows[:10]:
+                    cur_ret = _signal_dir_return_pct(r.get("direction"), r.get("entry_px"), r.get("exit_px") or r.get("entry_px"))
+                    f.write(f"  {r.get('coin')} {dir_cn(r.get('direction'))} | entry={fmt_num(r.get('entry_px'))} | last_score={fmt_num(r.get('last_score'))} | miss={r.get('missing_count')}\n")
+            if closed:
+                f.write("最近结束：\n")
+                for r in closed[:10]:
+                    f.write(f"  {r.get('exit_time')} {r.get('coin')} {dir_cn(r.get('direction'))} | 收益={fmt_pct(r.get('lifecycle_return_pct'))} | 持续={fmt_num(r.get('holding_hours'))}h | 原因={r.get('exit_reason')}\n")
+            f.write("\n")
+
+
+def get_closed_lifecycle_events(run_id: int) -> List[Dict[str, Any]]:
+    conn = db_conn()
+    cur = conn.cursor()
+    cur.execute("""
+    SELECT lifecycle_id, lifecycle_type, coin, direction, entry_time, entry_px, exit_time, exit_px, exit_reason, lifecycle_return_pct, holding_hours
+    FROM signal_lifecycles
+    WHERE exit_run_id=?
+    ORDER BY exit_time DESC
+    """, (run_id,))
+    rows = [dict(x) for x in cur.fetchall()]
+    conn.close()
+    return rows
+
+
+def create_longterm_events(run_id: int, candidates: List[Dict[str, Any]], prices: Dict[str, float]) -> int:
+    if not BACKTEST_MODE or not candidates:
+        return 0
+    conn = db_conn()
+    cur = conn.cursor()
+    created = 0
+    for c in candidates:
+        coin = c.get("coin")
+        px = prices.get(coin)
+        if px is None or px <= 0:
+            continue
+        direction = "bullish" if "多" in str(c.get("direction_cn")) else "bearish"
+        reason = f"长期分={c.get('long_term_score')} final={c.get('final_score')} 连续={c.get('streak')} 动作={c.get('action')}"
+        try:
+            cur.execute("""
+            INSERT INTO longterm_events(run_id, created_at, coin, direction, score, entry_px, reason)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (run_id, now_str(), coin, direction, c.get("long_term_score"), px, reason))
+            created += 1
+        except sqlite3.IntegrityError:
+            pass
+    conn.commit(); conn.close()
+    return created
+
+
+def _backtest_periods() -> List[Tuple[str, str, float]]:
+    """回测周期和对应门槛。ret 字段单位是百分比，例如 +3.2 表示 +3.2%。"""
+    return [
+        ("24h", "ret_24h", BACKTEST_HURDLE_24H),
+        ("72h", "ret_72h", BACKTEST_HURDLE_72H),
+        ("7d", "ret_7d", BACKTEST_HURDLE_7D),
+        ("15d", "ret_15d", BACKTEST_HURDLE_15D),
+        ("30d", "ret_30d", BACKTEST_HURDLE_30D),
+    ]
+
+
+def _export_event_backtest_table(table: str, filename: str, report_title: str, days: int = SIGNAL_BACKTEST_WINDOW_DAYS) -> List[Dict[str, Any]]:
+    """导出强信号/长期单回测。
+
+    现在同时显示两套胜率：
+    - 普通胜率：方向收益 > 0，只说明方向有没有走对。
+    - 门槛胜率：方向收益达到 24h/72h/7d/15d/30d 门槛，更适合评估低杠杆长期单质量。
+    """
+    since = (utc_now() - dt.timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+    conn = db_conn()
+    cur = conn.cursor()
+    cur.execute(f"""
+    SELECT event_id, run_id, created_at, coin, direction, score, entry_px,
+           ret_1h, ret_4h, ret_24h, ret_72h, ret_7d, ret_15d, ret_30d, reason
+    FROM {table}
+    WHERE created_at >= ?
+    ORDER BY created_at DESC
+    """, (since,))
+    rows = [dict(x) for x in cur.fetchall()]
+    conn.close()
+    ensure_dirs()
+
+    periods = _backtest_periods()
+    out_rows: List[Dict[str, Any]] = []
+    for r in rows:
+        rr = dict(r)
+        for label, col, hurdle in periods:
+            v = safe_float(r.get(col))
+            key = label.replace("h", "h").replace("d", "d")
+            rr[f"direction_win_{key}"] = "" if v is None else int(v > 0)
+            rr[f"hurdle_win_{key}"] = "" if v is None else int(v >= hurdle)
+            rr[f"hurdle_{key}_pct"] = hurdle
+        out_rows.append(rr)
+
+    if out_rows:
+        # 固定主要列顺序，避免每次字段顺序乱。
+        base_fields = ["event_id", "run_id", "created_at", "coin", "direction", "score", "entry_px", "ret_1h", "ret_4h", "ret_24h", "ret_72h", "ret_7d", "ret_15d", "ret_30d", "reason"]
+        extra_fields: List[str] = []
+        for label, _, _ in periods:
+            key = label.replace("h", "h").replace("d", "d")
+            extra_fields += [f"direction_win_{key}", f"hurdle_win_{key}", f"hurdle_{key}_pct"]
+        fields = base_fields + extra_fields
+        with open(os.path.join(DETAILS_DIR, filename), "w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
+            writer.writeheader(); writer.writerows(out_rows)
+    else:
+        with open(os.path.join(DETAILS_DIR, filename), "w", encoding="utf-8-sig", newline="") as f:
+            f.write("empty\n")
+
+    txt_name = filename.replace(".csv", "_report.txt")
+    with open(os.path.join(DETAILS_DIR, txt_name), "w", encoding="utf-8") as f:
+        f.write(f"【{report_title}】\n")
+        f.write(f"窗口：过去{days}天 | 事件样本：{len(rows)}\n")
+        f.write("说明：普通胜率=方向收益>0；门槛胜率=达到最低收益门槛，更适合长期单。\n")
+        f.write("门槛：24h≥{:.1f}% | 72h≥{:.1f}% | 7d≥{:.1f}% | 15d≥{:.1f}% | 30d≥{:.1f}%\n\n".format(
+            BACKTEST_HURDLE_24H, BACKTEST_HURDLE_72H, BACKTEST_HURDLE_7D, BACKTEST_HURDLE_15D, BACKTEST_HURDLE_30D
+        ))
+        for label, col, hurdle in periods:
+            vals = [safe_float(r.get(col)) for r in rows if safe_float(r.get(col)) is not None]
+            if not vals:
+                f.write(f"{label}: 暂无成熟样本\n")
+                continue
+            direction_win = sum(1 for v in vals if v > 0) / len(vals)
+            hurdle_win = sum(1 for v in vals if v >= hurdle) / len(vals)
+            avg = sum(vals) / len(vals)
+            median = sorted(vals)[len(vals)//2]
+            f.write(
+                f"{label}: 样本={len(vals)} | 普通胜率={direction_win*100:.1f}% | "
+                f"门槛胜率={hurdle_win*100:.1f}% | 门槛≥{hurdle:.1f}% | "
+                f"平均方向收益={avg:+.2f}% | 中位={median:+.2f}%\n"
+            )
+        f.write("\n最近样本：\n")
+        for r in rows[:20]:
+            parts = []
+            for label, col, hurdle in periods:
+                v = safe_float(r.get(col))
+                if v is None:
+                    continue
+                mark = "✅" if v >= hurdle else ("↗" if v > 0 else "❌")
+                parts.append(f"{label}={v:+.2f}%{mark}")
+            f.write(
+                f"{r.get('created_at')} {r.get('coin')} {dir_cn(r.get('direction'))} "
+                f"score={safe_float(r.get('score')):+.2f} | " + " | ".join(parts[:5]) + "\n"
+            )
+    return rows
+
+
+def export_backtest_files() -> None:
+    if not BACKTEST_MODE:
+        return
+    _export_event_backtest_table("signal_events", "signal_backtest_latest.csv", "强信号/观察信号回测")
+    _export_event_backtest_table("longterm_events", "longterm_backtest_latest.csv", "长期单候选回测")
+
+
+def write_last_run_status(run_id: int, wallet_rows: List[Dict[str, Any]], perp_rows: List[Dict[str, Any]], spot_rows: List[Dict[str, Any]], pushed: bool, note: str, started_at: Optional[str] = None) -> None:
+    ensure_dirs()
+    stats = run_wallet_stats(run_id)
+    start_dt = parse_time(started_at) if started_at else None
+    duration_minutes = None
+    if start_dt:
+        duration_minutes = (utc_now() - start_dt).total_seconds() / 60
+    payload = {
+        "last_run_utc": now_str(),
+        "run_id": run_id,
+        "trigger_note": note,
+        "wallet_count": len(wallet_rows),
+        "ok": stats.get("ok"),
+        "partial": stats.get("partial"),
+        "failed": stats.get("failed"),
+        "success_rate": stats.get("ok_rate"),
+        "perp_rows": len(perp_rows),
+        "spot_rows": len(spot_rows),
+        "tg_sent": bool(pushed),
+        "duration_minutes": duration_minutes,
+        "health_stale_hours_threshold": HEALTH_STALE_HOURS,
+    }
+    with open(os.path.join(REPORT_DIR, "last_run_status.json"), "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
 
 
 def create_signal_events(run_id: int, signals: List[Dict[str, Any]], prices: Dict[str, float], thresholds: Dict[str, Dict[str, float]]) -> int:
@@ -2936,14 +3683,14 @@ def top_wallet_quality(run_id: int, grade_filter: Optional[List[str]] = None, li
 
 def export_wallet_quality_files(rows: List[Dict[str, Any]]) -> None:
     ensure_dirs()
-    csv_path = os.path.join(REPORT_DIR, "wallet_quality_latest.csv")
+    csv_path = os.path.join(DETAILS_DIR, "wallet_quality_latest.csv")
     if rows:
         with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
             writer.writeheader()
             writer.writerows(rows)
 
-    txt_path = os.path.join(REPORT_DIR, "wallet_quality_report.txt")
+    txt_path = os.path.join(DETAILS_DIR, "wallet_quality_report.txt")
     counts: Dict[str, int] = defaultdict(int)
     for r in rows:
         counts[r.get("grade") or "N"] += 1
@@ -3132,12 +3879,18 @@ def long_term_entry_plan(sig: Dict[str, Any], ctx: Dict[str, Any], streak: int) 
     avg_lev = safe_float(sig.get("avg_leverage"))
     high_ratio = safe_float(sig.get("highrisk_leverage_ratio")) or 0.0
     leverage_bad = high_ratio >= 0.6 or (avg_liq is not None and avg_liq < LIQ_DANGER_DISTANCE_PCT) or (avg_lev is not None and avg_lev >= 20)
+    funding_bad = sig.get("funding_risk") == "高"
+    liquidity_bad = sig.get("liquidity_risk") == "高"
 
-    if confidence == "低" or state in avoid_states or bad_position or leverage_bad:
+    if confidence == "低" or state in avoid_states or bad_position or leverage_bad or funding_bad or liquidity_bad:
         action = "只观察，不适合直接做长期单"
         entry = "等待下一轮确认；不要因为单次异动直接开仓。"
         if leverage_bad:
             entry += " 当前同方向杠杆结构偏短线/强平距离偏近，长期单降权。"
+        if funding_bad:
+            entry += " 当前资金费率风险高，长期持仓成本需要谨慎。"
+        if liquidity_bad:
+            entry += " 当前24h成交额偏低，流动性风险高，不适合重仓长期单。"
     elif score >= LONG_TERM_MIN_SCORE and streak >= LONG_TERM_MIN_STREAK and good_state:
         action = "可进入低杠杆长期观察"
         entry = "分3批：30%试仓，30%确认加仓，40%回踩/反抽后再加；不要一次打满。"
@@ -3157,6 +3910,10 @@ def long_term_entry_plan(sig: Dict[str, Any], ctx: Dict[str, Any], streak: int) 
 
     if sig.get("leverage_note"):
         price_note += f" 杠杆结构：{sig.get('leverage_note')}。"
+    if sig.get("funding_rate_pct") is not None:
+        price_note += f" 资金费率：{fmt_pct(sig.get('funding_rate_pct'))}，风险={sig.get('funding_risk') or '未知'}。"
+    if sig.get("day_volume_usd") is not None:
+        price_note += f" 24h成交额：{fmt_money(sig.get('day_volume_usd'))}，流动性={sig.get('liquidity_risk') or '未知'}。"
     if pct4 is not None and abs(pct4) >= 5:
         price_note += f" 当前4h波动 {fmt_pct(pct4)}，不适合重仓追。"
     if pos is not None:
@@ -3218,6 +3975,10 @@ def build_long_term_candidates(run_id: int, signals: List[Dict[str, Any]], ctx_m
             "longterm_leverage_ratio": s.get("longterm_leverage_ratio"),
             "highrisk_leverage_ratio": s.get("highrisk_leverage_ratio"),
             "leverage_note": s.get("leverage_note"),
+            "funding_rate_pct": s.get("funding_rate_pct"),
+            "funding_risk": s.get("funding_risk"),
+            "day_volume_usd": s.get("day_volume_usd"),
+            "liquidity_risk": s.get("liquidity_risk"),
             "action": plan["action"],
             "entry": plan["entry"],
             "invalid": plan["invalid"],
@@ -3247,7 +4008,7 @@ def write_long_term_plan(candidates: List[Dict[str, Any]]) -> None:
             f.write(f"价格：{c['price_note']}\n")
             f.write(f"失效：{c['invalid']}\n\n")
 
-    csv_path = os.path.join(REPORT_DIR, "long_term_candidates.csv")
+    csv_path = os.path.join(DETAILS_DIR, "long_term_candidates.csv")
     if candidates:
         with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
             writer = csv.DictWriter(f, fieldnames=list(candidates[0].keys()))
@@ -3259,7 +4020,7 @@ def write_watchlists(signals: List[Dict[str, Any]]) -> None:
     mapping = {"long": "watchlist_long.txt", "short": "watchlist_short.txt", "observe": "watchlist_observe.txt"}
     titles = {"long": "做多观察", "short": "做空观察", "observe": "只观察"}
     for key, fname in mapping.items():
-        path = os.path.join(REPORT_DIR, fname)
+        path = os.path.join(DETAILS_DIR, fname)
         rows = [s for s in signals if s["watchlist"] == key]
         with open(path, "w", encoding="utf-8") as f:
             f.write(f"【{titles[key]}】\n更新时间 UTC：{now_str()}\n\n")
@@ -3281,7 +4042,7 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
     eth = ctx_map.get("ETH", {})
     lines: List[str] = []
     lines.append("🧠 Hyperliquid 钱包监控 FINAL")
-    lines.append("币种阈值 + 钱包主动变化 + 市场环境 + 观察列表 + TG 推送")
+    lines.append("币种阈值 + 钱包主动变化 + 信号解释 + 回测 + 资金费率/流动性过滤 + TG 推送")
     lines.append(f"UTC时间：{now_str()}")
     lines.append(f"run_id：{run_id}")
     stats = run_wallet_stats(run_id)
@@ -3325,6 +4086,18 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
     lines.append("【大盘环境】")
     lines.append(f"BTC: 1h {fmt_pct(btc.get('pct_1h'))} | 4h {fmt_pct(btc.get('pct_4h'))} | 24h {fmt_pct(btc.get('pct_24h'))} | regime={btc.get('regime')}")
     lines.append(f"ETH: 1h {fmt_pct(eth.get('pct_1h'))} | 4h {fmt_pct(eth.get('pct_4h'))} | 24h {fmt_pct(eth.get('pct_24h'))} | regime={eth.get('regime')}")
+    if RISK_FILTER_MODE:
+        risk_rows = load_rows("coin_risk_metrics", run_id)
+        if risk_rows:
+            lines.append("")
+            lines.append("【资金费率 / 流动性过滤】")
+            risky = [r for r in risk_rows if r.get("funding_risk") in ("中", "高") or r.get("liquidity_risk") in ("中", "高")]
+            if not risky:
+                lines.append("本轮候选币资金费率和流动性暂无明显风险。")
+            else:
+                risky.sort(key=lambda r: (r.get("liquidity_risk") == "高", r.get("funding_risk") == "高", abs(safe_float(r.get("funding_rate_pct")) or 0.0)), reverse=True)
+                for r in risky[:min(TOP_N, 8)]:
+                    lines.append(f"{r['coin']} | funding={fmt_pct(r.get('funding_rate_pct'))} 风险={r.get('funding_risk')} | 24h成交额={fmt_money(r.get('day_volume_usd'))} 流动性={r.get('liquidity_risk')}")
     lines.append("")
     lines.append("【最终强信号】")
     if not strong:
@@ -3333,6 +4106,8 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
         for s in strong[:TOP_N]:
             lines.append(f"🚨 {s['coin']} {dir_cn(s['direction'])} | score={s['final_score']:+.1f}/阈值{s['threshold_score']:.1f} | {s['signal_state']} | 可信度={s['confidence']} | 类型={s['signal_type']}")
             lines.append(f"  结论：{s['conclusion']}")
+            parts = s.get("score_parts") or {}
+            lines.append(f"  分解：资金{parts.get('base_flow',0):+.1f} / 历史{parts.get('confidence',0):+.1f} / 市场{parts.get('market',0):+.1f} / 位置{parts.get('price_position',0):+.1f} / 杠杆{parts.get('leverage',0):+.1f} / 费率流动性{parts.get('funding_liquidity',0):+.1f}")
             lines.append(f"  风险：{s['risk']}")
             lines.append(f"  原因：{s['reason']}")
     lines.append("")
@@ -3373,6 +4148,20 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
                 lines.append(f"  入场：{c['entry']}")
                 lines.append(f"  失效：{c['invalid']}")
         lines.append("")
+    closed_lifecycle = get_closed_lifecycle_events(run_id) if SIGNAL_LIFECYCLE_MODE else []
+    lines.append("【信号生命周期提醒】")
+    if not closed_lifecycle:
+        lines.append("本轮没有强信号/长期单失效或反转。")
+    else:
+        for e in closed_lifecycle[:8]:
+            typ_cn = "强信号" if e.get("lifecycle_type") == "strong" else "长期单"
+            lines.append(
+                f"⚠️ {e.get('coin')} {dir_cn(e.get('direction'))} {typ_cn}结束 | "
+                f"收益={fmt_pct(e.get('lifecycle_return_pct'))} | 持续={fmt_num(e.get('holding_hours'))}h | "
+                f"原因={e.get('exit_reason')}"
+            )
+    lines.append("详见 reports/details/signal_lifecycle_report.txt")
+    lines.append("")
     lines.append("【单钱包主动变化 Top】")
     if not actions:
         lines.append("暂无超过阈值的钱包主动变化。")
@@ -3399,6 +4188,27 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
         for c in cashflows[:TOP_N]:
             lines.append(f"{short_addr(c['address'])} [{c['groups']}] | USDC={fmt_money(c['usdc_delta'])} | 现货={fmt_money(c['spot_delta'])} | {c['flow_type']} | 增持现货={c.get('spot_increases','-')} | 减持现货={c.get('spot_decreases','-')} | 当前合约={c.get('current_perp_positions','-')}")
     lines.append("")
+    if BACKTEST_MODE:
+        try:
+            lines.append("【强信号 / 长期单回测摘要】")
+            lines.append("说明：普胜=方向收益>0；门胜=达到门槛收益，长期单优先看门胜。")
+            for title, table in (("信号", "signal_events"), ("长期单", "longterm_events")):
+                since = (utc_now() - dt.timedelta(days=SIGNAL_BACKTEST_WINDOW_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
+                conn = db_conn(); cur = conn.cursor()
+                cur.execute(f"SELECT ret_24h, ret_72h, ret_7d, ret_15d, ret_30d FROM {table} WHERE created_at >= ?", (since,))
+                brs = [dict(x) for x in cur.fetchall()]; conn.close()
+                parts_sum = []
+                for label, col, hurdle in _backtest_periods():
+                    vals = [safe_float(r.get(col)) for r in brs if safe_float(r.get(col)) is not None]
+                    if vals:
+                        dir_win = sum(1 for v in vals if v > 0) / len(vals) * 100
+                        hurdle_win = sum(1 for v in vals if v >= hurdle) / len(vals) * 100
+                        avg = sum(vals) / len(vals)
+                        parts_sum.append(f"{label} {len(vals)}次 普胜{dir_win:.0f}% 门胜{hurdle_win:.0f}% 均{avg:+.1f}%")
+                lines.append(f"{title}：" + ("；".join(parts_sum) if parts_sum else "暂无成熟样本"))
+            lines.append("")
+        except Exception:
+            pass
     lines.append(f"【过去{REPORT_REVIEW_WINDOW_DAYS}天 信号复盘】")
     summary = recent_signal_summary(REPORT_REVIEW_WINDOW_DAYS)
     if not summary:
@@ -3474,31 +4284,45 @@ async def send_tg(text: str) -> bool:
 
 
 def prune_reports(keep: int = 0) -> None:
-    """清理旧版小时级 run 报告。
+    """清理旧版/旧布局报告。
 
-    当前版本不再生成 final_report_run_x.txt，避免 reports 目录无限变乱。
-    只保留：
-    - final_latest_report.txt：每轮覆盖的最新报告
+    当前精简版报告结构：
+    - reports/ 根目录：只放每天要看的核心报告
+    - reports/details/：放全量 CSV 和辅助报告
     - reports/daily/YYYY-MM-DD/：每日归档
     - hl_monitor.db：长期历史数据库
     """
     ensure_dirs()
+    legacy_root_files = {
+        "wallet_states_latest.csv", "perp_positions_latest.csv", "spot_balances_latest.csv", "coin_signals_latest.csv",
+        "active_changes_all_latest.csv", "fund_flow_lite_all_latest.csv", "wallet_quality_latest.csv", "wallet_quality_report.txt",
+        "leverage_quality_latest.csv", "wallet_leverage_profile_latest.csv", "coin_leverage_summary_latest.csv", "leverage_quality_report.txt",
+        "wallet_position_trades_latest.csv", "wallet_position_performance_latest.csv", "wallet_position_report.txt",
+        "signal_explain_latest.csv", "coin_risk_latest.csv", "signal_backtest_latest.csv", "signal_backtest_latest_report.txt",
+        "longterm_backtest_latest.csv", "longterm_backtest_latest_report.txt", "long_term_candidates.csv",
+        "watchlist_long.txt", "watchlist_short.txt", "watchlist_observe.txt",
+    }
     try:
         for name in os.listdir(REPORT_DIR):
-            if name.startswith("final_report_run_") and name.endswith(".txt"):
-                os.remove(os.path.join(REPORT_DIR, name))
-    except Exception:
-        pass
+            path = os.path.join(REPORT_DIR, name)
+            if os.path.isdir(path):
+                continue
+            if (name.startswith("final_report_run_") and name.endswith(".txt")) or name in legacy_root_files:
+                try:
+                    os.remove(path)
+                except FileNotFoundError:
+                    pass
+    except Exception as e:
+        print(f"清理旧版报告失败：{e}", flush=True)
 
 
 def save_daily_archive(run_id: int, report: str) -> None:
     """每天保留一份长期复盘快照。
 
-    逻辑：
-    - reports/*_latest.* 继续每轮覆盖，用来看最新状态。
-    - reports/daily/YYYY-MM-DD/ 每天一个目录，会在当天每次运行时更新；
-      到第二天后就固定为前一天最后一次运行的快照。
-    - 默认只保留最近 DAILY_ARCHIVE_KEEP_DAYS 天，防止仓库越来越大。
+    精简版归档逻辑：
+    - 根目录 latest 文件仍每轮覆盖。
+    - 每日目录只保存复盘必看的核心报告和少量关键 CSV。
+    - 全量明细保存在 reports/details/ 和 hl_monitor.db，不再每天全部复制，避免仓库变乱。
     """
     if not DAILY_ARCHIVE:
         return
@@ -3512,33 +4336,27 @@ def save_daily_archive(run_id: int, report: str) -> None:
     with open(os.path.join(day_dir, "final_report.txt"), "w", encoding="utf-8") as f:
         f.write(report)
 
-    # 2) 把长期单计划 / 观察列表 / 最新 CSV 同步一份到当天目录
-    copy_files = [
+    # 2) 核心文本报告：每天保留
+    root_files = [
         "long_term_plan.txt",
-        "watchlist_long.txt",
-        "watchlist_short.txt",
-        "watchlist_observe.txt",
-        "wallet_states_latest.csv",
-        "perp_positions_latest.csv",
-        "spot_balances_latest.csv",
-        "coin_signals_latest.csv",
-        "long_term_candidates.csv",
-        "wallet_quality_latest.csv",
-        "wallet_quality_report.txt",
-        "leverage_quality_latest.csv",
-        "wallet_leverage_profile_latest.csv",
-        "coin_leverage_summary_latest.csv",
-        "leverage_quality_report.txt",
-        "wallet_position_trades_latest.csv",
-        "wallet_position_performance_latest.csv",
-        "wallet_position_report.txt",
-        "active_changes_all_latest.csv",
-        "fund_flow_lite_all_latest.csv",
+        "signal_explain_report.txt",
+        "coin_risk_report.txt",
+        "last_run_status.json",
     ]
-    for name in copy_files:
-        src = os.path.join(REPORT_DIR, name)
+    # 3) 关键 CSV：每天保留少量，用于长期复盘
+    detail_files = [
+        "coin_signals_latest.csv",
+        "wallet_quality_latest.csv",
+        "wallet_position_performance_latest.csv",
+        "signal_backtest_latest.csv",
+        "longterm_backtest_latest.csv",
+        "signal_lifecycle_latest.csv",
+    ]
+
+    def _copy(src_dir: str, name: str) -> None:
+        src = os.path.join(src_dir, name)
         if not os.path.exists(src):
-            continue
+            return
         dst_name = name.replace("_latest", "")
         dst = os.path.join(day_dir, dst_name)
         try:
@@ -3547,21 +4365,25 @@ def save_daily_archive(run_id: int, report: str) -> None:
         except Exception as e:
             print(f"每日归档复制失败：{name} -> {e}", flush=True)
 
-    # 3) 写一个索引，方便打开目录时先看这个
+    for name in root_files:
+        _copy(REPORT_DIR, name)
+    for name in detail_files:
+        _copy(DETAILS_DIR, name)
+
+    # 4) 写一个索引，方便打开目录时先看这个
     index = (
         f"Hyperliquid Monitor Daily Archive\n"
         f"date_utc: {today}\n"
         f"run_id: {run_id}\n"
         f"updated_at_utc: {now_str()}\n\n"
-        f"主要看：final_report.txt 和 long_term_plan.txt\n"
-        f"CSV 用来复盘当天最后一次扫描的钱包、合约、现货和币种信号。\n"
+        f"主要看：final_report.txt、long_term_plan.txt、signal_explain_report.txt、coin_risk_report.txt\n"
+        f"关键 CSV：coin_signals.csv、wallet_quality.csv、wallet_position_performance.csv、signal_backtest.csv、longterm_backtest.csv、signal_lifecycle.csv\n"
+        f"全量明细请看仓库 reports/details/，长期历史保存在 hl_monitor.db。\n"
     )
     with open(os.path.join(day_dir, "README.txt"), "w", encoding="utf-8") as f:
         f.write(index)
 
     prune_daily_archives(DAILY_ARCHIVE_KEEP_DAYS)
-    print(f"每日归档已更新：{day_dir}", flush=True)
-
 
 def prune_daily_archives(keep_days: int) -> None:
     if keep_days <= 0:
@@ -3632,8 +4454,8 @@ async def run_once(args: argparse.Namespace) -> None:
             f"监控钱包：{stats['total']} | 成功：{stats['ok']} | "
             f"partial：{stats['partial']} | failed：{stats['failed']} | "
             f"成功率：{stats['ok_rate']*100:.2f}%\n\n"
-            f"钱包质量分类已导出：reports/wallet_quality_latest.csv / wallet_quality_report.txt\n"
-            f"仓位生命周期追踪已导出：reports/wallet_position_trades_latest.csv / wallet_position_report.txt\n\n"
+            f"钱包质量分类已导出：reports/details/wallet_quality_latest.csv / wallet_quality_report.txt\n"
+            f"仓位生命周期追踪已导出：reports/details/wallet_position_trades_latest.csv / wallet_position_report.txt\n\n"
             f"第一次运行，已建立快照。第二次开始才有趋势对比。"
         )
         with open(os.path.join(REPORT_DIR, "final_latest_report.txt"), "w", encoding="utf-8") as f:
@@ -3641,6 +4463,7 @@ async def run_once(args: argparse.Namespace) -> None:
         with open(os.path.join(REPORT_DIR, "long_term_plan.txt"), "w", encoding="utf-8") as f:
             f.write("第一次运行，已建立快照。第二次开始生成低杠杆长期单观察计划。\n")
         export_latest_csv(run_id)
+        export_signal_lifecycle_files()
         save_daily_archive(run_id, report)
         daily_due = should_push_daily()
         pushed = False
@@ -3649,6 +4472,7 @@ async def run_once(args: argparse.Namespace) -> None:
             if pushed and daily_due:
                 mark_pushed("daily")
         finish_run(run_id, wallet_rows, perp_rows, spot_rows, pushed)
+        write_last_run_status(run_id, wallet_rows, perp_rows, spot_rows, pushed, args.note)
         print(report, flush=True)
         return
 
@@ -3662,12 +4486,19 @@ async def run_once(args: argparse.Namespace) -> None:
 
     candidate_coins = sorted(preliminary.keys(), key=lambda c: abs(preliminary[c].get("weighted_flow") or 0), reverse=True)[:25]
     ctx_map = await build_market_context(run_id, candidate_coins, {**spot_coin_price, **mid_prices})
-    signals = build_signals(run_id, preliminary, ctx_map, thresholds) if ok_rate >= MIN_OK_RATE else []
+    risk_map = await build_coin_risk_metrics(run_id, candidate_coins)
+    signals = build_signals(run_id, preliminary, ctx_map, thresholds, risk_map) if ok_rate >= MIN_OK_RATE else []
+    export_signal_explain_files(run_id, signals)
     new_signal_events = create_signal_events(run_id, signals, {**spot_coin_price, **mid_prices}, thresholds) if ok_rate >= MIN_OK_RATE else 0
 
     write_watchlists(signals)
+    lt_candidates: List[Dict[str, Any]] = []
     if LONG_TERM_MODE:
-        write_long_term_plan(build_long_term_candidates(run_id, signals, ctx_map))
+        lt_candidates = build_long_term_candidates(run_id, signals, ctx_map)
+        write_long_term_plan(lt_candidates)
+        create_longterm_events(run_id, lt_candidates, {**spot_coin_price, **mid_prices})
+    closed_lifecycle_events = update_signal_lifecycles(run_id, signals, lt_candidates, {**spot_coin_price, **mid_prices})
+    export_backtest_files()
     export_latest_csv(run_id)
 
     report = build_report(run_id, signals, ctx_map, actions, cashflows, ok_rate, new_signal_events, updated_actions, updated_signals)
@@ -3677,7 +4508,7 @@ async def run_once(args: argparse.Namespace) -> None:
 
     strong = [s for s in signals if abs(s["final_score"]) >= s["threshold_score"]]
     daily_due = should_push_daily()
-    should_push = PUSH_EVERY_RUN or bool(strong) or daily_due
+    should_push = PUSH_EVERY_RUN or bool(strong) or bool(closed_lifecycle_events) or daily_due
     pushed = False
     if should_push:
         pushed = await send_tg(report)
@@ -3687,6 +4518,7 @@ async def run_once(args: argparse.Namespace) -> None:
         print("无强信号，也不是每日推送时间，不推送 TG。")
 
     finish_run(run_id, wallet_rows, perp_rows, spot_rows, pushed)
+    write_last_run_status(run_id, wallet_rows, perp_rows, spot_rows, pushed, args.note)
     print(f"新增钱包动作：{inserted_actions} | 强信号：{len(strong)}", flush=True)
     print(report, flush=True)
 
