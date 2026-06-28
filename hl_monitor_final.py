@@ -133,6 +133,14 @@ DATA_ANOMALY_PROTECT_MODE = os.getenv("DATA_ANOMALY_PROTECT_MODE", "1") == "1"
 DOMINANT_WALLETS_MODE = os.getenv("DOMINANT_WALLETS_MODE", "1") == "1"
 DOMINANT_WALLET_TOP_N = int(os.getenv("DOMINANT_WALLET_TOP_N", "5"))
 
+
+# 数据库体积控制：GitHub 单文件硬限制 100MB，必须定期裁剪原始快照并 VACUUM。
+# 只裁剪最占空间的逐轮原始表；钱包动作、信号、仓位生命周期保留足够窗口用于 30d 回测。
+DB_PRUNE_MODE = os.getenv("DB_PRUNE_MODE", "1") == "1"
+DB_RAW_KEEP_RUNS = int(os.getenv("DB_RAW_KEEP_RUNS", "72"))
+DB_HISTORY_KEEP_DAYS = int(os.getenv("DB_HISTORY_KEEP_DAYS", "45"))
+DB_MAX_MB = float(os.getenv("DB_MAX_MB", "95"))
+
 # 默认阈值，可被 coin_thresholds.json 覆盖
 DEFAULT_THRESHOLDS = {
     "score_push": 8.0,
@@ -4615,6 +4623,7 @@ async def run_once(args: argparse.Namespace) -> None:
                 mark_pushed("daily")
         finish_run(run_id, wallet_rows, perp_rows, spot_rows, pushed)
         write_last_run_status(run_id, wallet_rows, perp_rows, spot_rows, pushed, args.note)
+        prune_database_for_github(run_id)
         print(report, flush=True)
         return
 
@@ -4666,8 +4675,106 @@ async def run_once(args: argparse.Namespace) -> None:
 
     finish_run(run_id, wallet_rows, perp_rows, spot_rows, pushed)
     write_last_run_status(run_id, wallet_rows, perp_rows, spot_rows, pushed, args.note)
+    prune_database_for_github(run_id)
     print(f"新增钱包动作：{inserted_actions} | 强信号：{len(strong)}", flush=True)
     print(report, flush=True)
+
+
+
+def db_file_size_mb() -> float:
+    try:
+        if not os.path.exists(DB_FILE):
+            return 0.0
+        return os.path.getsize(DB_FILE) / 1024 / 1024
+    except Exception:
+        return 0.0
+
+
+def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: bool = False) -> None:
+    """控制 hl_monitor.db 体积，避免 GitHub 100MB 单文件限制。
+
+    设计原则：
+    - wallet_states / perp_positions / spot_balances 这类逐轮原始快照最占空间，只保留最近 N 轮。
+    - wallet_actions / signal_events / longterm_events 等保留 30d+ 缓冲，用于回测和钱包质量。
+    - position_trades / signal_lifecycles 保留未结束记录和最近窗口内已结束记录。
+    - 最后 VACUUM 真正收缩 sqlite 文件大小。
+    """
+    if not DB_PRUNE_MODE or not os.path.exists(DB_FILE):
+        return
+
+    before = db_file_size_mb()
+    raw_keep = max(12, int(DB_RAW_KEEP_RUNS))
+    history_days = max(31, int(DB_HISTORY_KEEP_DAYS))
+    if aggressive:
+        raw_keep = max(12, min(raw_keep, 24))
+        history_days = max(31, min(history_days, 35))
+
+    cutoff_dt = utc_now() - dt.timedelta(days=history_days)
+    cutoff_str = cutoff_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+    conn = db_conn()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT run_id FROM runs ORDER BY run_id DESC LIMIT ?", (raw_keep,))
+        keep_ids = [int(r[0]) for r in cur.fetchall()]
+        cutoff_run = min(keep_ids) if keep_ids else (int(current_run_id or 0) + 1)
+
+        # 逐轮原始快照：只保留最近 raw_keep 轮，足够做上一轮对比和短期连续性。
+        raw_tables = [
+            "wallet_states",
+            "perp_positions",
+            "spot_balances",
+            "coin_signals",
+            "market_context",
+            "coin_risk_metrics",
+            "wallet_quality",
+            "wallet_position_performance",
+        ]
+        for t in raw_tables:
+            try:
+                cur.execute(f"DELETE FROM {t} WHERE run_id < ?", (cutoff_run,))
+            except sqlite3.OperationalError:
+                pass
+
+        # 事件类保留 30d 回测窗口 + 缓冲。
+        for t in ("wallet_actions", "signal_events", "longterm_events", "position_trade_events", "signal_lifecycle_events", "final_reports"):
+            try:
+                cur.execute(f"DELETE FROM {t} WHERE created_at < ?", (cutoff_str,))
+            except sqlite3.OperationalError:
+                pass
+
+        # 已关闭的仓位交易，保留最近窗口；open 交易不删。
+        try:
+            cur.execute("DELETE FROM position_trades WHERE status='closed' AND close_time IS NOT NULL AND close_time < ?", (cutoff_str,))
+        except sqlite3.OperationalError:
+            pass
+
+        # 已结束的生命周期，保留最近窗口；open 记录不删。
+        try:
+            cur.execute("DELETE FROM signal_lifecycles WHERE status='closed' AND exit_time IS NOT NULL AND exit_time < ?", (cutoff_str,))
+        except sqlite3.OperationalError:
+            pass
+
+        conn.commit()
+    finally:
+        conn.close()
+
+    # VACUUM 必须在事务外执行，才能真正缩小文件。
+    try:
+        conn = db_conn()
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        conn.execute("VACUUM")
+        conn.close()
+    except Exception as e:
+        print(f"数据库 VACUUM 失败：{e}", flush=True)
+
+    after = db_file_size_mb()
+    mode = "aggressive" if aggressive else "normal"
+    print(f"数据库体积控制({mode})：{before:.2f}MB -> {after:.2f}MB | raw_keep={raw_keep} | history_days={history_days}", flush=True)
+
+    # 如果仍接近 GitHub 单文件限制，再做一次更激进裁剪。
+    if not aggressive and after > DB_MAX_MB:
+        prune_database_for_github(current_run_id=current_run_id, aggressive=True)
 
 
 def parse_args() -> argparse.Namespace:
