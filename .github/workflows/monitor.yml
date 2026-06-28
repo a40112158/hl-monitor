@@ -29,6 +29,16 @@ jobs:
         run: |
           git pull --rebase || true
 
+      - name: Restore compressed database
+        run: |
+          if [ -f hl_monitor.db.gz ]; then
+            echo "Restoring hl_monitor.db from hl_monitor.db.gz..."
+            gzip -dc hl_monitor.db.gz > hl_monitor.db
+            ls -lh hl_monitor.db hl_monitor.db.gz || true
+          else
+            echo "No hl_monitor.db.gz found. Starting with fresh local SQLite database."
+          fi
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -58,10 +68,9 @@ jobs:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
 
-          # Turso 外部数据库：GitHub Secrets 里添加这两个即可启用
-          DB_BACKEND: "turso"
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          # 稳定版：使用本地 SQLite，结束后压缩成 hl_monitor.db.gz 提交，避免 GitHub 100MB 限制。
+          DB_BACKEND: "sqlite"
+          HL_DB_FILE: "hl_monitor.db"
 
           # 0 = 只有强信号或每日复盘才推送；1 = 每次运行都推送
           PUSH_EVERY_RUN: "0"
@@ -69,8 +78,8 @@ jobs:
           # 到达这个 UTC 小时后，当天第一轮成功报告会推送；UTC 00 = 北京08 / 日本09
           DAILY_PUSH_HOUR_UTC: "0"
 
-          HL_RPM: "200"
-          HL_CONCURRENCY: "5"
+          HL_RPM: "300"
+          HL_CONCURRENCY: "10"
           MIN_OK_RATE: "0.85"
           MIN_WALLET_COUNT: "100"
           TOP_N: "15"
@@ -126,11 +135,17 @@ jobs:
           DOMINANT_WALLET_TOP_N: "5"
           DATA_ANOMALY_PROTECT_MODE: "1"
 
-          # GitHub 单文件 100MB 限制：自动裁剪数据库原始快照并 VACUUM，避免 hl_monitor.db 过大无法 push
+          # GitHub 单文件 100MB 限制：先在脚本内裁剪，再由 hardcap 脚本二次兜底。
           DB_PRUNE_MODE: "1"
-          DB_RAW_KEEP_RUNS: "24"
+          DB_RAW_KEEP_RUNS: "12"
           DB_HISTORY_KEEP_DAYS: "35"
-          DB_MAX_MB: "85"
+          DB_MAX_MB: "75"
+
+          # 压缩包硬上限：hl_monitor.db.gz 超过这个值就自动进入更激进清理，避免 push 被 GitHub 拒绝。
+          DB_GZ_MAX_MB: "92"
+          HARDCAP_RAW_KEEP: "12"
+          HARDCAP_HISTORY_DAYS: "35"
+          HARDCAP_FINAL_REPORTS_DAYS: "7"
 
           BACKTEST_HURDLE_24H: "1"
           BACKTEST_HURDLE_72H: "2"
@@ -146,10 +161,73 @@ jobs:
 
           PYTHONUNBUFFERED: "1"
           DETAILS_DIR: "reports/details"
+          DB_INSERT_CHUNK: "500"
+          RUN_STEP_LOG: "1"
 
         run: |
-          python -u hl_monitor_final.py --rpm 200 --concurrency 5 --note "github hourly"
+          python -u hl_monitor_final.py --rpm 300 --concurrency 10 --note "github hourly"
 
+
+      - name: Hard-cap local database before compression
+        if: always()
+        env:
+          HARDCAP_RAW_KEEP: "12"
+          HARDCAP_HISTORY_DAYS: "35"
+          HARDCAP_FINAL_REPORTS_DAYS: "7"
+        run: |
+          if [ -f hl_monitor.db ]; then
+            echo "Running hardcap compaction before gzip..."
+            python -u scripts/compact_sqlite_hardcap.py --db hl_monitor.db --raw-keep 12 --history-days 35 --final-reports-days 7
+            ls -lh hl_monitor.db || true
+          else
+            echo "No hl_monitor.db found; skip hardcap."
+          fi
+
+      - name: Compress local database with gzip hard cap
+        if: always()
+        env:
+          DB_GZ_MAX_MB: "92"
+        run: |
+          if [ ! -f hl_monitor.db ]; then
+            echo "No hl_monitor.db found; skip compression."
+            exit 0
+          fi
+
+          echo "Compressing hl_monitor.db to hl_monitor.db.gz..."
+          gzip -9 -c hl_monitor.db > hl_monitor.db.gz
+          ls -lh hl_monitor.db hl_monitor.db.gz || true
+
+          gz_mb=$(python - <<'PY'
+import os
+p='hl_monitor.db.gz'
+print(os.path.getsize(p)/1024/1024 if os.path.exists(p) else 0)
+PY
+)
+          echo "Compressed db size: ${gz_mb} MB; limit=${DB_GZ_MAX_MB} MB"
+
+          python - <<'PY'
+import os, sys
+size=os.path.getsize('hl_monitor.db.gz')/1024/1024 if os.path.exists('hl_monitor.db.gz') else 0
+limit=float(os.getenv('DB_GZ_MAX_MB','92'))
+sys.exit(0 if size <= limit else 1)
+PY
+          ok=$?
+          if [ "$ok" != "0" ]; then
+            echo "hl_monitor.db.gz is still too large. Running emergency hardcap..."
+            python -u scripts/compact_sqlite_hardcap.py --db hl_monitor.db --raw-keep 2 --history-days 30 --final-reports-days 3 --hard
+            gzip -9 -c hl_monitor.db > hl_monitor.db.gz
+            ls -lh hl_monitor.db hl_monitor.db.gz || true
+          fi
+
+          python - <<'PY'
+import os, sys
+size=os.path.getsize('hl_monitor.db.gz')/1024/1024 if os.path.exists('hl_monitor.db.gz') else 0
+limit=float(os.getenv('DB_GZ_MAX_MB','92'))
+print(f"Final compressed db size: {size:.2f} MB / limit {limit:.2f} MB")
+if size > limit:
+    print("ERROR: hl_monitor.db.gz is still above hard cap. Not pushing to avoid GitHub GH001.")
+    sys.exit(1)
+PY
 
       - name: Clean report archives
         run: |
@@ -171,11 +249,11 @@ jobs:
           git fetch origin main
           git pull --rebase origin main || true
 
-          # Turso 版不再把数据库文件提交到 GitHub，避免 100MB 限制。
-          git rm --cached -f hl_monitor.db hl_monitor.db.gz 2>/dev/null || true
-          rm -f hl_monitor.db hl_monitor.db.gz || true
+          # 本地 SQLite 运行，GitHub 只提交压缩后的 hl_monitor.db.gz，不提交 hl_monitor.db。
+          git rm --cached -f hl_monitor.db 2>/dev/null || true
+          rm -f hl_monitor.db || true
 
-          git add reports coin_thresholds.json .gitignore || true
+          git add -f hl_monitor.db.gz reports coin_thresholds.json .gitignore scripts/compact_sqlite_hardcap.py || true
 
           if git diff --cached --quiet; then
             echo "No changes to commit."
