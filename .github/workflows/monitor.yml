@@ -120,6 +120,13 @@ jobs:
           DOMINANT_WALLETS_MODE: "1"
           DOMINANT_WALLET_TOP_N: "5"
           DATA_ANOMALY_PROTECT_MODE: "1"
+
+          # GitHub 单文件 100MB 限制：自动裁剪数据库原始快照并 VACUUM，避免 hl_monitor.db 过大无法 push
+          DB_PRUNE_MODE: "1"
+          DB_RAW_KEEP_RUNS: "72"
+          DB_HISTORY_KEEP_DAYS: "45"
+          DB_MAX_MB: "95"
+
           BACKTEST_HURDLE_24H: "1"
           BACKTEST_HURDLE_72H: "2"
           BACKTEST_HURDLE_7D: "4"
