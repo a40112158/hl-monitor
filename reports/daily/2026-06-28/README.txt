@@ -1,8 +1,8 @@
 Hyperliquid Monitor Daily Archive
 date_utc: 2026-06-28
-run_id: 15
-updated_at_utc: 2026-06-28 12:11:54
+run_id: 1
+updated_at_utc: 2026-06-28 17:37:16
 
 主要看：final_report.txt、long_term_plan.txt、signal_explain_report.txt、coin_risk_report.txt
 关键 CSV：coin_signals.csv、wallet_quality.csv、wallet_position_performance.csv、signal_backtest.csv、longterm_backtest.csv、signal_lifecycle.csv
-全量明细请看仓库 reports/details/，长期历史保存在 hl_monitor.db。
+全量明细请看仓库 reports/details/，长期历史保存在数据库（Turso 或本地 SQLite）。
