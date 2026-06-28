@@ -197,20 +197,10 @@ jobs:
           gzip -9 -c hl_monitor.db > hl_monitor.db.gz
           ls -lh hl_monitor.db hl_monitor.db.gz || true
 
-          gz_mb=$(python - <<'PY'
-import os
-p='hl_monitor.db.gz'
-print(os.path.getsize(p)/1024/1024 if os.path.exists(p) else 0)
-PY
-)
+          gz_mb=$(python -c "import os; p='hl_monitor.db.gz'; print(os.path.getsize(p)/1024/1024 if os.path.exists(p) else 0)")
           echo "Compressed db size: ${gz_mb} MB; limit=${DB_GZ_MAX_MB} MB"
 
-          python - <<'PY'
-import os, sys
-size=os.path.getsize('hl_monitor.db.gz')/1024/1024 if os.path.exists('hl_monitor.db.gz') else 0
-limit=float(os.getenv('DB_GZ_MAX_MB','92'))
-sys.exit(0 if size <= limit else 1)
-PY
+          python -c "import os,sys; size=os.path.getsize('hl_monitor.db.gz')/1024/1024 if os.path.exists('hl_monitor.db.gz') else 0; limit=float(os.getenv('DB_GZ_MAX_MB','92')); sys.exit(0 if size <= limit else 1)"
           ok=$?
           if [ "$ok" != "0" ]; then
             echo "hl_monitor.db.gz is still too large. Running emergency hardcap..."
@@ -219,15 +209,7 @@ PY
             ls -lh hl_monitor.db hl_monitor.db.gz || true
           fi
 
-          python - <<'PY'
-import os, sys
-size=os.path.getsize('hl_monitor.db.gz')/1024/1024 if os.path.exists('hl_monitor.db.gz') else 0
-limit=float(os.getenv('DB_GZ_MAX_MB','92'))
-print(f"Final compressed db size: {size:.2f} MB / limit {limit:.2f} MB")
-if size > limit:
-    print("ERROR: hl_monitor.db.gz is still above hard cap. Not pushing to avoid GitHub GH001.")
-    sys.exit(1)
-PY
+          python -c "import os,sys; size=os.path.getsize('hl_monitor.db.gz')/1024/1024 if os.path.exists('hl_monitor.db.gz') else 0; limit=float(os.getenv('DB_GZ_MAX_MB','92')); print(f'Final compressed db size: {size:.2f} MB / limit {limit:.2f} MB'); sys.exit(1 if size > limit else 0)"
 
       - name: Clean report archives
         run: |
