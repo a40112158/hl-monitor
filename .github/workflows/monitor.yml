@@ -116,6 +116,10 @@ jobs:
           SIGNAL_LIFECYCLE_MODE: "1"
           STRONG_SIGNAL_MISSING_ROUNDS: "1"
           LONGTERM_SIGNAL_MISSING_ROUNDS: "2"
+          # 主导钱包名单 + API异常保护
+          DOMINANT_WALLETS_MODE: "1"
+          DOMINANT_WALLET_TOP_N: "5"
+          DATA_ANOMALY_PROTECT_MODE: "1"
           BACKTEST_HURDLE_24H: "1"
           BACKTEST_HURDLE_72H: "2"
           BACKTEST_HURDLE_7D: "4"
