@@ -1,2 +1,2 @@
 ﻿id,run_id,coin,direction,score,confidence,signal_type,signal_state,watchlist,perp_active,spot_active,weighted_flow,price_position,pct_1h,pct_4h,pct_24h,final_score,threshold_score,avg_leverage,avg_liq_distance,longterm_leverage_ratio,highrisk_leverage_ratio,leverage_note,conclusion,risk,reason
-61,35,BASED,bearish,-1.0,低,普通趋势,现货主导,observe,0.0,-5809561.720789599,1811261.4468608643,,,,,-1.0,8.0,,,,,,只观察 / 普通趋势,历史样本/胜率不足,现货主动变化-$5.81M；钱包质量加权资金流$1.81M；历史样本不足
+62,36,BASED,bullish,4.0,低,普通趋势,现货主导,observe,0.0,37407921.343051255,61294852.791313134,,,,,4.0,8.0,,,,,,只观察 / 普通趋势,历史样本/胜率不足,现货主动变化$37.41M；钱包质量加权资金流$61.29M；历史样本不足
