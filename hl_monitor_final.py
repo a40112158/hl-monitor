@@ -139,6 +139,18 @@ DATA_ANOMALY_PROTECT_MODE = os.getenv("DATA_ANOMALY_PROTECT_MODE", "1") == "1"
 DOMINANT_WALLETS_MODE = os.getenv("DOMINANT_WALLETS_MODE", "1") == "1"
 DOMINANT_WALLET_TOP_N = int(os.getenv("DOMINANT_WALLET_TOP_N", "5"))
 
+# 滚动建仓信号：不再只看“当前快照 vs 上一快照”。
+# 短线异动仍看上一轮；中长期建仓看 2h/6h/24h/72h/15d/30d 累计净流入。
+ROLLING_FLOW_MODE = os.getenv("ROLLING_FLOW_MODE", "1") == "1"
+# 滚动杠杆质量：长期单不只看资金流，还看这些资金流对应的杠杆结构是否健康。
+ROLLING_LEVERAGE_MODE = os.getenv("ROLLING_LEVERAGE_MODE", "1") == "1"
+EXPECTED_INTERVAL_MINUTES = float(os.getenv("EXPECTED_INTERVAL_MINUTES", "30"))
+MAX_SHORT_SIGNAL_GAP_MINUTES = float(os.getenv("MAX_SHORT_SIGNAL_GAP_MINUTES", "90"))
+ROLLING_FLOW_WINDOWS_HOURS = [
+    float(x.strip()) for x in os.getenv("ROLLING_FLOW_WINDOWS_HOURS", "2,6,24,72,360,720").split(",")
+    if x.strip()
+]
+
 
 # 数据库体积控制：GitHub 单文件硬限制 100MB，必须定期裁剪原始快照并 VACUUM。
 # 只裁剪最占空间的逐轮原始表；钱包动作、信号、仓位生命周期保留足够窗口用于 30d 回测。
@@ -635,6 +647,29 @@ def init_db() -> None:
     """)
 
     cur.execute("""
+    CREATE TABLE IF NOT EXISTS coin_flow_snapshots (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        run_id INTEGER,
+        created_at TEXT,
+        coin TEXT,
+        perp_active REAL,
+        spot_active REAL,
+        weighted_flow REAL,
+        active_total REAL,
+        source_gap_minutes REAL,
+        is_gap INTEGER DEFAULT 0,
+        flow_direction TEXT,
+        avg_leverage REAL,
+        avg_liq_distance REAL,
+        longterm_leverage_ratio REAL,
+        highrisk_leverage_ratio REAL,
+        leverage_health_score REAL,
+        leverage_note TEXT,
+        UNIQUE(run_id, coin)
+    )
+    """)
+
+    cur.execute("""
     CREATE TABLE IF NOT EXISTS market_context (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         run_id INTEGER,
@@ -913,6 +948,18 @@ def init_db() -> None:
         add_col_if_missing("coin_signals", col, "REAL")
     add_col_if_missing("coin_signals", "leverage_note", "TEXT")
 
+    # 滚动资金流快照补充杠杆质量字段，兼容旧 db。
+    add_col_if_missing("coin_flow_snapshots", "flow_direction", "TEXT")
+    for col in ("avg_leverage", "avg_liq_distance", "longterm_leverage_ratio", "highrisk_leverage_ratio", "leverage_health_score"):
+        add_col_if_missing("coin_flow_snapshots", col, "REAL")
+    add_col_if_missing("coin_flow_snapshots", "leverage_note", "TEXT")
+
+    # wallet_actions 也保留动作级杠杆字段，便于以后复盘。
+    for col in ("side", "margin_mode", "leverage_style"):
+        add_col_if_missing("wallet_actions", col, "TEXT")
+    for col in ("position_value", "leverage", "liq_distance_pct", "leverage_weight"):
+        add_col_if_missing("wallet_actions", col, "REAL")
+
     cur.execute("CREATE INDEX IF NOT EXISTS idx_perp_run_addr_coin ON perp_positions(run_id, address, coin)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_spot_run_addr_coin ON spot_balances(run_id, address, coin)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_actions_addr ON wallet_actions(address)")
@@ -921,6 +968,8 @@ def init_db() -> None:
     cur.execute("CREATE INDEX IF NOT EXISTS idx_quality_addr ON wallet_quality(address)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_coin ON signal_events(coin)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_coin_signal_run ON coin_signals(run_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_coin_flow_run ON coin_flow_snapshots(run_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_coin_flow_created_coin ON coin_flow_snapshots(created_at, coin)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_risk_run_coin ON coin_risk_metrics(run_id, coin)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_longterm_coin ON longterm_events(coin)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_lifecycles_status ON signal_lifecycles(lifecycle_type, status, coin, direction)")
@@ -970,7 +1019,7 @@ def get_previous_run_id(run_id: int) -> Optional[int]:
 
 
 def load_rows(table: str, run_id: int) -> List[Dict[str, Any]]:
-    allowed = {"wallet_states", "perp_positions", "spot_balances", "wallet_actions", "coin_signals", "market_context", "wallet_quality", "position_trades", "position_trade_events", "wallet_position_performance", "coin_risk_metrics"}
+    allowed = {"wallet_states", "perp_positions", "spot_balances", "wallet_actions", "coin_signals", "coin_flow_snapshots", "market_context", "wallet_quality", "position_trades", "position_trade_events", "wallet_position_performance", "coin_risk_metrics"}
     if table not in allowed:
         raise ValueError("bad table")
     conn = db_conn()
@@ -1704,6 +1753,422 @@ def enrich_actions_and_cashflows(
             "current_perp_positions": extra.get("current_perp_positions", "-"),
             "current_spot_holdings": extra.get("current_spot_holdings", "-"),
         })
+
+def rolling_window_label(hours: float) -> str:
+    if abs(hours - 720) < 0.01:
+        return "30d"
+    if abs(hours - 360) < 0.01:
+        return "15d"
+    if abs(hours - 168) < 0.01:
+        return "7d"
+    if abs(hours - 72) < 0.01:
+        return "72h"
+    if abs(hours - 24) < 0.01:
+        return "24h"
+    if hours >= 24 and abs(hours % 24) < 0.01:
+        return f"{int(hours/24)}d"
+    if abs(hours - int(hours)) < 0.01:
+        return f"{int(hours)}h"
+    return f"{hours:g}h"
+
+
+def get_run_started_at(run_id: Optional[int]) -> Optional[dt.datetime]:
+    if not run_id:
+        return None
+    conn = db_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT started_at FROM runs WHERE run_id=?", (run_id,))
+    row = cur.fetchone()
+    conn.close()
+    return parse_time(row[0]) if row else None
+
+
+def get_run_gap_minutes(run_id: int, prev_run_id: Optional[int]) -> Optional[float]:
+    if not prev_run_id:
+        return None
+    cur_ts = get_run_started_at(run_id)
+    pre_ts = get_run_started_at(prev_run_id)
+    if not cur_ts or not pre_ts:
+        return None
+    return max(0.0, (cur_ts - pre_ts).total_seconds() / 60.0)
+
+
+def rolling_leverage_health_for_flow(direction: str, lev: Dict[str, Any]) -> Dict[str, Any]:
+    """给某个币某个方向的滚动资金流打杠杆健康分。
+
+    direction: bullish 用当前多头仓位的杠杆结构；bearish 用当前空头仓位的杠杆结构。
+    这个分数只作为长期建仓的“质量过滤”，不是单独开信号。
+    """
+    if not ROLLING_LEVERAGE_MODE or not LEVERAGE_QUALITY_MODE or not lev:
+        return {
+            "avg_leverage": None,
+            "avg_liq_distance": None,
+            "longterm_leverage_ratio": 0.0,
+            "highrisk_leverage_ratio": 0.0,
+            "leverage_health_score": 0.0,
+            "leverage_note": "无滚动杠杆样本",
+        }
+    side = "long" if direction == "bullish" else "short" if direction == "bearish" else ""
+    if not side:
+        return {
+            "avg_leverage": None,
+            "avg_liq_distance": None,
+            "longterm_leverage_ratio": 0.0,
+            "highrisk_leverage_ratio": 0.0,
+            "leverage_health_score": 0.0,
+            "leverage_note": "无方向",
+        }
+    val = safe_float(lev.get(f"{side}_value")) or 0.0
+    avg_lev = safe_float(lev.get(f"{side}_avg_leverage"))
+    avg_liq = safe_float(lev.get(f"{side}_avg_liq_distance"))
+    long_ratio = safe_float(lev.get(f"{side}_longterm_ratio")) or 0.0
+    high_ratio = safe_float(lev.get(f"{side}_highrisk_ratio")) or 0.0
+    if val <= 0:
+        return {
+            "avg_leverage": avg_lev,
+            "avg_liq_distance": avg_liq,
+            "longterm_leverage_ratio": long_ratio,
+            "highrisk_leverage_ratio": high_ratio,
+            "leverage_health_score": -0.15,
+            "leverage_note": "当前无同方向合约仓位杠杆样本",
+        }
+
+    score = 0.0
+    notes: List[str] = []
+    if long_ratio >= 0.60 and (avg_lev is None or avg_lev <= LEVERAGE_MID_MAX) and (avg_liq is None or avg_liq >= 20):
+        score += 1.0
+        notes.append(f"低/中杠杆占比{long_ratio*100:.0f}%")
+    elif long_ratio >= 0.40 and (avg_lev is None or avg_lev <= LEVERAGE_MID_MAX):
+        score += 0.45
+        notes.append(f"低/中杠杆占比{long_ratio*100:.0f}%")
+
+    if high_ratio >= 0.60:
+        score -= 1.25
+        notes.append(f"高杠杆/爆仓边缘占比{high_ratio*100:.0f}%")
+    elif high_ratio >= 0.35:
+        score -= 0.65
+        notes.append(f"高杠杆占比{high_ratio*100:.0f}%")
+
+    if avg_lev is not None:
+        if avg_lev <= LEVERAGE_LOW_MAX:
+            score += 0.45
+            notes.append(f"均杠杆{avg_lev:.1f}x")
+        elif avg_lev >= 20:
+            score -= 1.05
+            notes.append(f"均杠杆{avg_lev:.1f}x 极高")
+        elif avg_lev >= LEVERAGE_HIGH_MIN:
+            score -= 0.55
+            notes.append(f"均杠杆{avg_lev:.1f}x 偏高")
+
+    if avg_liq is not None:
+        if avg_liq < LIQ_DANGER_DISTANCE_PCT:
+            score -= 0.95
+            notes.append(f"均强平距离{avg_liq:.1f}% 过近")
+        elif avg_liq >= LIQ_SAFE_DISTANCE_PCT:
+            score += 0.35
+            notes.append(f"均强平距离{avg_liq:.1f}% 安全")
+
+    score = max(-2.2, min(1.8, score))
+    return {
+        "avg_leverage": avg_lev,
+        "avg_liq_distance": avg_liq,
+        "longterm_leverage_ratio": long_ratio,
+        "highrisk_leverage_ratio": high_ratio,
+        "leverage_health_score": score,
+        "leverage_note": "，".join(notes) if notes else "杠杆结构中性",
+    }
+
+
+def save_coin_flow_snapshots(run_id: int, prev_run_id: Optional[int], preliminary: Dict[str, Dict[str, Any]]) -> None:
+    """保存每轮币种级净流入快照，用于 2h/6h/24h/72h/15d/30d 滚动建仓判断。"""
+    if not ROLLING_FLOW_MODE:
+        return
+    created_at = (get_run_started_at(run_id) or utc_now()).strftime("%Y-%m-%d %H:%M:%S")
+    gap_min = get_run_gap_minutes(run_id, prev_run_id)
+    is_gap = 1 if (gap_min is not None and gap_min > MAX_SHORT_SIGNAL_GAP_MINUTES) else 0
+    rows = []
+    lev_map = build_leverage_signal_map(run_id) if (ROLLING_LEVERAGE_MODE and LEVERAGE_QUALITY_MODE) else {}
+    for coin, d in preliminary.items():
+        perp_active = float(d.get("perp_active") or 0.0)
+        spot_active = float(d.get("spot_active") or 0.0)
+        weighted_flow = float(d.get("weighted_flow") or 0.0)
+        active_total = perp_active + spot_active
+        # 太小的噪音不入滚动表，避免数据库膨胀；阈值很低，只过滤浮点灰尘。
+        if abs(perp_active) < 1 and abs(spot_active) < 1 and abs(weighted_flow) < 1:
+            continue
+        flow_ref = weighted_flow if abs(weighted_flow) >= 1 else active_total
+        flow_direction = "bullish" if flow_ref > 0 else "bearish" if flow_ref < 0 else "neutral"
+        lev_health = rolling_leverage_health_for_flow(flow_direction, lev_map.get(coin, {}))
+        rows.append((
+            run_id, created_at, coin, perp_active, spot_active, weighted_flow, active_total, gap_min, is_gap,
+            flow_direction, lev_health.get("avg_leverage"), lev_health.get("avg_liq_distance"),
+            lev_health.get("longterm_leverage_ratio"), lev_health.get("highrisk_leverage_ratio"),
+            lev_health.get("leverage_health_score"), lev_health.get("leverage_note"),
+        ))
+    conn = db_conn()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM coin_flow_snapshots WHERE run_id=?", (run_id,))
+    cur.executemany("""
+        INSERT OR REPLACE INTO coin_flow_snapshots
+        (run_id, created_at, coin, perp_active, spot_active, weighted_flow, active_total, source_gap_minutes, is_gap,
+         flow_direction, avg_leverage, avg_liq_distance, longterm_leverage_ratio, highrisk_leverage_ratio,
+         leverage_health_score, leverage_note)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, rows)
+    conn.commit()
+    conn.close()
+    step_log(f"滚动资金流快照完成 | rows={len(rows)} gap_min={gap_min if gap_min is not None else 'N/A'} is_gap={is_gap}")
+
+
+def build_rolling_flow_metrics(run_id: int) -> Dict[str, Dict[str, Any]]:
+    """按多个窗口汇总币种级净流入。输出给信号评分和 rolling_flow_report。"""
+    if not ROLLING_FLOW_MODE:
+        return {}
+    now_dt = get_run_started_at(run_id) or utc_now()
+    result: Dict[str, Dict[str, Any]] = defaultdict(dict)
+    conn = db_conn()
+    cur = conn.cursor()
+    for hours in ROLLING_FLOW_WINDOWS_HOURS:
+        label = rolling_window_label(hours)
+        cutoff = (now_dt - dt.timedelta(hours=float(hours))).strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute("""
+            SELECT coin,
+                   SUM(perp_active) AS perp_active,
+                   SUM(spot_active) AS spot_active,
+                   SUM(weighted_flow) AS weighted_flow,
+                   SUM(active_total) AS active_total,
+                   COUNT(DISTINCT run_id) AS run_count,
+                   SUM(CASE WHEN is_gap=1 THEN 1 ELSE 0 END) AS gap_count
+            FROM coin_flow_snapshots
+            WHERE run_id <= ? AND created_at >= ?
+            GROUP BY coin
+        """, (run_id, cutoff))
+        for row in cur.fetchall():
+            coin = row[0]
+            d = result[coin]
+            d["coin"] = coin
+            d[f"perp_{label}"] = float(row[1] or 0.0)
+            d[f"spot_{label}"] = float(row[2] or 0.0)
+            d[f"weighted_{label}"] = float(row[3] or 0.0)
+            d[f"active_{label}"] = float(row[4] or 0.0)
+            d[f"runs_{label}"] = int(row[5] or 0)
+            d[f"gaps_{label}"] = int(row[6] or 0)
+
+        # 同一窗口内，按方向聚合滚动杠杆质量。
+        # 这样 72h/15d/30d 的建仓，不仅看累计流入，还能看是不是低杠杆健康建仓。
+        if ROLLING_LEVERAGE_MODE and LEVERAGE_QUALITY_MODE:
+            cur.execute("""
+                SELECT coin, flow_direction,
+                       SUM(ABS(weighted_flow)) AS den,
+                       SUM(CASE WHEN avg_leverage IS NOT NULL THEN avg_leverage * ABS(weighted_flow) ELSE 0 END) AS lev_num,
+                       SUM(CASE WHEN avg_liq_distance IS NOT NULL THEN avg_liq_distance * ABS(weighted_flow) ELSE 0 END) AS liq_num,
+                       SUM(longterm_leverage_ratio * ABS(weighted_flow)) AS long_num,
+                       SUM(highrisk_leverage_ratio * ABS(weighted_flow)) AS high_num,
+                       SUM(leverage_health_score * ABS(weighted_flow)) AS health_num
+                FROM coin_flow_snapshots
+                WHERE run_id <= ? AND created_at >= ? AND flow_direction IN ('bullish', 'bearish')
+                GROUP BY coin, flow_direction
+            """, (run_id, cutoff))
+            for row in cur.fetchall():
+                coin = row[0]
+                direction = row[1] or "neutral"
+                den = float(row[2] or 0.0)
+                if den <= 0:
+                    continue
+                d = result[coin]
+                d["coin"] = coin
+                prefix = "bullish" if direction == "bullish" else "bearish"
+                d[f"{prefix}_lev_den_{label}"] = den
+                d[f"{prefix}_avg_leverage_{label}"] = float(row[3] or 0.0) / den
+                d[f"{prefix}_avg_liq_distance_{label}"] = float(row[4] or 0.0) / den
+                d[f"{prefix}_longterm_leverage_ratio_{label}"] = float(row[5] or 0.0) / den
+                d[f"{prefix}_highrisk_leverage_ratio_{label}"] = float(row[6] or 0.0) / den
+                d[f"{prefix}_leverage_health_{label}"] = float(row[7] or 0.0) / den
+    conn.close()
+    # 计算每个币最强滚动窗口，方便排序/报告。
+    for coin, d in result.items():
+        best_label = ""
+        best_val = 0.0
+        best_runs = 0
+        for hours in ROLLING_FLOW_WINDOWS_HOURS:
+            label = rolling_window_label(hours)
+            val = float(d.get(f"weighted_{label}") or d.get(f"active_{label}") or 0.0)
+            if abs(val) > abs(best_val):
+                best_val = val
+                best_label = label
+                best_runs = int(d.get(f"runs_{label}") or 0)
+        d["best_window"] = best_label
+        d["best_flow"] = best_val
+        d["best_direction"] = "bullish" if best_val > 0 else "bearish" if best_val < 0 else "neutral"
+        d["best_runs"] = best_runs
+    return dict(result)
+
+
+def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[str, Dict[str, float]]) -> Tuple[float, List[str], Dict[str, Any]]:
+    if not rolling:
+        return 0.0, [], {}
+    # 窗口越长，要求累计流入越高；满足后给长期建仓分。
+    cfg = {
+        "2h": (1.0, 0.5),
+        "6h": (1.5, 0.8),
+        "24h": (2.5, 1.1),
+        "72h": (4.0, 1.5),
+        "15d": (7.0, 2.0),
+        "30d": (10.0, 2.5),
+    }
+    pth = threshold(thresholds, coin, "perp")
+    score = 0.0
+    reasons: List[str] = []
+    parts: Dict[str, Any] = {}
+    last_sign = 0
+    aligned_windows = 0
+    rolling_leverage_adj = 0.0
+    leverage_notes: List[str] = []
+    best_lev_snapshot: Dict[str, Any] = {}
+    for hours in ROLLING_FLOW_WINDOWS_HOURS:
+        label = rolling_window_label(hours)
+        signed = float(rolling.get(f"weighted_{label}") or rolling.get(f"active_{label}") or 0.0)
+        parts[f"rolling_{label}"] = signed
+        if label not in cfg:
+            # 非默认窗口给温和评分。
+            mult, pts = 3.0, 1.0
+        else:
+            mult, pts = cfg[label]
+        if abs(signed) >= pth * mult:
+            sign = 1 if signed > 0 else -1
+            score += pts * sign
+            reasons.append(f"{label}滚动净流入{fmt_money(signed)}")
+            if last_sign == 0 or last_sign == sign:
+                aligned_windows += 1
+                last_sign = sign
+
+            # 滚动杠杆质量：只有当该窗口的资金流达到建仓阈值时才参与加减分。
+            # 杠杆健康会顺着方向加强信号；高杠杆/强平近会把信号往 0 拉回。
+            if ROLLING_LEVERAGE_MODE and LEVERAGE_QUALITY_MODE:
+                prefix = "bullish" if sign > 0 else "bearish"
+                lev_health = safe_float(rolling.get(f"{prefix}_leverage_health_{label}"))
+                if lev_health is not None:
+                    # 单窗口最多加/减约 0.75 分，总滚动杠杆分最后再 cap，防止杠杆项盖过资金流。
+                    lev_abs = max(-0.75, min(0.75, lev_health * 0.42))
+                    rolling_leverage_adj += lev_abs * sign
+                    avg_lev = safe_float(rolling.get(f"{prefix}_avg_leverage_{label}"))
+                    avg_liq = safe_float(rolling.get(f"{prefix}_avg_liq_distance_{label}"))
+                    long_ratio = safe_float(rolling.get(f"{prefix}_longterm_leverage_ratio_{label}")) or 0.0
+                    high_ratio = safe_float(rolling.get(f"{prefix}_highrisk_leverage_ratio_{label}")) or 0.0
+                    if label == rolling.get("best_window"):
+                        best_lev_snapshot = {
+                            "best_avg_leverage": avg_lev,
+                            "best_avg_liq_distance": avg_liq,
+                            "best_longterm_leverage_ratio": long_ratio,
+                            "best_highrisk_leverage_ratio": high_ratio,
+                            "best_leverage_health": lev_health,
+                        }
+                    if lev_abs > 0.15:
+                        leverage_notes.append(f"{label}杠杆健康：低/中杠杆{long_ratio*100:.0f}% 均杠杆{avg_lev:.1f}x" if avg_lev is not None else f"{label}杠杆健康：低/中杠杆{long_ratio*100:.0f}%")
+                    elif lev_abs < -0.15:
+                        leverage_notes.append(f"{label}杠杆风险：高风险{high_ratio*100:.0f}% 均杠杆{avg_lev:.1f}x" if avg_lev is not None else f"{label}杠杆风险：高风险{high_ratio*100:.0f}%")
+    # 多窗口同方向，加一点连续性分；冲突则不给。
+    if aligned_windows >= 3 and last_sign != 0:
+        bonus = min(1.5, 0.4 * (aligned_windows - 2)) * last_sign
+        score += bonus
+        reasons.append(f"多窗口同向累积({aligned_windows}个窗口) {bonus:+.1f}")
+    rolling_flow_core_score = score
+    if rolling_leverage_adj:
+        # 总 rolling 杠杆加减分做硬限制：长期单要考虑杠杆，但不能让杠杆项单独制造信号。
+        rolling_leverage_adj = max(-1.8, min(1.8, rolling_leverage_adj))
+        score += rolling_leverage_adj
+        reasons.extend(leverage_notes[:4])
+    parts["rolling_score"] = round(score, 4)
+    parts["rolling_flow_core"] = round(rolling_flow_core_score, 4)
+    parts["rolling_leverage"] = round(rolling_leverage_adj, 4)
+    parts.update(best_lev_snapshot)
+    parts["best_window"] = rolling.get("best_window")
+    parts["best_flow"] = rolling.get("best_flow")
+    return score, reasons, parts
+
+
+def export_rolling_flow_files(run_id: int, rolling_map: Dict[str, Dict[str, Any]], thresholds: Dict[str, Dict[str, float]]) -> None:
+    if not ROLLING_FLOW_MODE:
+        return
+    ensure_dirs()
+    labels = [rolling_window_label(h) for h in ROLLING_FLOW_WINDOWS_HOURS]
+    rows: List[Dict[str, Any]] = []
+    for coin, d in rolling_map.items():
+        score, reasons, parts = rolling_score_for_coin(coin, d, thresholds)
+        if abs(d.get("best_flow") or 0.0) < 1 and abs(score) < 0.01:
+            continue
+        best_dir = d.get("best_direction") or "neutral"
+        best_prefix = "bullish" if best_dir == "bullish" else "bearish" if best_dir == "bearish" else ""
+        best_label = d.get("best_window")
+        row = {
+            "run_id": run_id,
+            "coin": coin,
+            "rolling_score": round(score, 4),
+            "rolling_leverage_score": parts.get("rolling_leverage"),
+            "best_window": best_label,
+            "best_direction": best_dir,
+            "best_flow": d.get("best_flow"),
+            "best_runs": d.get("best_runs"),
+            "best_avg_leverage": d.get(f"{best_prefix}_avg_leverage_{best_label}") if best_prefix and best_label else None,
+            "best_avg_liq_distance": d.get(f"{best_prefix}_avg_liq_distance_{best_label}") if best_prefix and best_label else None,
+            "best_longterm_leverage_ratio": d.get(f"{best_prefix}_longterm_leverage_ratio_{best_label}") if best_prefix and best_label else None,
+            "best_highrisk_leverage_ratio": d.get(f"{best_prefix}_highrisk_leverage_ratio_{best_label}") if best_prefix and best_label else None,
+            "best_leverage_health": d.get(f"{best_prefix}_leverage_health_{best_label}") if best_prefix and best_label else None,
+            "reason": "；".join(reasons),
+        }
+        for label in labels:
+            row[f"weighted_{label}"] = d.get(f"weighted_{label}")
+            row[f"active_{label}"] = d.get(f"active_{label}")
+            row[f"perp_{label}"] = d.get(f"perp_{label}")
+            row[f"spot_{label}"] = d.get(f"spot_{label}")
+            row[f"runs_{label}"] = d.get(f"runs_{label}")
+            row[f"gaps_{label}"] = d.get(f"gaps_{label}")
+            for prefix in ("bullish", "bearish"):
+                row[f"{prefix}_avg_leverage_{label}"] = d.get(f"{prefix}_avg_leverage_{label}")
+                row[f"{prefix}_avg_liq_distance_{label}"] = d.get(f"{prefix}_avg_liq_distance_{label}")
+                row[f"{prefix}_longterm_leverage_ratio_{label}"] = d.get(f"{prefix}_longterm_leverage_ratio_{label}")
+                row[f"{prefix}_highrisk_leverage_ratio_{label}"] = d.get(f"{prefix}_highrisk_leverage_ratio_{label}")
+                row[f"{prefix}_leverage_health_{label}"] = d.get(f"{prefix}_leverage_health_{label}")
+        rows.append(row)
+    rows.sort(key=lambda r: abs(float(r.get("rolling_score") or 0.0)) * 1_000_000 + abs(float(r.get("best_flow") or 0.0)), reverse=True)
+    fieldnames = [
+        "run_id", "coin", "rolling_score", "rolling_leverage_score", "best_window", "best_direction",
+        "best_flow", "best_runs", "best_avg_leverage", "best_avg_liq_distance",
+        "best_longterm_leverage_ratio", "best_highrisk_leverage_ratio", "best_leverage_health", "reason"
+    ]
+    for label in labels:
+        fieldnames.extend([f"weighted_{label}", f"active_{label}", f"perp_{label}", f"spot_{label}", f"runs_{label}", f"gaps_{label}"])
+        for prefix in ("bullish", "bearish"):
+            fieldnames.extend([
+                f"{prefix}_avg_leverage_{label}", f"{prefix}_avg_liq_distance_{label}",
+                f"{prefix}_longterm_leverage_ratio_{label}", f"{prefix}_highrisk_leverage_ratio_{label}",
+                f"{prefix}_leverage_health_{label}"
+            ])
+    with open(os.path.join(DETAILS_DIR, "rolling_flow_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w.writeheader()
+        w.writerows(rows)
+    lines = [
+        "【滚动建仓资金流 + 杠杆质量】",
+        "说明：短线异动看上一轮；长期建仓看 2h/6h/24h/72h/15d/30d 累计净流入，并叠加滚动杠杆健康度。",
+        f"run_id={run_id} UTC={now_str()}",
+        "",
+    ]
+    top = [r for r in rows if abs(float(r.get("rolling_score") or 0.0)) > 0]
+    if not top:
+        lines.append("暂无达到滚动窗口阈值的持续建仓信号。")
+    else:
+        for r in top[:20]:
+            lines.append(
+                f"{r['coin']} {dir_cn(r['best_direction'])} | rolling_score={float(r.get('rolling_score') or 0):+.1f} "
+                f"杠杆项={float(r.get('rolling_leverage_score') or 0):+.1f} "
+                f"| 最强窗口={r.get('best_window')} {fmt_money(r.get('best_flow'))} "
+                f"| 均杠杆={r.get('best_avg_leverage') if r.get('best_avg_leverage') is not None else 'N/A'} "
+                f"高风险占比={(float(r.get('best_highrisk_leverage_ratio') or 0)*100):.0f}% | {r.get('reason') or '-'}"
+            )
+    with open(os.path.join(REPORT_DIR, "rolling_flow_report.txt"), "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
 def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dict[str, Dict[str, float]], quality_map: Optional[Dict[str, Dict[str, Any]]] = None) -> Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
     if prev_run_id is None:
         return {}, [], []
@@ -1863,10 +2328,13 @@ def save_wallet_actions(run_id: int, actions: List[Dict[str, Any]]) -> int:
             cur.execute("""
             INSERT INTO wallet_actions (
                 run_id, created_at, address, groups, coin, market, direction, action_type,
-                active_delta, price_effect, qty_delta, entry_px
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                active_delta, price_effect, qty_delta, entry_px, side, position_value, leverage,
+                margin_mode, liq_distance_pct, leverage_style, leverage_weight
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (run_id, now_str(), a["address"], a.get("groups", ""), a["coin"], a["market"], a["direction"], a["action_type"],
-                  a["active_delta"], a["price_effect"], a["qty_delta"], a["entry_px"]))
+                  a["active_delta"], a["price_effect"], a["qty_delta"], a["entry_px"],
+                  a.get("side"), a.get("position_value"), a.get("leverage"), a.get("margin_mode"),
+                  a.get("liq_distance_pct"), a.get("leverage_style"), a.get("leverage_weight")))
             inserted += 1
         except sqlite3.IntegrityError:
             pass
@@ -2902,11 +3370,15 @@ def risk_filter_adjust(direction: str, risk: Dict[str, Any]) -> Tuple[float, Lis
     }
 
 
-def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: Dict[str, Dict[str, Any]], thresholds: Dict[str, Dict[str, float]], risk_map: Optional[Dict[str, Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: Dict[str, Dict[str, Any]], thresholds: Dict[str, Dict[str, float]], risk_map: Optional[Dict[str, Dict[str, Any]]] = None, rolling_map: Optional[Dict[str, Dict[str, Any]]] = None, gap_minutes: Optional[float] = None) -> List[Dict[str, Any]]:
     btc_ctx = ctx_map.get("BTC", {})
     lev_map = build_leverage_signal_map(run_id) if LEVERAGE_QUALITY_MODE else {}
     rows: List[Dict[str, Any]] = []
-    for coin, d in preliminary.items():
+    rolling_map = rolling_map or {}
+    current_gap_ok = (gap_minutes is None) or (gap_minutes <= MAX_SHORT_SIGNAL_GAP_MINUTES)
+    coin_universe = set(preliminary.keys()) | set(rolling_map.keys())
+    for coin in coin_universe:
+        d = preliminary.get(coin, {})
         perp_active = float(d.get("perp_active") or 0.0)
         spot_active = float(d.get("spot_active") or 0.0)
         weighted_flow = float(d.get("weighted_flow") or 0.0)
@@ -2914,18 +3386,25 @@ def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: 
         reasons: List[str] = []
         pth = threshold(thresholds, coin, "perp")
         sth = threshold(thresholds, coin, "spot")
-        if abs(perp_active) >= pth:
-            score += 3.0 if perp_active > 0 else -3.0
-            reasons.append(f"合约主动变化{fmt_money(perp_active)}")
-        if abs(spot_active) >= sth:
-            score += 2.0 if spot_active > 0 else -2.0
-            reasons.append(f"现货主动变化{fmt_money(spot_active)}")
-        if abs(weighted_flow) >= pth * 3:
-            score += 2.0 if weighted_flow > 0 else -2.0
-            reasons.append(f"钱包质量加权资金流{fmt_money(weighted_flow)}")
-        elif abs(weighted_flow) >= pth:
-            score += 1.0 if weighted_flow > 0 else -1.0
-            reasons.append(f"钱包质量加权资金流{fmt_money(weighted_flow)}")
+        if current_gap_ok:
+            if abs(perp_active) >= pth:
+                score += 3.0 if perp_active > 0 else -3.0
+                reasons.append(f"本轮合约主动变化{fmt_money(perp_active)}")
+            if abs(spot_active) >= sth:
+                score += 2.0 if spot_active > 0 else -2.0
+                reasons.append(f"本轮现货主动变化{fmt_money(spot_active)}")
+            if abs(weighted_flow) >= pth * 3:
+                score += 2.0 if weighted_flow > 0 else -2.0
+                reasons.append(f"本轮钱包质量加权资金流{fmt_money(weighted_flow)}")
+            elif abs(weighted_flow) >= pth:
+                score += 1.0 if weighted_flow > 0 else -1.0
+                reasons.append(f"本轮钱包质量加权资金流{fmt_money(weighted_flow)}")
+        else:
+            if abs(perp_active) >= pth or abs(spot_active) >= sth or abs(weighted_flow) >= pth:
+                reasons.append(f"距离上一轮{gap_minutes:.0f}分钟，当前变化只进入滚动窗口，不当作30m短线强信号")
+        rolling_score, rolling_reasons, rolling_parts = rolling_score_for_coin(coin, rolling_map.get(coin, {}), thresholds) if ROLLING_FLOW_MODE else (0.0, [], {})
+        score += rolling_score
+        reasons.extend(rolling_reasons)
         if score == 0:
             continue
         direction = "bullish" if score > 0 else "bearish"
@@ -2936,6 +3415,8 @@ def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: 
         risk_adj, risk_reasons, risk_risks, risk_fields = risk_filter_adjust(direction, (risk_map or {}).get(coin, {}))
         final_score = score + conf_adj + m_adj + p_adj + lev_adj + risk_adj
         state = classify_state(direction, perp_active, spot_active, coin, thresholds, stype)
+        if state == "不明确" and abs(rolling_score) > 0:
+            state = "滚动建仓/减仓"
         th_score = threshold(thresholds, coin, "score_push")
         min_watch = threshold(thresholds, coin, "min_watch_score")
         watchlist = "observe"
@@ -2956,7 +3437,8 @@ def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: 
         risk = "；".join(risk_parts) if risk_parts else "无明显额外风险"
         reason = "；".join(reasons + [conf_reason] + m_reasons + p_reasons + lev_reasons + risk_reasons)
         score_parts = {
-            "base_flow": round(score, 4),
+            "base_flow": round(score - rolling_score, 4),
+            "rolling_flow": round(rolling_parts.get("rolling_flow_core", rolling_score - float(rolling_parts.get("rolling_leverage") or 0.0)), 4),
             "confidence": round(conf_adj, 4),
             "market": round(m_adj, 4),
             "price_position": round(p_adj, 4),
@@ -2964,6 +3446,7 @@ def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: 
             "funding_liquidity": round(risk_adj, 4),
             "final_score": round(final_score, 4),
         }
+        score_parts.update(rolling_parts)
         ctx = ctx_map.get(coin, {})
         rows.append({
             "run_id": run_id,
@@ -4326,7 +4809,7 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
             lines.append(f"🚨 {s['coin']} {dir_cn(s['direction'])} | score={s['final_score']:+.1f}/阈值{s['threshold_score']:.1f} | {s['signal_state']} | 可信度={s['confidence']} | 类型={s['signal_type']}")
             lines.append(f"  结论：{s['conclusion']}")
             parts = s.get("score_parts") or {}
-            lines.append(f"  分解：资金{parts.get('base_flow',0):+.1f} / 历史{parts.get('confidence',0):+.1f} / 市场{parts.get('market',0):+.1f} / 位置{parts.get('price_position',0):+.1f} / 杠杆{parts.get('leverage',0):+.1f} / 费率流动性{parts.get('funding_liquidity',0):+.1f}")
+            lines.append(f"  分解：本轮资金{parts.get('base_flow',0):+.1f} / 滚动建仓{parts.get('rolling_flow',0):+.1f} / 滚动杠杆{parts.get('rolling_leverage',0):+.1f} / 历史{parts.get('confidence',0):+.1f} / 市场{parts.get('market',0):+.1f} / 位置{parts.get('price_position',0):+.1f} / 当前杠杆{parts.get('leverage',0):+.1f} / 费率流动性{parts.get('funding_liquidity',0):+.1f}")
             lines.append(f"  风险：{s['risk']}")
             lines.append(f"  主导钱包：{s.get('dominant_wallets', '-')}")
             lines.append(f"  原因：{s['reason']}")
@@ -4561,11 +5044,13 @@ def save_daily_archive(run_id: int, report: str) -> None:
         "long_term_plan.txt",
         "signal_explain_report.txt",
         "coin_risk_report.txt",
+        "rolling_flow_report.txt",
         "last_run_status.json",
     ]
     # 3) 关键 CSV：每天保留少量，用于长期复盘
     detail_files = [
         "coin_signals_latest.csv",
+        "rolling_flow_latest.csv",
         "wallet_quality_latest.csv",
         "wallet_position_performance_latest.csv",
         "signal_backtest_latest.csv",
@@ -4597,8 +5082,8 @@ def save_daily_archive(run_id: int, report: str) -> None:
         f"date_utc: {today}\n"
         f"run_id: {run_id}\n"
         f"updated_at_utc: {now_str()}\n\n"
-        f"主要看：final_report.txt、long_term_plan.txt、signal_explain_report.txt、coin_risk_report.txt\n"
-        f"关键 CSV：coin_signals.csv、wallet_quality.csv、wallet_position_performance.csv、signal_backtest.csv、longterm_backtest.csv、signal_lifecycle.csv\n"
+        f"主要看：final_report.txt、long_term_plan.txt、signal_explain_report.txt、coin_risk_report.txt、rolling_flow_report.txt\n"
+        f"关键 CSV：coin_signals.csv、rolling_flow.csv、wallet_quality.csv、wallet_position_performance.csv、signal_backtest.csv、longterm_backtest.csv、signal_lifecycle.csv\n"
         f"全量明细请看仓库 reports/details/，长期历史保存在数据库（Turso 或本地 SQLite）。\n"
     )
     with open(os.path.join(day_dir, "README.txt"), "w", encoding="utf-8") as f:
@@ -4712,21 +5197,30 @@ async def run_once(args: argparse.Namespace) -> None:
 
     step_log("开始计算主动变化/资金流")
     preliminary, actions, cashflows = compute_preliminary(run_id, prev_id, thresholds, quality_map)
-    step_log(f"主动变化计算完成 | actions={len(actions)} cashflows={len(cashflows)} coins={len(preliminary)}")
+    gap_minutes = get_run_gap_minutes(run_id, prev_id)
+    step_log(f"主动变化计算完成 | actions={len(actions)} cashflows={len(cashflows)} coins={len(preliminary)} gap_min={gap_minutes if gap_minutes is not None else 'N/A'}")
+    save_coin_flow_snapshots(run_id, prev_id, preliminary)
+    rolling_map = build_rolling_flow_metrics(run_id)
+    export_rolling_flow_files(run_id, rolling_map, thresholds)
     export_operation_detail_files(actions, cashflows)
-    step_log("主动变化明细导出完成")
+    step_log("主动变化明细/滚动建仓导出完成")
     inserted_actions = 0
     if data_quality_ok:
         inserted_actions = save_wallet_actions(run_id, actions)
     else:
         print(f"成功率 {ok_rate*100:.2f}% 低于阈值 {MIN_OK_RATE*100:.2f}%，不记录本轮钱包动作/信号/生命周期。")
 
-    candidate_coins = sorted(preliminary.keys(), key=lambda c: abs(preliminary[c].get("weighted_flow") or 0), reverse=True)[:25]
+    candidate_pool = set(preliminary.keys()) | set(rolling_map.keys())
+    candidate_coins = sorted(
+        candidate_pool,
+        key=lambda c: max(abs(preliminary.get(c, {}).get("weighted_flow") or 0), abs(rolling_map.get(c, {}).get("best_flow") or 0)),
+        reverse=True
+    )[:35]
     step_log(f"开始构建市场上下文/风险指标 | candidate_coins={len(candidate_coins)}")
     ctx_map = await build_market_context(run_id, candidate_coins, {**spot_coin_price, **mid_prices})
     risk_map = await build_coin_risk_metrics(run_id, candidate_coins)
     step_log("市场上下文/风险指标完成，开始构建信号")
-    signals = build_signals(run_id, preliminary, ctx_map, thresholds, risk_map) if data_quality_ok else []
+    signals = build_signals(run_id, preliminary, ctx_map, thresholds, risk_map, rolling_map=rolling_map, gap_minutes=gap_minutes) if data_quality_ok else []
     attach_dominant_wallets(signals, actions)
     export_signal_explain_files(run_id, signals)
     new_signal_events = create_signal_events(run_id, signals, {**spot_coin_price, **mid_prices}, thresholds) if data_quality_ok else 0
@@ -4842,7 +5336,7 @@ def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: 
                 pass
 
         # 事件类保留 30d 回测窗口 + 缓冲。
-        for t in ("wallet_actions", "signal_events", "longterm_events", "position_trade_events", "signal_lifecycle_events", "final_reports"):
+        for t in ("wallet_actions", "coin_flow_snapshots", "signal_events", "longterm_events", "position_trade_events", "signal_lifecycle_events", "final_reports"):
             try:
                 cur.execute(f"DELETE FROM {t} WHERE created_at < ?", (cutoff_str,))
             except sqlite3.OperationalError:
