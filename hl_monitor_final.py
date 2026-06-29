@@ -151,6 +151,19 @@ ROLLING_FLOW_WINDOWS_HOURS = [
     if x.strip()
 ]
 
+# 滚动建仓质量过滤：避免同一笔大额变动被 2h/6h/24h/72h/15d/30d 重复加分。
+# 核心原则：嵌套窗口分组取最高，长期窗口必须看持续性、钱包广度、杠杆确认。
+ROLLING_DEDUP_SCORE_MODE = os.getenv("ROLLING_DEDUP_SCORE_MODE", "1") == "1"
+ROLLING_MIN_WALLETS_MID = int(os.getenv("ROLLING_MIN_WALLETS_MID", "2"))
+ROLLING_MIN_WALLETS_LONG = int(os.getenv("ROLLING_MIN_WALLETS_LONG", "3"))
+ROLLING_TOP1_MAX_SHARE = float(os.getenv("ROLLING_TOP1_MAX_SHARE", "0.70"))
+ROLLING_TOP3_MAX_SHARE = float(os.getenv("ROLLING_TOP3_MAX_SHARE", "0.90"))
+ROLLING_SPOT_ONLY_SHARE = float(os.getenv("ROLLING_SPOT_ONLY_SHARE", "0.80"))
+ROLLING_SPOT_ONLY_MULT = float(os.getenv("ROLLING_SPOT_ONLY_MULT", "0.40"))
+ROLLING_CONCENTRATION_MULT = float(os.getenv("ROLLING_CONCENTRATION_MULT", "0.45"))
+ROLLING_PERSISTENCE_MULT = float(os.getenv("ROLLING_PERSISTENCE_MULT", "0.45"))
+ROLLING_SUSPECT_CAP_SCORE = float(os.getenv("ROLLING_SUSPECT_CAP_SCORE", "6.5"))
+
 
 # 数据库体积控制：GitHub 单文件硬限制 100MB，必须定期裁剪原始快照并 VACUUM。
 # 只裁剪最占空间的逐轮原始表；钱包动作、信号、仓位生命周期保留足够窗口用于 30d 回测。
@@ -1921,7 +1934,11 @@ def save_coin_flow_snapshots(run_id: int, prev_run_id: Optional[int], preliminar
 
 
 def build_rolling_flow_metrics(run_id: int) -> Dict[str, Dict[str, Any]]:
-    """按多个窗口汇总币种级净流入。输出给信号评分和 rolling_flow_report。"""
+    """按多个窗口汇总币种级净流入。输出给信号评分和 rolling_flow_report。
+
+    重点修正：滚动窗口是嵌套窗口，评分时不能把同一笔流入在 2h/6h/24h/72h/15d/30d 里重复加满分。
+    这里先把每个窗口的金额、方向持续性、钱包广度、集中度、杠杆健康度全部算出来；后续评分再做去重和过滤。
+    """
     if not ROLLING_FLOW_MODE:
         return {}
     now_dt = get_run_started_at(run_id) or utc_now()
@@ -1931,6 +1948,8 @@ def build_rolling_flow_metrics(run_id: int) -> Dict[str, Dict[str, Any]]:
     for hours in ROLLING_FLOW_WINDOWS_HOURS:
         label = rolling_window_label(hours)
         cutoff = (now_dt - dt.timedelta(hours=float(hours))).strftime("%Y-%m-%d %H:%M:%S")
+
+        # 1) 币种级窗口累计。注意：这只是原始窗口值，最终评分不会把所有嵌套窗口无脑相加。
         cur.execute("""
             SELECT coin,
                    SUM(perp_active) AS perp_active,
@@ -1938,7 +1957,13 @@ def build_rolling_flow_metrics(run_id: int) -> Dict[str, Dict[str, Any]]:
                    SUM(weighted_flow) AS weighted_flow,
                    SUM(active_total) AS active_total,
                    COUNT(DISTINCT run_id) AS run_count,
-                   SUM(CASE WHEN is_gap=1 THEN 1 ELSE 0 END) AS gap_count
+                   SUM(CASE WHEN is_gap=1 THEN 1 ELSE 0 END) AS gap_count,
+                   SUM(CASE WHEN weighted_flow > 0 THEN weighted_flow ELSE 0 END) AS bullish_weighted,
+                   SUM(CASE WHEN weighted_flow < 0 THEN weighted_flow ELSE 0 END) AS bearish_weighted,
+                   SUM(CASE WHEN weighted_flow > 0 THEN 1 ELSE 0 END) AS bullish_runs,
+                   SUM(CASE WHEN weighted_flow < 0 THEN 1 ELSE 0 END) AS bearish_runs,
+                   COUNT(DISTINCT CASE WHEN weighted_flow > 0 THEN substr(created_at,1,10) END) AS bullish_days,
+                   COUNT(DISTINCT CASE WHEN weighted_flow < 0 THEN substr(created_at,1,10) END) AS bearish_days
             FROM coin_flow_snapshots
             WHERE run_id <= ? AND created_at >= ?
             GROUP BY coin
@@ -1953,8 +1978,19 @@ def build_rolling_flow_metrics(run_id: int) -> Dict[str, Dict[str, Any]]:
             d[f"active_{label}"] = float(row[4] or 0.0)
             d[f"runs_{label}"] = int(row[5] or 0)
             d[f"gaps_{label}"] = int(row[6] or 0)
+            d[f"bullish_weighted_{label}"] = float(row[7] or 0.0)
+            d[f"bearish_weighted_{label}"] = float(row[8] or 0.0)
+            d[f"bullish_runs_{label}"] = int(row[9] or 0)
+            d[f"bearish_runs_{label}"] = int(row[10] or 0)
+            d[f"bullish_days_{label}"] = int(row[11] or 0)
+            d[f"bearish_days_{label}"] = int(row[12] or 0)
 
-        # 同一窗口内，按方向聚合滚动杠杆质量。
+            # 用金额本身估算现货占比。这里看绝对值，避免现货卖出/合约买入互相抵消后误判。
+            perp_abs = abs(float(row[1] or 0.0))
+            spot_abs = abs(float(row[2] or 0.0))
+            d[f"spot_share_{label}"] = spot_abs / (perp_abs + spot_abs) if (perp_abs + spot_abs) > 0 else 0.0
+
+        # 2) 同一窗口内，按方向聚合滚动杠杆质量。
         # 这样 72h/15d/30d 的建仓，不仅看累计流入，还能看是不是低杠杆健康建仓。
         if ROLLING_LEVERAGE_MODE and LEVERAGE_QUALITY_MODE:
             cur.execute("""
@@ -1984,6 +2020,51 @@ def build_rolling_flow_metrics(run_id: int) -> Dict[str, Dict[str, Any]]:
                 d[f"{prefix}_longterm_leverage_ratio_{label}"] = float(row[5] or 0.0) / den
                 d[f"{prefix}_highrisk_leverage_ratio_{label}"] = float(row[6] or 0.0) / den
                 d[f"{prefix}_leverage_health_{label}"] = float(row[7] or 0.0) / den
+
+        # 3) 钱包广度/集中度：长期建仓不能只靠一个地址一笔大额转移。
+        # wallet_actions 只保留达到阈值的动作，所以这里是“主要推动钱包”的广度，不是所有钱包数。
+        cur.execute("""
+            SELECT coin, direction, address,
+                   SUM(ABS(active_delta)) AS abs_flow,
+                   SUM(CASE WHEN market='perp' THEN ABS(active_delta) ELSE 0 END) AS perp_abs,
+                   SUM(CASE WHEN market='spot' THEN ABS(active_delta) ELSE 0 END) AS spot_abs,
+                   COUNT(*) AS action_count
+            FROM wallet_actions
+            WHERE run_id <= ? AND created_at >= ? AND direction IN ('bullish', 'bearish')
+            GROUP BY coin, direction, address
+        """, (run_id, cutoff))
+        grouped: Dict[Tuple[str, str], List[Tuple[str, float, float, float, int]]] = defaultdict(list)
+        for row in cur.fetchall():
+            coin = row[0]
+            direction = row[1] or "neutral"
+            addr = row[2] or ""
+            abs_flow = float(row[3] or 0.0)
+            perp_abs = float(row[4] or 0.0)
+            spot_abs = float(row[5] or 0.0)
+            action_count = int(row[6] or 0)
+            if coin and direction in ("bullish", "bearish") and abs_flow > 0:
+                grouped[(coin, direction)].append((addr, abs_flow, perp_abs, spot_abs, action_count))
+        for (coin, direction), items in grouped.items():
+            prefix = "bullish" if direction == "bullish" else "bearish"
+            d = result[coin]
+            d["coin"] = coin
+            total_abs = sum(x[1] for x in items)
+            perp_abs = sum(x[2] for x in items)
+            spot_abs = sum(x[3] for x in items)
+            action_count = sum(x[4] for x in items)
+            vals = sorted([x[1] for x in items], reverse=True)
+            wallet_count = len(items)
+            top1 = vals[0] if vals else 0.0
+            top3 = sum(vals[:3]) if vals else 0.0
+            d[f"{prefix}_wallets_{label}"] = wallet_count
+            d[f"{prefix}_actions_{label}"] = action_count
+            d[f"{prefix}_wallet_abs_flow_{label}"] = total_abs
+            d[f"{prefix}_top1_share_{label}"] = top1 / total_abs if total_abs > 0 else 0.0
+            d[f"{prefix}_top3_share_{label}"] = top3 / total_abs if total_abs > 0 else 0.0
+            d[f"{prefix}_wallet_spot_share_{label}"] = spot_abs / (perp_abs + spot_abs) if (perp_abs + spot_abs) > 0 else 0.0
+            d[f"{prefix}_wallet_perp_abs_{label}"] = perp_abs
+            d[f"{prefix}_wallet_spot_abs_{label}"] = spot_abs
+
     conn.close()
     # 计算每个币最强滚动窗口，方便排序/报告。
     for coin, d in result.items():
@@ -2003,89 +2084,234 @@ def build_rolling_flow_metrics(run_id: int) -> Dict[str, Dict[str, Any]]:
         d["best_runs"] = best_runs
     return dict(result)
 
-
 def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[str, Dict[str, float]]) -> Tuple[float, List[str], Dict[str, Any]]:
     if not rolling:
         return 0.0, [], {}
-    # 窗口越长，要求累计流入越高；满足后给长期建仓分。
+
+    # 修正版：滚动窗口是嵌套窗口，不能把同一笔变化在 2h/6h/24h/72h/15d/30d 里重复加分。
+    # 评分方式：短/中/长三组各自取“质量调整后最强窗口”，再叠加小幅连续性分和杠杆质量分。
     cfg = {
-        "2h": (1.0, 0.5),
-        "6h": (1.5, 0.8),
-        "24h": (2.5, 1.1),
-        "72h": (4.0, 1.5),
-        "15d": (7.0, 2.0),
-        "30d": (10.0, 2.5),
+        "2h":  {"mult": 1.0,  "pts": 0.45, "group": "short", "min_runs": 1, "min_days": 1, "min_wallets": 1},
+        "6h":  {"mult": 1.5,  "pts": 0.75, "group": "short", "min_runs": 2, "min_days": 1, "min_wallets": 1},
+        "24h": {"mult": 2.5,  "pts": 1.20, "group": "mid",   "min_runs": 2, "min_days": 1, "min_wallets": ROLLING_MIN_WALLETS_MID},
+        "72h": {"mult": 4.0,  "pts": 1.60, "group": "mid",   "min_runs": 3, "min_days": 2, "min_wallets": ROLLING_MIN_WALLETS_MID},
+        "15d": {"mult": 7.0,  "pts": 2.10, "group": "long",  "min_runs": 5, "min_days": 3, "min_wallets": ROLLING_MIN_WALLETS_LONG},
+        "30d": {"mult": 10.0, "pts": 2.60, "group": "long",  "min_runs": 8, "min_days": 5, "min_wallets": ROLLING_MIN_WALLETS_LONG},
     }
+    group_caps = {"short": 1.0, "mid": 2.0, "long": 2.6}
+    group_names = {"short": "短窗口", "mid": "中窗口", "long": "长窗口"}
     pth = threshold(thresholds, coin, "perp")
-    score = 0.0
-    reasons: List[str] = []
+
     parts: Dict[str, Any] = {}
-    last_sign = 0
-    aligned_windows = 0
-    rolling_leverage_adj = 0.0
-    leverage_notes: List[str] = []
-    best_lev_snapshot: Dict[str, Any] = {}
+    reasons: List[str] = []
+    candidates: Dict[str, Dict[str, Any]] = {}
+    all_candidate_count = 0
+    signs_by_group: List[int] = []
+    risk_flags = {
+        "spot_only": False,
+        "concentration": False,
+        "persistence": False,
+        "gap": False,
+    }
+
     for hours in ROLLING_FLOW_WINDOWS_HOURS:
         label = rolling_window_label(hours)
         signed = float(rolling.get(f"weighted_{label}") or rolling.get(f"active_{label}") or 0.0)
         parts[f"rolling_{label}"] = signed
         if label not in cfg:
-            # 非默认窗口给温和评分。
-            mult, pts = 3.0, 1.0
+            spec = {"mult": 3.0, "pts": 1.0, "group": "mid", "min_runs": 2, "min_days": 1, "min_wallets": ROLLING_MIN_WALLETS_MID}
         else:
-            mult, pts = cfg[label]
-        if abs(signed) >= pth * mult:
-            sign = 1 if signed > 0 else -1
-            score += pts * sign
-            reasons.append(f"{label}滚动净流入{fmt_money(signed)}")
-            if last_sign == 0 or last_sign == sign:
-                aligned_windows += 1
-                last_sign = sign
+            spec = cfg[label]
+        if abs(signed) < pth * float(spec["mult"]):
+            continue
 
-            # 滚动杠杆质量：只有当该窗口的资金流达到建仓阈值时才参与加减分。
-            # 杠杆健康会顺着方向加强信号；高杠杆/强平近会把信号往 0 拉回。
-            if ROLLING_LEVERAGE_MODE and LEVERAGE_QUALITY_MODE:
-                prefix = "bullish" if sign > 0 else "bearish"
-                lev_health = safe_float(rolling.get(f"{prefix}_leverage_health_{label}"))
-                if lev_health is not None:
-                    # 单窗口最多加/减约 0.75 分，总滚动杠杆分最后再 cap，防止杠杆项盖过资金流。
-                    lev_abs = max(-0.75, min(0.75, lev_health * 0.42))
-                    rolling_leverage_adj += lev_abs * sign
-                    avg_lev = safe_float(rolling.get(f"{prefix}_avg_leverage_{label}"))
-                    avg_liq = safe_float(rolling.get(f"{prefix}_avg_liq_distance_{label}"))
-                    long_ratio = safe_float(rolling.get(f"{prefix}_longterm_leverage_ratio_{label}")) or 0.0
-                    high_ratio = safe_float(rolling.get(f"{prefix}_highrisk_leverage_ratio_{label}")) or 0.0
-                    if label == rolling.get("best_window"):
-                        best_lev_snapshot = {
-                            "best_avg_leverage": avg_lev,
-                            "best_avg_liq_distance": avg_liq,
-                            "best_longterm_leverage_ratio": long_ratio,
-                            "best_highrisk_leverage_ratio": high_ratio,
-                            "best_leverage_health": lev_health,
-                        }
-                    if lev_abs > 0.15:
-                        leverage_notes.append(f"{label}杠杆健康：低/中杠杆{long_ratio*100:.0f}% 均杠杆{avg_lev:.1f}x" if avg_lev is not None else f"{label}杠杆健康：低/中杠杆{long_ratio*100:.0f}%")
-                    elif lev_abs < -0.15:
-                        leverage_notes.append(f"{label}杠杆风险：高风险{high_ratio*100:.0f}% 均杠杆{avg_lev:.1f}x" if avg_lev is not None else f"{label}杠杆风险：高风险{high_ratio*100:.0f}%")
-    # 多窗口同方向，加一点连续性分；冲突则不给。
-    if aligned_windows >= 3 and last_sign != 0:
-        bonus = min(1.5, 0.4 * (aligned_windows - 2)) * last_sign
-        score += bonus
-        reasons.append(f"多窗口同向累积({aligned_windows}个窗口) {bonus:+.1f}")
-    rolling_flow_core_score = score
-    if rolling_leverage_adj:
-        # 总 rolling 杠杆加减分做硬限制：长期单要考虑杠杆，但不能让杠杆项单独制造信号。
-        rolling_leverage_adj = max(-1.8, min(1.8, rolling_leverage_adj))
-        score += rolling_leverage_adj
-        reasons.extend(leverage_notes[:4])
+        sign = 1 if signed > 0 else -1
+        prefix = "bullish" if sign > 0 else "bearish"
+        group = str(spec["group"])
+        all_candidate_count += 1
+
+        same_runs = int(rolling.get(f"{prefix}_runs_{label}") or 0)
+        same_days = int(rolling.get(f"{prefix}_days_{label}") or 0)
+        total_runs = int(rolling.get(f"runs_{label}") or 0)
+        gaps = int(rolling.get(f"gaps_{label}") or 0)
+        wallet_count = int(rolling.get(f"{prefix}_wallets_{label}") or 0)
+        top1_share = float(rolling.get(f"{prefix}_top1_share_{label}") or 0.0)
+        top3_share = float(rolling.get(f"{prefix}_top3_share_{label}") or 0.0)
+        spot_share_window = float(rolling.get(f"spot_share_{label}") or 0.0)
+        spot_share_wallet = float(rolling.get(f"{prefix}_wallet_spot_share_{label}") or 0.0)
+        spot_share = max(spot_share_window, spot_share_wallet)
+        perp_abs = abs(float(rolling.get(f"perp_{label}") or 0.0))
+
+        lev_health = safe_float(rolling.get(f"{prefix}_leverage_health_{label}"))
+        avg_lev = safe_float(rolling.get(f"{prefix}_avg_leverage_{label}"))
+        avg_liq = safe_float(rolling.get(f"{prefix}_avg_liq_distance_{label}"))
+        long_ratio = safe_float(rolling.get(f"{prefix}_longterm_leverage_ratio_{label}")) or 0.0
+        high_ratio = safe_float(rolling.get(f"{prefix}_highrisk_leverage_ratio_{label}")) or 0.0
+
+        quality_mult = 1.0
+        notes: List[str] = []
+        risk_notes: List[str] = []
+
+        # 持续性：长期窗口必须是多轮/多天同向，不允许“单次大额变化”因为落在 30d 窗口里就拿长期满分。
+        min_runs = int(spec["min_runs"])
+        min_days = int(spec["min_days"])
+        if same_runs < min_runs or same_days < min_days:
+            if group == "short":
+                quality_mult *= 0.75
+            else:
+                quality_mult *= ROLLING_PERSISTENCE_MULT
+                risk_flags["persistence"] = True
+            risk_notes.append(f"持续性不足：{same_runs}轮/{same_days}天")
+
+        # 如果窗口里有 gap，窗口累计信号降权，避免断跑后把多小时累计当成普通连续建仓。
+        if gaps > 0:
+            quality_mult *= 0.80
+            risk_flags["gap"] = True
+            risk_notes.append(f"含断跑gap={gaps}")
+
+        # 钱包广度/集中度：一个钱包贡献绝大部分，不算“集体持续建仓”。
+        min_wallets = int(spec["min_wallets"])
+        if wallet_count > 0 and wallet_count < min_wallets and group != "short":
+            quality_mult *= 0.65
+            risk_flags["concentration"] = True
+            risk_notes.append(f"参与钱包少：{wallet_count}个")
+        if top1_share >= ROLLING_TOP1_MAX_SHARE and wallet_count > 0:
+            quality_mult *= ROLLING_CONCENTRATION_MULT
+            risk_flags["concentration"] = True
+            risk_notes.append(f"Top1占比{top1_share*100:.0f}%")
+        elif top3_share >= ROLLING_TOP3_MAX_SHARE and wallet_count >= 3:
+            quality_mult *= 0.75
+            risk_flags["concentration"] = True
+            risk_notes.append(f"Top3占比{top3_share*100:.0f}%")
+
+        # 现货-only：现货减少/增加不一定是卖出/买入，可能是转账/归集/划转。
+        # 没有同方向低杠杆合约确认时，不允许现货-only 拉出高分长期单。
+        if spot_share >= ROLLING_SPOT_ONLY_SHARE and perp_abs < pth * 0.35 and (lev_health is None or lev_health <= 0.15):
+            quality_mult *= ROLLING_SPOT_ONLY_MULT
+            risk_flags["spot_only"] = True
+            risk_notes.append(f"现货主导{spot_share*100:.0f}%且无合约低杠杆确认")
+
+        # 异常大额 + 单钱包：多数是转账/归集/数据异常，不直接给满分。
+        if abs(signed) >= pth * 20 and (wallet_count <= 1 or top1_share >= 0.85):
+            quality_mult *= 0.35
+            risk_flags["concentration"] = True
+            risk_notes.append("单钱包异常大额，按观察处理")
+
+        quality_mult = max(0.10, min(1.0, quality_mult))
+        raw_pts = float(spec["pts"])
+        flow_score = raw_pts * quality_mult * sign
+
+        # 杠杆项只给被选中的窗口加，不再每个嵌套窗口都叠加。
+        lev_score = 0.0
+        if ROLLING_LEVERAGE_MODE and LEVERAGE_QUALITY_MODE and lev_health is not None:
+            lev_score = max(-0.60, min(0.60, lev_health * 0.35)) * sign
+            if lev_score > 0.12:
+                notes.append(f"杠杆健康：低/中杠杆{long_ratio*100:.0f}%" + (f" 均{avg_lev:.1f}x" if avg_lev is not None else ""))
+            elif lev_score < -0.12:
+                notes.append(f"杠杆风险：高风险{high_ratio*100:.0f}%" + (f" 均{avg_lev:.1f}x" if avg_lev is not None else ""))
+
+        notes.append(f"{label}{fmt_money(signed)} 质量={quality_mult:.2f} 钱包={wallet_count} 持续={same_runs}轮/{same_days}天")
+        if risk_notes:
+            notes.extend(risk_notes[:3])
+
+        cand = {
+            "label": label,
+            "group": group,
+            "sign": sign,
+            "signed": signed,
+            "flow_score": flow_score,
+            "lev_score": lev_score,
+            "quality_mult": quality_mult,
+            "same_runs": same_runs,
+            "same_days": same_days,
+            "total_runs": total_runs,
+            "gap_count": gaps,
+            "wallet_count": wallet_count,
+            "top1_share": top1_share,
+            "top3_share": top3_share,
+            "spot_share": spot_share,
+            "avg_leverage": avg_lev,
+            "avg_liq_distance": avg_liq,
+            "longterm_leverage_ratio": long_ratio,
+            "highrisk_leverage_ratio": high_ratio,
+            "leverage_health": lev_health,
+            "notes": notes,
+        }
+        prev = candidates.get(group)
+        if prev is None or abs(cand["flow_score"]) + abs(cand["lev_score"]) > abs(prev["flow_score"]) + abs(prev["lev_score"]):
+            candidates[group] = cand
+
+    score = 0.0
+    rolling_flow_core_score = 0.0
+    rolling_leverage_adj = 0.0
+    selected: List[Dict[str, Any]] = []
+    for group in ("short", "mid", "long"):
+        cand = candidates.get(group)
+        if not cand:
+            continue
+        cap = group_caps.get(group, 2.0)
+        flow_score = max(-cap, min(cap, float(cand["flow_score"])))
+        rolling_flow_core_score += flow_score
+        rolling_leverage_adj += float(cand.get("lev_score") or 0.0)
+        selected.append(cand)
+        signs_by_group.append(int(cand["sign"]))
+        reasons.append(f"{group_names.get(group, group)}取{cand['label']}：{fmt_money(cand['signed'])}，资金分{flow_score:+.1f}")
+        for n in cand.get("notes", [])[:4]:
+            reasons.append(n)
+
+    # 多组同向才给连续性分；不是“窗口数量越多越无脑加”，因为 2h/6h/24h/72h/15d/30d 是嵌套的。
+    if len(selected) >= 2 and signs_by_group and all(x == signs_by_group[0] for x in signs_by_group):
+        sign = signs_by_group[0]
+        # 只有中/长窗口质量不太差时才加连续性，否则只是旧大额/单钱包/现货-only。
+        avg_quality = sum(float(c.get("quality_mult") or 0.0) for c in selected) / max(1, len(selected))
+        if avg_quality >= 0.45:
+            bonus = min(0.9, 0.35 * (len(selected) - 1)) * sign
+            rolling_flow_core_score += bonus
+            reasons.append(f"短中长分组同向({len(selected)}组)，连续性加分{bonus:+.1f}")
+
+    rolling_leverage_adj = max(-1.2, min(1.2, rolling_leverage_adj))
+    score = rolling_flow_core_score + rolling_leverage_adj
+
+    # 如果滚动信号质量明显可疑，rolling 自身封顶，防止再叠加历史/市场/价格位置后变成假强信号。
+    suspect = risk_flags["spot_only"] or risk_flags["concentration"] or risk_flags["persistence"]
+    if suspect and abs(score) > ROLLING_SUSPECT_CAP_SCORE:
+        score = (1 if score > 0 else -1) * ROLLING_SUSPECT_CAP_SCORE
+        reasons.append(f"滚动信号含现货only/集中度/持续性风险，rolling封顶到{ROLLING_SUSPECT_CAP_SCORE:.1f}")
+
     parts["rolling_score"] = round(score, 4)
     parts["rolling_flow_core"] = round(rolling_flow_core_score, 4)
     parts["rolling_leverage"] = round(rolling_leverage_adj, 4)
-    parts.update(best_lev_snapshot)
-    parts["best_window"] = rolling.get("best_window")
-    parts["best_flow"] = rolling.get("best_flow")
-    return score, reasons, parts
+    parts["rolling_selected_groups"] = ",".join([str(c.get("group")) for c in selected])
+    parts["rolling_candidate_windows"] = all_candidate_count
+    parts["rolling_spot_only_risk"] = 1 if risk_flags["spot_only"] else 0
+    parts["rolling_concentration_risk"] = 1 if risk_flags["concentration"] else 0
+    parts["rolling_persistence_risk"] = 1 if risk_flags["persistence"] else 0
+    parts["rolling_gap_risk"] = 1 if risk_flags["gap"] else 0
 
+    if selected:
+        # 报告里保留最终选择出的最强质量窗口，而不是原始金额最大的嵌套窗口。
+        best = max(selected, key=lambda c: abs(float(c.get("flow_score") or 0.0)) + abs(float(c.get("lev_score") or 0.0)))
+        parts.update({
+            "best_window": best.get("label"),
+            "best_flow": best.get("signed"),
+            "best_same_runs": best.get("same_runs"),
+            "best_same_days": best.get("same_days"),
+            "best_wallet_count": best.get("wallet_count"),
+            "best_top1_share": best.get("top1_share"),
+            "best_top3_share": best.get("top3_share"),
+            "best_spot_share": best.get("spot_share"),
+            "best_quality_mult": best.get("quality_mult"),
+            "best_avg_leverage": best.get("avg_leverage"),
+            "best_avg_liq_distance": best.get("avg_liq_distance"),
+            "best_longterm_leverage_ratio": best.get("longterm_leverage_ratio"),
+            "best_highrisk_leverage_ratio": best.get("highrisk_leverage_ratio"),
+            "best_leverage_health": best.get("leverage_health"),
+        })
+    else:
+        parts["best_window"] = rolling.get("best_window")
+        parts["best_flow"] = rolling.get("best_flow")
+
+    return score, reasons, parts
 
 def export_rolling_flow_files(run_id: int, rolling_map: Dict[str, Dict[str, Any]], thresholds: Dict[str, Dict[str, float]]) -> None:
     if not ROLLING_FLOW_MODE:
@@ -2097,23 +2323,37 @@ def export_rolling_flow_files(run_id: int, rolling_map: Dict[str, Dict[str, Any]
         score, reasons, parts = rolling_score_for_coin(coin, d, thresholds)
         if abs(d.get("best_flow") or 0.0) < 1 and abs(score) < 0.01:
             continue
-        best_dir = d.get("best_direction") or "neutral"
+        best_flow_for_score = safe_float(parts.get("best_flow"))
+        best_dir = "bullish" if (best_flow_for_score or 0.0) > 0 else "bearish" if (best_flow_for_score or 0.0) < 0 else (d.get("best_direction") or "neutral")
         best_prefix = "bullish" if best_dir == "bullish" else "bearish" if best_dir == "bearish" else ""
-        best_label = d.get("best_window")
+        best_label = parts.get("best_window") or d.get("best_window")
         row = {
             "run_id": run_id,
             "coin": coin,
             "rolling_score": round(score, 4),
             "rolling_leverage_score": parts.get("rolling_leverage"),
+            "rolling_flow_core": parts.get("rolling_flow_core"),
+            "selected_groups": parts.get("rolling_selected_groups"),
+            "candidate_windows": parts.get("rolling_candidate_windows"),
+            "spot_only_risk": parts.get("rolling_spot_only_risk"),
+            "concentration_risk": parts.get("rolling_concentration_risk"),
+            "persistence_risk": parts.get("rolling_persistence_risk"),
+            "gap_risk": parts.get("rolling_gap_risk"),
             "best_window": best_label,
             "best_direction": best_dir,
-            "best_flow": d.get("best_flow"),
-            "best_runs": d.get("best_runs"),
-            "best_avg_leverage": d.get(f"{best_prefix}_avg_leverage_{best_label}") if best_prefix and best_label else None,
-            "best_avg_liq_distance": d.get(f"{best_prefix}_avg_liq_distance_{best_label}") if best_prefix and best_label else None,
-            "best_longterm_leverage_ratio": d.get(f"{best_prefix}_longterm_leverage_ratio_{best_label}") if best_prefix and best_label else None,
-            "best_highrisk_leverage_ratio": d.get(f"{best_prefix}_highrisk_leverage_ratio_{best_label}") if best_prefix and best_label else None,
-            "best_leverage_health": d.get(f"{best_prefix}_leverage_health_{best_label}") if best_prefix and best_label else None,
+            "best_flow": parts.get("best_flow", d.get("best_flow")),
+            "best_runs": parts.get("best_same_runs", d.get("best_runs")),
+            "best_same_days": parts.get("best_same_days"),
+            "best_wallet_count": parts.get("best_wallet_count"),
+            "best_top1_share": parts.get("best_top1_share"),
+            "best_top3_share": parts.get("best_top3_share"),
+            "best_spot_share": parts.get("best_spot_share"),
+            "best_quality_mult": parts.get("best_quality_mult"),
+            "best_avg_leverage": parts.get("best_avg_leverage", d.get(f"{best_prefix}_avg_leverage_{best_label}") if best_prefix and best_label else None),
+            "best_avg_liq_distance": parts.get("best_avg_liq_distance", d.get(f"{best_prefix}_avg_liq_distance_{best_label}") if best_prefix and best_label else None),
+            "best_longterm_leverage_ratio": parts.get("best_longterm_leverage_ratio", d.get(f"{best_prefix}_longterm_leverage_ratio_{best_label}") if best_prefix and best_label else None),
+            "best_highrisk_leverage_ratio": parts.get("best_highrisk_leverage_ratio", d.get(f"{best_prefix}_highrisk_leverage_ratio_{best_label}") if best_prefix and best_label else None),
+            "best_leverage_health": parts.get("best_leverage_health", d.get(f"{best_prefix}_leverage_health_{best_label}") if best_prefix and best_label else None),
             "reason": "；".join(reasons),
         }
         for label in labels:
@@ -2123,7 +2363,14 @@ def export_rolling_flow_files(run_id: int, rolling_map: Dict[str, Dict[str, Any]
             row[f"spot_{label}"] = d.get(f"spot_{label}")
             row[f"runs_{label}"] = d.get(f"runs_{label}")
             row[f"gaps_{label}"] = d.get(f"gaps_{label}")
+            row[f"spot_share_{label}"] = d.get(f"spot_share_{label}")
             for prefix in ("bullish", "bearish"):
+                row[f"{prefix}_runs_{label}"] = d.get(f"{prefix}_runs_{label}")
+                row[f"{prefix}_days_{label}"] = d.get(f"{prefix}_days_{label}")
+                row[f"{prefix}_wallets_{label}"] = d.get(f"{prefix}_wallets_{label}")
+                row[f"{prefix}_top1_share_{label}"] = d.get(f"{prefix}_top1_share_{label}")
+                row[f"{prefix}_top3_share_{label}"] = d.get(f"{prefix}_top3_share_{label}")
+                row[f"{prefix}_wallet_spot_share_{label}"] = d.get(f"{prefix}_wallet_spot_share_{label}")
                 row[f"{prefix}_avg_leverage_{label}"] = d.get(f"{prefix}_avg_leverage_{label}")
                 row[f"{prefix}_avg_liq_distance_{label}"] = d.get(f"{prefix}_avg_liq_distance_{label}")
                 row[f"{prefix}_longterm_leverage_ratio_{label}"] = d.get(f"{prefix}_longterm_leverage_ratio_{label}")
@@ -2132,14 +2379,19 @@ def export_rolling_flow_files(run_id: int, rolling_map: Dict[str, Dict[str, Any]
         rows.append(row)
     rows.sort(key=lambda r: abs(float(r.get("rolling_score") or 0.0)) * 1_000_000 + abs(float(r.get("best_flow") or 0.0)), reverse=True)
     fieldnames = [
-        "run_id", "coin", "rolling_score", "rolling_leverage_score", "best_window", "best_direction",
-        "best_flow", "best_runs", "best_avg_leverage", "best_avg_liq_distance",
+        "run_id", "coin", "rolling_score", "rolling_leverage_score", "rolling_flow_core",
+        "selected_groups", "candidate_windows", "spot_only_risk", "concentration_risk", "persistence_risk", "gap_risk",
+        "best_window", "best_direction", "best_flow", "best_runs", "best_same_days",
+        "best_wallet_count", "best_top1_share", "best_top3_share", "best_spot_share", "best_quality_mult",
+        "best_avg_leverage", "best_avg_liq_distance",
         "best_longterm_leverage_ratio", "best_highrisk_leverage_ratio", "best_leverage_health", "reason"
     ]
     for label in labels:
-        fieldnames.extend([f"weighted_{label}", f"active_{label}", f"perp_{label}", f"spot_{label}", f"runs_{label}", f"gaps_{label}"])
+        fieldnames.extend([f"weighted_{label}", f"active_{label}", f"perp_{label}", f"spot_{label}", f"runs_{label}", f"gaps_{label}", f"spot_share_{label}"])
         for prefix in ("bullish", "bearish"):
             fieldnames.extend([
+                f"{prefix}_runs_{label}", f"{prefix}_days_{label}", f"{prefix}_wallets_{label}",
+                f"{prefix}_top1_share_{label}", f"{prefix}_top3_share_{label}", f"{prefix}_wallet_spot_share_{label}",
                 f"{prefix}_avg_leverage_{label}", f"{prefix}_avg_liq_distance_{label}",
                 f"{prefix}_longterm_leverage_ratio_{label}", f"{prefix}_highrisk_leverage_ratio_{label}",
                 f"{prefix}_leverage_health_{label}"
@@ -2150,7 +2402,8 @@ def export_rolling_flow_files(run_id: int, rolling_map: Dict[str, Dict[str, Any]
         w.writerows(rows)
     lines = [
         "【滚动建仓资金流 + 杠杆质量】",
-        "说明：短线异动看上一轮；长期建仓看 2h/6h/24h/72h/15d/30d 累计净流入，并叠加滚动杠杆健康度。",
+        "说明：短线异动看上一轮；长期建仓看滚动窗口，但已修正嵌套窗口重复加分。",
+        "新逻辑：2h/6h、24h/72h、15d/30d 分组取最高；同时检查持续性、钱包广度、单钱包集中度、现货-only、杠杆质量。",
         f"run_id={run_id} UTC={now_str()}",
         "",
     ]
@@ -3419,6 +3672,20 @@ def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: 
             state = "滚动建仓/减仓"
         th_score = threshold(thresholds, coin, "score_push")
         min_watch = threshold(thresholds, coin, "min_watch_score")
+
+        # 滚动质量封顶：如果滚动信号主要来自现货-only、单钱包集中、持续性不足，
+        # 又没有本轮合约和当前低杠杆确认，则不能直接变成强信号/长期单。
+        rolling_quality_suspect = bool(
+            rolling_parts.get("rolling_spot_only_risk") or
+            rolling_parts.get("rolling_concentration_risk") or
+            rolling_parts.get("rolling_persistence_risk")
+        )
+        if rolling_quality_suspect and abs(perp_active) < pth * 0.5 and abs(lev_adj) < 0.5:
+            cap = min(th_score - 0.2, max(min_watch, ROLLING_SUSPECT_CAP_SCORE))
+            if cap > 0 and abs(final_score) > cap:
+                final_score = (1 if final_score > 0 else -1) * cap
+                reasons.append(f"滚动信号质量不足，缺少合约低杠杆确认，final_score封顶到{cap:.1f}")
+
         watchlist = "observe"
         if abs(final_score) >= th_score:
             watchlist = "long" if direction == "bullish" else "short"
@@ -3430,6 +3697,12 @@ def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: 
             risk_parts.append("历史样本/胜率不足")
         if state in ("可能对冲", "现货流出+合约做多，换杠杆/冲突", "不明确"):
             risk_parts.append(f"信号状态：{state}")
+        if rolling_parts.get("rolling_spot_only_risk"):
+            risk_parts.append("滚动信号现货主导，可能是转账/归集/划转，不等于合约方向")
+        if rolling_parts.get("rolling_concentration_risk"):
+            risk_parts.append("滚动信号钱包集中度过高，可能是单钱包异动")
+        if rolling_parts.get("rolling_persistence_risk"):
+            risk_parts.append("滚动信号持续性不足，不能按长期建仓处理")
         if stype in ("高位追多", "低位追空"):
             risk_parts.append("价格位置有追涨杀跌风险")
         risk_parts.extend(lev_risks)
