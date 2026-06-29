@@ -1,4 +1,3 @@
 ﻿id,run_id,coin,direction,score,confidence,signal_type,signal_state,watchlist,perp_active,spot_active,weighted_flow,price_position,pct_1h,pct_4h,pct_24h,final_score,threshold_score,avg_leverage,avg_liq_distance,longterm_leverage_ratio,highrisk_leverage_ratio,leverage_note,conclusion,risk,reason
-51,30,QONE,bearish,-4.0,低,普通趋势,现货主导,observe,0.0,-29955798.86940004,-35946958.643280044,,,,,-4.0,8.0,,,,,,只观察 / 普通趋势,历史样本/胜率不足,现货主动变化-$29.96M；钱包质量加权资金流-$35.95M；历史样本不足
-52,30,BASED,bullish,1.0,低,普通趋势,现货主导,observe,0.0,1287741.18461622,-1442270.1267701662,,,,,1.0,8.0,,,,,,只观察 / 普通趋势,历史样本/胜率不足,现货主动变化$1.29M；钱包质量加权资金流-$1.44M；历史样本不足
-53,30,UPUMP,bullish,1.0,低,普通趋势,现货主导,observe,0.0,1697638.1788973464,-2224350.5085294535,,,,,1.0,8.0,,,,,,只观察 / 普通趋势,历史样本/胜率不足,现货主动变化$1.70M；钱包质量加权资金流-$2.22M；历史样本不足
+54,31,BASED,bullish,2.0,低,普通趋势,现货主导,observe,0.0,550555.5349775394,424817.36777726444,,,,,2.0,8.0,,,,,,只观察 / 普通趋势,历史样本/胜率不足,现货主动变化$550.56K；历史样本不足
+55,31,UPUMP,bearish,-1.0,低,普通趋势,现货主导,observe,0.0,-2222832.5343520287,1301481.0880915478,,,,,-1.0,8.0,,,,,,只观察 / 普通趋势,历史样本/胜率不足,现货主动变化-$2.22M；钱包质量加权资金流$1.30M；历史样本不足
