@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
   schedule:
-    # GitHub 自带定时改成每6小时兜底一次；主触发建议用 Cloudflare Worker Cron。
-    - cron: "53 */6 * * *"
+    # Public 仓库可免费跑标准 runner；这里按半小时监控。
+    - cron: "*/30 * * * *"
 
 permissions:
   contents: write
@@ -120,6 +120,14 @@ jobs:
 
           # 报告底部复盘窗口：过去30天信号复盘 + 过去30天钱包主动资金流
           REPORT_REVIEW_WINDOW_DAYS: "30"
+
+          # 滚动建仓信号：短线看上一轮，中长期看 2h/6h/24h/72h/15d/30d
+          ROLLING_FLOW_MODE: "1"
+          # 滚动杠杆质量：长期单同时看低/中杠杆占比、高风险杠杆占比、平均杠杆和强平距离
+          ROLLING_LEVERAGE_MODE: "1"
+          EXPECTED_INTERVAL_MINUTES: "30"
+          MAX_SHORT_SIGNAL_GAP_MINUTES: "90"
+          ROLLING_FLOW_WINDOWS_HOURS: "2,6,24,72,360,720"
 
           # 信号解释 / 回测 / 资金费率与流动性过滤 / 健康状态
           SIGNAL_EXPLAIN_MODE: "1"
