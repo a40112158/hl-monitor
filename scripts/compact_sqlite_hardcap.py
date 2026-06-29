@@ -22,6 +22,7 @@ RAW_TABLES = [
 ]
 EVENT_TABLES = [
     "wallet_actions",
+    "coin_flow_snapshots",
     "signal_events",
     "longterm_events",
     "position_trade_events",
