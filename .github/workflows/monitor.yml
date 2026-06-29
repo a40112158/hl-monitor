@@ -128,6 +128,14 @@ jobs:
           EXPECTED_INTERVAL_MINUTES: "30"
           MAX_SHORT_SIGNAL_GAP_MINUTES: "90"
           ROLLING_FLOW_WINDOWS_HOURS: "2,6,24,72,360,720"
+          # 滚动评分修正：嵌套窗口去重 + 持续性/广度/现货-only/集中度过滤
+          ROLLING_DEDUP_SCORE_MODE: "1"
+          ROLLING_MIN_WALLETS_MID: "2"
+          ROLLING_MIN_WALLETS_LONG: "3"
+          ROLLING_TOP1_MAX_SHARE: "0.70"
+          ROLLING_TOP3_MAX_SHARE: "0.90"
+          ROLLING_SPOT_ONLY_SHARE: "0.80"
+          ROLLING_SUSPECT_CAP_SCORE: "6.5"
 
           # 信号解释 / 回测 / 资金费率与流动性过滤 / 健康状态
           SIGNAL_EXPLAIN_MODE: "1"
