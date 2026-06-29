@@ -1,5 +1,5 @@
 【数据质量 / API异常保护】
-run_id=42 | UTC=2026-06-29 12:35:08 | note=github hourly
+run_id=43 | UTC=2026-06-29 12:57:24 | note=github hourly
 监控钱包=2421 | ok=2421 | partial=0 | failed=0 | 成功率=100.00% | 最低要求=85.00%
 
 本轮数据质量通过，可以正常参考信号。
