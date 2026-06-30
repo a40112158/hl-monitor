@@ -75,7 +75,10 @@ jobs:
           # 0 = 只有强信号或每日复盘才推送；1 = 每次运行都推送
           PUSH_EVERY_RUN: "0"
 
-          # 到达这个 UTC 小时后，当天第一轮成功报告会推送；UTC 00 = 北京08 / 日本09
+          # 报告显示和每日复盘按北京时间。DAILY_PUSH_HOUR_CN=8 表示北京时间早上 8 点后当天首轮成功报告推送。
+          DISPLAY_TZ_NAME: "北京时间"
+          DISPLAY_TZ_OFFSET_HOURS: "8"
+          DAILY_PUSH_HOUR_CN: "8"
           DAILY_PUSH_HOUR_UTC: "0"
 
           HL_RPM: "300"
