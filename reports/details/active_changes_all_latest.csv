@@ -1,2 +1,1 @@
-﻿address,groups,coin,market,direction,action_type,active_delta,price_effect,qty_delta,entry_px,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings
-0x399965e15d4e61ec3529cc98b7f7ebb93b733336,smart_money,BASED,spot,bearish,sell_spot,-2788955.6626362614,0.0,-3845.191246000002,725.31,-,UXPL -$1.72K 数量Δ=-1.00K @ 1.715；BASED -$2.79M 数量Δ=-3.85K @ 725.31；UPUMP -$18.80K 数量Δ=-171.64K @ 0.10951,UXPL -$1.72K 数量Δ=-1.00K @ 1.715；BASED -$2.79M 数量Δ=-3.85K @ 725.31；UPUMP -$18.80K 数量Δ=-171.64K @ 0.10951,现货卖出BASED -$2.79M 数量Δ=-3.85K @ 725.31,-,-,MAX $6.80B 数量=1027.63M；BASED $18.17M 数量=25.05K；UPUMP $431.09K 数量=3.94M
+﻿empty
