@@ -188,6 +188,17 @@ LONG_SCORE_SPOT_ONLY_CAP = float(os.getenv("LONG_SCORE_SPOT_ONLY_CAP", "4.0"))
 LONG_SCORE_CONCENTRATION_CAP = float(os.getenv("LONG_SCORE_CONCENTRATION_CAP", "4.5"))
 LONG_SCORE_PERSISTENCE_CAP = float(os.getenv("LONG_SCORE_PERSISTENCE_CAP", "5.0"))
 ALERT_SCORE_ROLLING_CONFIRM_CAP = float(os.getenv("ALERT_SCORE_ROLLING_CONFIRM_CAP", "1.5"))
+# 多空分离 + 长期状态机：不要用一个 long_score 同时代表长期多/空。
+# alert_score 仍然只做短线雷达；长期候选拆成 long_candidate_score / short_candidate_score。
+LONG_SHORT_STATE_MODE = os.getenv("LONG_SHORT_STATE_MODE", "1") == "1"
+LONG_SHORT_MIN_STREAK_FORMING = int(os.getenv("LONG_SHORT_MIN_STREAK_FORMING", "2"))
+LONG_SHORT_MIN_STREAK_CANDIDATE = int(os.getenv("LONG_SHORT_MIN_STREAK_CANDIDATE", "3"))
+LONG_SHORT_BLOCK_TOP1_SHARE = float(os.getenv("LONG_SHORT_BLOCK_TOP1_SHARE", "0.70"))
+LONG_SHORT_BLOCK_HIGH_LEV_RATIO = float(os.getenv("LONG_SHORT_BLOCK_HIGH_LEV_RATIO", "0.50"))
+LONG_SHORT_BLOCK_AVG_LEVERAGE = float(os.getenv("LONG_SHORT_BLOCK_AVG_LEVERAGE", "10"))
+LONG_SHORT_BLOCK_LIQ_DISTANCE = float(os.getenv("LONG_SHORT_BLOCK_LIQ_DISTANCE", "10"))
+LONG_SHORT_PRICE_24H_EXTREME = float(os.getenv("LONG_SHORT_PRICE_24H_EXTREME", "18"))
+LONG_SHORT_REQUIRE_CANDIDATE_STATE = os.getenv("LONG_SHORT_REQUIRE_CANDIDATE_STATE", "0") == "1"
 
 
 
@@ -1027,6 +1038,11 @@ def init_db() -> None:
     for col in ("avg_leverage", "avg_liq_distance", "longterm_leverage_ratio", "highrisk_leverage_ratio"):
         add_col_if_missing("coin_signals", col, "REAL")
     add_col_if_missing("coin_signals", "leverage_note", "TEXT")
+    for col in ("alert_score", "long_score", "long_candidate_score", "short_candidate_score"):
+        add_col_if_missing("coin_signals", col, "REAL")
+    for col in ("signal_category", "candidate_state", "candidate_gate", "candidate_block_reasons", "candidate_side"):
+        add_col_if_missing("coin_signals", col, "TEXT")
+
 
     # 滚动资金流快照补充杠杆质量字段，兼容旧 db。
     add_col_if_missing("coin_flow_snapshots", "flow_direction", "TEXT")
@@ -5601,12 +5617,14 @@ def save_daily_archive(run_id: int, report: str) -> None:
         "signal_explain_report.txt",
         "coin_risk_report.txt",
         "rolling_flow_report.txt",
+        "long_short_state_report.txt",
         "last_run_status.json",
     ]
     # 3) 关键 CSV：每天保留少量，用于长期复盘
     detail_files = [
         "coin_signals_latest.csv",
         "rolling_flow_latest.csv",
+        "long_short_state_latest.csv",
         "wallet_quality_latest.csv",
         "wallet_position_performance_latest.csv",
         "signal_backtest_latest.csv",
@@ -5955,6 +5973,382 @@ def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: 
     elif aggressive and not emergency and after > DB_MAX_MB:
         prune_database_for_github(current_run_id=current_run_id, aggressive=True, emergency=True)
 
+
+
+# ===== long-short-state-final overrides =====
+# 多单/空单分离 + 长期状态机。短线 alert 与长期候选彻底分开。
+_build_signals_dualscore_base = build_signals
+_build_long_term_candidates_base = build_long_term_candidates
+
+
+def _ensure_coin_signal_state_columns(conn) -> None:
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(coin_signals)")
+    cols = {r[1] for r in cur.fetchall()}
+    for col in ("alert_score", "long_score", "long_candidate_score", "short_candidate_score"):
+        if col not in cols:
+            cur.execute(f"ALTER TABLE coin_signals ADD COLUMN {col} REAL")
+    for col in ("signal_category", "candidate_state", "candidate_gate", "candidate_block_reasons", "candidate_side"):
+        if col not in cols:
+            cur.execute(f"ALTER TABLE coin_signals ADD COLUMN {col} TEXT")
+
+
+def _bool_from_parts(parts: Dict[str, Any], key: str) -> bool:
+    v = parts.get(key)
+    if isinstance(v, str):
+        return v not in ("", "0", "false", "False", "None", "none")
+    return bool(v)
+
+
+def _candidate_side_name(direction: str) -> str:
+    return "long" if direction == "bullish" else "short"
+
+
+def _candidate_side_cn(direction: str) -> str:
+    return "长期多单" if direction == "bullish" else "长期空单"
+
+
+def _long_short_gate(sig: Dict[str, Any], direction: str) -> Tuple[bool, List[str]]:
+    parts = sig.get("score_parts") or {}
+    reasons: List[str] = []
+    if _bool_from_parts(parts, "rolling_spot_only_risk"):
+        reasons.append("spot-only/现货主导")
+    if _bool_from_parts(parts, "rolling_concentration_risk"):
+        reasons.append("钱包集中度过高")
+    if _bool_from_parts(parts, "rolling_persistence_risk"):
+        reasons.append("持续性不足")
+    if _bool_from_parts(parts, "rolling_immature_risk"):
+        reasons.append("长窗口未成熟")
+    if _bool_from_parts(parts, "rolling_gap_risk"):
+        reasons.append("含断跑gap")
+    top1 = safe_float(parts.get("best_top1_share"))
+    if top1 is not None and top1 >= LONG_SHORT_BLOCK_TOP1_SHARE:
+        reasons.append(f"Top1贡献过高({top1:.0%})")
+    has_perp_confirm = bool(parts.get("has_perp_confirm"))
+    leverage_confirm = bool(parts.get("leverage_confirm"))
+    if LONG_SCORE_REQUIRE_PERP_CONFIRM and not (has_perp_confirm or leverage_confirm):
+        reasons.append("缺少合约/低杠杆确认")
+    high_ratio = safe_float(sig.get("highrisk_leverage_ratio")) or safe_float(parts.get("best_highrisk_leverage_ratio")) or 0.0
+    if high_ratio >= LONG_SHORT_BLOCK_HIGH_LEV_RATIO:
+        reasons.append(f"高杠杆占比过高({high_ratio:.0%})")
+    avg_lev = safe_float(sig.get("avg_leverage"))
+    if avg_lev is not None and avg_lev >= LONG_SHORT_BLOCK_AVG_LEVERAGE:
+        reasons.append(f"平均杠杆过高({avg_lev:.1f}x)")
+    avg_liq = safe_float(sig.get("avg_liq_distance"))
+    if avg_liq is not None and avg_liq < LONG_SHORT_BLOCK_LIQ_DISTANCE:
+        reasons.append(f"强平距离过近({avg_liq:.1f}%)")
+    stype = sig.get("signal_type") or ""
+    pct24 = safe_float(sig.get("pct_24h"))
+    if direction == "bullish":
+        if stype == "高位追多":
+            reasons.append("高位追多")
+        if pct24 is not None and pct24 >= LONG_SHORT_PRICE_24H_EXTREME:
+            reasons.append(f"24h涨幅过大({pct24:.1f}%)")
+    else:
+        if stype == "低位追空":
+            reasons.append("低位追空")
+        if pct24 is not None and pct24 <= -LONG_SHORT_PRICE_24H_EXTREME:
+            reasons.append(f"24h跌幅过大({pct24:.1f}%)")
+        state = sig.get("signal_state") or ""
+        if state in {"现货主导", "不明确"} and not has_perp_confirm:
+            reasons.append("长期空单缺少明确short确认")
+    if sig.get("funding_risk") == "高":
+        reasons.append("资金费率风险高")
+    if sig.get("liquidity_risk") == "高":
+        reasons.append("流动性风险高")
+    return (len(reasons) == 0), reasons
+
+
+def _candidate_state_for(sig: Dict[str, Any], direction: str, run_id: int, score: float, gate_ok: bool, min_watch: float, th_score: float) -> str:
+    if score <= 0 or abs(score) < min_watch:
+        return "WATCH"
+    if not gate_ok:
+        return "BLOCKED"
+    streak = signal_streak(sig.get("coin"), direction, run_id, min_abs_score=min_watch)
+    if score >= th_score and streak >= LONG_SHORT_MIN_STREAK_CANDIDATE:
+        return "CANDIDATE"
+    if streak >= LONG_SHORT_MIN_STREAK_FORMING and score >= min_watch + 1.0:
+        return "CONFIRMED"
+    return "FORMING"
+
+
+def enhance_long_short_state(run_id: int, signals: List[Dict[str, Any]], thresholds: Dict[str, Dict[str, float]]) -> List[Dict[str, Any]]:
+    if not LONG_SHORT_STATE_MODE:
+        return signals
+    out: List[Dict[str, Any]] = []
+    for s in signals:
+        coin = s.get("coin")
+        direction = s.get("direction")
+        th_score = threshold(thresholds, coin, "score_push")
+        min_watch = threshold(thresholds, coin, "min_watch_score")
+        abs_long = abs(safe_float(s.get("long_score")) or 0.0)
+        long_candidate_score = abs_long if direction == "bullish" else 0.0
+        short_candidate_score = abs_long if direction == "bearish" else 0.0
+        candidate_score = long_candidate_score if direction == "bullish" else short_candidate_score
+        gate_ok, gate_reasons = _long_short_gate(s, direction)
+        state = _candidate_state_for(s, direction, run_id, candidate_score, gate_ok, min_watch, th_score)
+        side = _candidate_side_name(direction)
+        old_category = s.get("signal_category") or "只观察"
+        category = old_category
+        if candidate_score >= min_watch:
+            if gate_ok:
+                if direction == "bullish":
+                    category = "长期多单候选" if state == "CANDIDATE" and candidate_score >= th_score else "多单建仓观察"
+                else:
+                    category = "长期空单候选" if state == "CANDIDATE" and candidate_score >= th_score else "空单建仓观察"
+            else:
+                category = "长期资格未通过"
+        alert_score_abs = abs(safe_float(s.get("alert_score")) or 0.0)
+        if not gate_ok and alert_score_abs >= th_score and old_category in {"现货异常变化", "高杠杆短线异动", "短线突发异动"}:
+            category = old_category
+        watchlist = side if (gate_ok and state == "CANDIDATE" and candidate_score >= th_score) else "observe"
+        if gate_ok and state == "CANDIDATE":
+            conclusion = f"{_candidate_side_cn(direction)}候选 / 已通过硬门槛"
+        elif gate_ok and state in {"FORMING", "CONFIRMED"}:
+            conclusion = f"{_candidate_side_cn(direction)}形成中 / 等待连续确认"
+        elif not gate_ok and candidate_score >= min_watch:
+            conclusion = f"{_candidate_side_cn(direction)}未通过 / " + "、".join(gate_reasons[:3])
+        else:
+            conclusion = s.get("conclusion") or "只观察 / 等待确认"
+        risk = s.get("risk") or ""
+        if gate_reasons:
+            extra = "长期多空硬门槛未通过：" + "、".join(gate_reasons)
+            risk = (risk + "；" + extra).strip("；") if risk else extra
+        parts = dict(s.get("score_parts") or {})
+        parts.update({
+            "long_candidate_score": round(long_candidate_score, 4),
+            "short_candidate_score": round(short_candidate_score, 4),
+            "candidate_state": state,
+            "candidate_gate": "PASS" if gate_ok else "BLOCK",
+            "candidate_side": side,
+            "candidate_block_reasons": "、".join(gate_reasons),
+        })
+        s2 = dict(s)
+        s2.update({
+            "long_candidate_score": long_candidate_score,
+            "short_candidate_score": short_candidate_score,
+            "candidate_score": candidate_score,
+            "candidate_state": state,
+            "candidate_gate": "PASS" if gate_ok else "BLOCK",
+            "candidate_side": side,
+            "candidate_block_reasons": "、".join(gate_reasons),
+            "signal_category": category,
+            "watchlist": watchlist,
+            "conclusion": conclusion,
+            "risk": risk,
+            "score_parts": parts,
+        })
+        out.append(s2)
+    return out
+
+
+def save_coin_signals(run_id: int, rows: List[Dict[str, Any]]) -> None:
+    conn = db_conn()
+    _ensure_coin_signal_state_columns(conn)
+    cur = conn.cursor()
+    cur.execute("DELETE FROM coin_signals WHERE run_id=?", (run_id,))
+    created_at = now_str()
+    created_at_cn = display_time_from_utc(created_at)
+    cur.executemany("""
+    INSERT INTO coin_signals (
+        run_id, created_at, created_at_cn, coin, direction, score, confidence, signal_type, signal_state, watchlist,
+        perp_active, spot_active, weighted_flow, price_position, pct_1h, pct_4h, pct_24h,
+        final_score, threshold_score, avg_leverage, avg_liq_distance, longterm_leverage_ratio, highrisk_leverage_ratio, leverage_note,
+        alert_score, long_score, long_candidate_score, short_candidate_score, signal_category, candidate_state, candidate_gate, candidate_block_reasons, candidate_side,
+        conclusion, risk, reason
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, [(
+        run_id, created_at, created_at_cn, r.get("coin"), r.get("direction"), r.get("score"), r.get("confidence"), r.get("signal_type"), r.get("signal_state"), r.get("watchlist"),
+        r.get("perp_active"), r.get("spot_active"), r.get("weighted_flow"), r.get("price_position"), r.get("pct_1h"), r.get("pct_4h"), r.get("pct_24h"),
+        r.get("final_score"), r.get("threshold_score"), r.get("avg_leverage"), r.get("avg_liq_distance"), r.get("longterm_leverage_ratio"), r.get("highrisk_leverage_ratio"), r.get("leverage_note"),
+        r.get("alert_score"), r.get("long_score"), r.get("long_candidate_score"), r.get("short_candidate_score"), r.get("signal_category"), r.get("candidate_state"), r.get("candidate_gate"), r.get("candidate_block_reasons"), r.get("candidate_side"),
+        r.get("conclusion"), r.get("risk"), r.get("reason"),
+    ) for r in rows])
+    conn.commit()
+    conn.close()
+
+
+def export_long_short_state_files(run_id: int, signals: List[Dict[str, Any]]) -> None:
+    ensure_dirs()
+    rows = []
+    for s in signals:
+        rows.append({
+            "run_id": run_id,
+            "time_cn": signal_time_cn(run_id),
+            "coin": s.get("coin"),
+            "direction": s.get("direction"),
+            "direction_cn": dir_cn(s.get("direction")),
+            "alert_score": round(safe_float(s.get("alert_score")) or 0.0, 4),
+            "long_score_raw": round(safe_float(s.get("long_score")) or 0.0, 4),
+            "long_candidate_score": round(safe_float(s.get("long_candidate_score")) or 0.0, 4),
+            "short_candidate_score": round(safe_float(s.get("short_candidate_score")) or 0.0, 4),
+            "candidate_side": s.get("candidate_side"),
+            "candidate_state": s.get("candidate_state"),
+            "candidate_gate": s.get("candidate_gate"),
+            "category": s.get("signal_category"),
+            "watchlist": s.get("watchlist"),
+            "avg_leverage": s.get("avg_leverage"),
+            "avg_liq_distance": s.get("avg_liq_distance"),
+            "longterm_leverage_ratio": s.get("longterm_leverage_ratio"),
+            "highrisk_leverage_ratio": s.get("highrisk_leverage_ratio"),
+            "pct_24h": s.get("pct_24h"),
+            "spot_active": s.get("spot_active"),
+            "perp_active": s.get("perp_active"),
+            "block_reasons": s.get("candidate_block_reasons"),
+            "conclusion": s.get("conclusion"),
+            "risk": s.get("risk"),
+        })
+    path = os.path.join(DETAILS_DIR, "long_short_state_latest.csv")
+    if rows:
+        with open(path, "w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+            writer.writeheader(); writer.writerows(rows)
+    thresholds = load_thresholds()
+    longs = [r for r in rows if r.get("candidate_side") == "long" and r.get("candidate_gate") == "PASS" and safe_float(r.get("long_candidate_score")) >= threshold(thresholds, r.get("coin"), "min_watch_score")]
+    shorts = [r for r in rows if r.get("candidate_side") == "short" and r.get("candidate_gate") == "PASS" and safe_float(r.get("short_candidate_score")) >= threshold(thresholds, r.get("coin"), "min_watch_score")]
+    blocked = [r for r in rows if r.get("candidate_gate") == "BLOCK" and max(safe_float(r.get("long_candidate_score")) or 0.0, safe_float(r.get("short_candidate_score")) or 0.0) >= threshold(thresholds, r.get("coin"), "min_watch_score")]
+    with open(os.path.join(REPORT_DIR, "long_short_state_report.txt"), "w", encoding="utf-8") as f:
+        print("【长期多/空分离状态机】", file=f)
+        print(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}", file=f)
+        print("说明：alert_score=短线雷达；long_candidate_score/short_candidate_score=长期多/空资格。BLOCK 表示硬门槛未通过。", file=f)
+        print("", file=f)
+        print("【长期多单形成/候选】", file=f)
+        if not longs:
+            print("暂无。", file=f)
+        for r in sorted(longs, key=lambda x: safe_float(x.get("long_candidate_score")) or 0.0, reverse=True)[:TOP_N]:
+            print(f"{r['coin']} 多 | 状态={r['candidate_state']} | 多单分={r['long_candidate_score']:+.1f} | alert={r['alert_score']:+.1f} | 分类={r['category']} | {r['conclusion']}", file=f)
+        print("", file=f)
+        print("【长期空单形成/候选】", file=f)
+        if not shorts:
+            print("暂无。", file=f)
+        for r in sorted(shorts, key=lambda x: safe_float(x.get("short_candidate_score")) or 0.0, reverse=True)[:TOP_N]:
+            print(f"{r['coin']} 空 | 状态={r['candidate_state']} | 空单分={r['short_candidate_score']:+.1f} | alert={r['alert_score']:+.1f} | 分类={r['category']} | {r['conclusion']}", file=f)
+        print("", file=f)
+        print("【长期资格未通过但有分数】", file=f)
+        if not blocked:
+            print("暂无。", file=f)
+        for r in sorted(blocked, key=lambda x: max(safe_float(x.get("long_candidate_score")) or 0.0, safe_float(x.get("short_candidate_score")) or 0.0), reverse=True)[:TOP_N]:
+            score = r['long_candidate_score'] if r.get('candidate_side') == 'long' else r['short_candidate_score']
+            print(f"{r['coin']} {r['direction_cn']} | 分={score:+.1f} | gate=BLOCK | 原因={r.get('block_reasons') or '-'}", file=f)
+
+
+def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: Dict[str, Dict[str, Any]], thresholds: Dict[str, Dict[str, float]], risk_map: Optional[Dict[str, Dict[str, Any]]] = None, rolling_map: Optional[Dict[str, Dict[str, Any]]] = None, gap_minutes: Optional[float] = None) -> List[Dict[str, Any]]:
+    rows = _build_signals_dualscore_base(run_id, preliminary, ctx_map, thresholds, risk_map=risk_map, rolling_map=rolling_map, gap_minutes=gap_minutes)
+    rows = enhance_long_short_state(run_id, rows, thresholds)
+    save_coin_signals(run_id, rows)
+    export_long_short_state_files(run_id, rows)
+    return rows
+
+
+def build_long_term_candidates(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
+    if not LONG_TERM_MODE:
+        return []
+    out: List[Dict[str, Any]] = []
+    thresholds = load_thresholds()
+    for s in signals:
+        coin = s.get("coin")
+        direction = s.get("direction")
+        side = s.get("candidate_side") or _candidate_side_name(direction)
+        score = safe_float(s.get("long_candidate_score" if side == "long" else "short_candidate_score")) or 0.0
+        min_watch = threshold(thresholds, coin, "min_watch_score")
+        th_score = threshold(thresholds, coin, "score_push")
+        state = s.get("candidate_state") or "WATCH"
+        gate_ok = s.get("candidate_gate") == "PASS"
+        if score < min_watch or not gate_ok:
+            continue
+        if LONG_SHORT_REQUIRE_CANDIDATE_STATE and state != "CANDIDATE":
+            continue
+        ctx = ctx_map.get(coin, {})
+        s_for_plan = dict(s)
+        s_for_plan["final_score"] = score if direction == "bullish" else -score
+        streak = signal_streak(coin, direction, run_id, min_abs_score=min_watch)
+        plan = long_term_entry_plan(s_for_plan, ctx, streak)
+        state_bonus = {"FORMING": 0.3, "CONFIRMED": 1.0, "CANDIDATE": 1.8}.get(state, 0.0)
+        lt_score = score + state_bonus
+        if s.get("confidence") == "高":
+            lt_score += 0.7
+        elif s.get("confidence") == "低":
+            lt_score -= 0.7
+        out.append({
+            "coin": coin,
+            "side": side,
+            "direction": direction,
+            "direction_cn": "做多" if side == "long" else "做空",
+            "candidate_state": state,
+            "candidate_gate": s.get("candidate_gate"),
+            "candidate_score": score,
+            "long_candidate_score": s.get("long_candidate_score"),
+            "short_candidate_score": s.get("short_candidate_score"),
+            "final_score": s.get("final_score"),
+            "alert_score": s.get("alert_score"),
+            "long_score": s.get("long_score"),
+            "signal_category": s.get("signal_category"),
+            "long_term_score": lt_score,
+            "threshold_score": th_score,
+            "streak": streak,
+            "confidence": s.get("confidence"),
+            "signal_state": s.get("signal_state"),
+            "signal_type": s.get("signal_type"),
+            "leverage": plan["leverage"],
+            "avg_leverage": s.get("avg_leverage"),
+            "avg_liq_distance": s.get("avg_liq_distance"),
+            "longterm_leverage_ratio": s.get("longterm_leverage_ratio"),
+            "highrisk_leverage_ratio": s.get("highrisk_leverage_ratio"),
+            "leverage_note": s.get("leverage_note"),
+            "funding_rate_pct": s.get("funding_rate_pct"),
+            "funding_risk": s.get("funding_risk"),
+            "day_volume_usd": s.get("day_volume_usd"),
+            "liquidity_risk": s.get("liquidity_risk"),
+            "action": plan["action"],
+            "entry": plan["entry"],
+            "invalid": plan["invalid"],
+            "price_note": plan["price_note"],
+            "risk_pct": LONG_TERM_RISK_PCT,
+            "block_reasons": s.get("candidate_block_reasons"),
+        })
+    out.sort(key=lambda x: (x.get("side") == "long", x.get("candidate_state") == "CANDIDATE", x.get("long_term_score") or 0), reverse=True)
+    return out
+
+
+def write_long_term_plan(candidates: List[Dict[str, Any]]) -> None:
+    ensure_dirs()
+    longs = [c for c in candidates if c.get("side") == "long"]
+    shorts = [c for c in candidates if c.get("side") == "short"]
+    with open(os.path.join(REPORT_DIR, "long_term_plan.txt"), "w", encoding="utf-8") as f:
+        print("【低杠杆长期多/空观察计划】", file=f)
+        print(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}", file=f)
+        print("说明：长期多单和长期空单分开筛选；短线 alert 不等于长期资格。", file=f)
+        print("状态：FORMING=形成中，CONFIRMED=持续确认，CANDIDATE=长期候选。", file=f)
+        print(f"风控默认：单币最大亏损控制在账户 {LONG_TERM_RISK_PCT:.1f}% 左右；建议低杠杆，不一次打满。", file=f)
+        print("", file=f)
+        print("【长期多单】", file=f)
+        if not longs:
+            print("暂无适合低杠杆长期多单的候选。", file=f)
+        for c in longs[:TOP_N]:
+            print(f"{c['coin']} 做多 | 状态={c.get('candidate_state')} | 长期分={c['long_term_score']:.1f} | 多单资格={safe_float(c.get('long_candidate_score')) or 0:+.1f} | alert={safe_float(c.get('alert_score')) or 0:+.1f} | 连续={c['streak']}轮 | 可信度={c['confidence']}", file=f)
+            print(f"类型：{c.get('signal_category')} | 信号状态：{c['signal_state']} | 价格类型：{c['signal_type']} | 建议杠杆：{c['leverage']}", file=f)
+            print(f"动作：{c['action']}", file=f)
+            print(f"入场：{c['entry']}", file=f)
+            print(f"价格：{c['price_note']}", file=f)
+            print(f"失效：{c['invalid']}", file=f)
+            print("", file=f)
+        print("【长期空单】", file=f)
+        if not shorts:
+            print("暂无适合低杠杆长期空单的候选。", file=f)
+        for c in shorts[:TOP_N]:
+            print(f"{c['coin']} 做空 | 状态={c.get('candidate_state')} | 长期分={c['long_term_score']:.1f} | 空单资格={safe_float(c.get('short_candidate_score')) or 0:+.1f} | alert={safe_float(c.get('alert_score')) or 0:+.1f} | 连续={c['streak']}轮 | 可信度={c['confidence']}", file=f)
+            print(f"类型：{c.get('signal_category')} | 信号状态：{c['signal_state']} | 价格类型：{c['signal_type']} | 建议杠杆：{c['leverage']}", file=f)
+            print(f"动作：{c['action']}", file=f)
+            print(f"入场：{c['entry']}", file=f)
+            print(f"价格：{c['price_note']}", file=f)
+            print(f"失效：{c['invalid']}", file=f)
+            print("", file=f)
+    if candidates:
+        with open(os.path.join(DETAILS_DIR, "long_term_candidates.csv"), "w", newline="", encoding="utf-8-sig") as f:
+            writer = csv.DictWriter(f, fieldnames=list(candidates[0].keys()))
+            writer.writeheader(); writer.writerows(candidates)
+
+# ===== end long-short-state-final overrides =====
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Hyperliquid Wallet Monitor FINAL")
