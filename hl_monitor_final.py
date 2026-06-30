@@ -65,6 +65,10 @@ TG_CHAT_ID = os.getenv("TG_CHAT_ID", "").strip()
 
 PUSH_EVERY_RUN = os.getenv("PUSH_EVERY_RUN", "0") == "1"
 DAILY_PUSH_HOUR_UTC = int(os.getenv("DAILY_PUSH_HOUR_UTC", "0"))
+# 显示时间统一用北京时间（UTC+8）。数据库内部仍保存 UTC，便于窗口计算和回测不混乱。
+DISPLAY_TZ_NAME = os.getenv("DISPLAY_TZ_NAME", "北京时间")
+DISPLAY_TZ_OFFSET_HOURS = int(os.getenv("DISPLAY_TZ_OFFSET_HOURS", "8"))
+DAILY_PUSH_HOUR_CN = int(os.getenv("DAILY_PUSH_HOUR_CN", str((DAILY_PUSH_HOUR_UTC + DISPLAY_TZ_OFFSET_HOURS) % 24)))
 MIN_OK_RATE = float(os.getenv("MIN_OK_RATE", "0.85"))
 MIN_WALLET_COUNT = int(os.getenv("MIN_WALLET_COUNT", "100"))
 
@@ -164,6 +168,28 @@ ROLLING_CONCENTRATION_MULT = float(os.getenv("ROLLING_CONCENTRATION_MULT", "0.45
 ROLLING_PERSISTENCE_MULT = float(os.getenv("ROLLING_PERSISTENCE_MULT", "0.45"))
 ROLLING_SUSPECT_CAP_SCORE = float(os.getenv("ROLLING_SUSPECT_CAP_SCORE", "6.5"))
 
+# 滚动窗口防“时间越久分越高”：
+# 1) 15d/30d 等长窗口必须真的有足够历史覆盖，不能刚跑几天就拿 30d 分。
+# 2) 嵌套窗口不再把短/中/长三组满额相加，默认只取一个主窗口，其他窗口只做小幅确认。
+ROLLING_REQUIRE_WINDOW_MATURITY = os.getenv("ROLLING_REQUIRE_WINDOW_MATURITY", "1") == "1"
+ROLLING_SCORE_USE_BEST_HORIZON = os.getenv("ROLLING_SCORE_USE_BEST_HORIZON", "1") == "1"
+ROLLING_MIN_COVERAGE_SHORT = float(os.getenv("ROLLING_MIN_COVERAGE_SHORT", "0.25"))
+ROLLING_MIN_COVERAGE_MID = float(os.getenv("ROLLING_MIN_COVERAGE_MID", "0.50"))
+ROLLING_MIN_COVERAGE_LONG = float(os.getenv("ROLLING_MIN_COVERAGE_LONG", "0.70"))
+ROLLING_CONTINUITY_BONUS_MAX = float(os.getenv("ROLLING_CONTINUITY_BONUS_MAX", "0.80"))
+
+# 双分数模型：把“短线报警”和“低杠杆长期资格”彻底分开。
+# alert_score：本轮/短线异动雷达，负责提醒你看盘。
+# long_score：滚动建仓 + 持续性 + 钱包广度 + 低杠杆质量，负责长期单候选。
+DUAL_SCORE_MODE = os.getenv("DUAL_SCORE_MODE", "1") == "1"
+LONG_SCORE_REQUIRE_PERP_CONFIRM = os.getenv("LONG_SCORE_REQUIRE_PERP_CONFIRM", "1") == "1"
+LONG_SCORE_MIN_LEVERAGE_CONFIRM = float(os.getenv("LONG_SCORE_MIN_LEVERAGE_CONFIRM", "0.20"))
+LONG_SCORE_SPOT_ONLY_CAP = float(os.getenv("LONG_SCORE_SPOT_ONLY_CAP", "4.0"))
+LONG_SCORE_CONCENTRATION_CAP = float(os.getenv("LONG_SCORE_CONCENTRATION_CAP", "4.5"))
+LONG_SCORE_PERSISTENCE_CAP = float(os.getenv("LONG_SCORE_PERSISTENCE_CAP", "5.0"))
+ALERT_SCORE_ROLLING_CONFIRM_CAP = float(os.getenv("ALERT_SCORE_ROLLING_CONFIRM_CAP", "1.5"))
+
+
 
 # 数据库体积控制：GitHub 单文件硬限制 100MB，必须定期裁剪原始快照并 VACUUM。
 # 只裁剪最占空间的逐轮原始表；钱包动作、信号、仓位生命周期保留足够窗口用于 30d 回测。
@@ -193,6 +219,43 @@ def now_str() -> str:
 
 def utc_today() -> str:
     return utc_now().strftime("%Y-%m-%d")
+
+
+def display_now() -> dt.datetime:
+    return utc_now() + dt.timedelta(hours=DISPLAY_TZ_OFFSET_HOURS)
+
+
+def display_now_str() -> str:
+    return display_now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def display_today() -> str:
+    return display_now().strftime("%Y-%m-%d")
+
+
+def display_time_from_utc(value: Optional[Any]) -> str:
+    """把数据库里的 UTC 时间转换成北京时间显示；输入为空时返回当前北京时间。"""
+    if value is None:
+        return display_now_str()
+    if isinstance(value, dt.datetime):
+        base = value
+    else:
+        base = parse_time(str(value))
+    if base is None:
+        return str(value)
+    return (base + dt.timedelta(hours=DISPLAY_TZ_OFFSET_HOURS)).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def signal_time_cn(run_id: Optional[int] = None) -> str:
+    """本轮信号显示时间：优先使用 runs.started_at，避免报告生成时间和扫描开始时间混淆。"""
+    try:
+        if run_id is not None:
+            started = get_run_started_at(run_id)
+            if started is not None:
+                return display_time_from_utc(started)
+    except Exception:
+        pass
+    return display_now_str()
 
 
 def ms_now() -> int:
@@ -632,6 +695,8 @@ def init_db() -> None:
     CREATE TABLE IF NOT EXISTS coin_signals (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         run_id INTEGER,
+        created_at TEXT,
+        created_at_cn TEXT,
         coin TEXT,
         direction TEXT,
         score REAL,
@@ -957,6 +1022,8 @@ def init_db() -> None:
         add_col_if_missing("perp_positions", col, "TEXT")
     for col in ("margin_used", "liq_distance_pct", "account_leverage", "leverage_weight", "leverage_risk_score"):
         add_col_if_missing("perp_positions", col, "REAL")
+    add_col_if_missing("coin_signals", "created_at", "TEXT")
+    add_col_if_missing("coin_signals", "created_at_cn", "TEXT")
     for col in ("avg_leverage", "avg_liq_distance", "longterm_leverage_ratio", "highrisk_leverage_ratio"):
         add_col_if_missing("coin_signals", col, "REAL")
     add_col_if_missing("coin_signals", "leverage_note", "TEXT")
@@ -1963,7 +2030,9 @@ def build_rolling_flow_metrics(run_id: int) -> Dict[str, Dict[str, Any]]:
                    SUM(CASE WHEN weighted_flow > 0 THEN 1 ELSE 0 END) AS bullish_runs,
                    SUM(CASE WHEN weighted_flow < 0 THEN 1 ELSE 0 END) AS bearish_runs,
                    COUNT(DISTINCT CASE WHEN weighted_flow > 0 THEN substr(created_at,1,10) END) AS bullish_days,
-                   COUNT(DISTINCT CASE WHEN weighted_flow < 0 THEN substr(created_at,1,10) END) AS bearish_days
+                   COUNT(DISTINCT CASE WHEN weighted_flow < 0 THEN substr(created_at,1,10) END) AS bearish_days,
+                   MIN(created_at) AS first_seen,
+                   MAX(created_at) AS last_seen
             FROM coin_flow_snapshots
             WHERE run_id <= ? AND created_at >= ?
             GROUP BY coin
@@ -1984,6 +2053,11 @@ def build_rolling_flow_metrics(run_id: int) -> Dict[str, Dict[str, Any]]:
             d[f"bearish_runs_{label}"] = int(row[10] or 0)
             d[f"bullish_days_{label}"] = int(row[11] or 0)
             d[f"bearish_days_{label}"] = int(row[12] or 0)
+            first_ts = parse_time(row[13]) if len(row) > 13 else None
+            last_ts = parse_time(row[14]) if len(row) > 14 else None
+            span_hours = max(0.0, (last_ts - first_ts).total_seconds() / 3600.0) if first_ts and last_ts else 0.0
+            d[f"span_hours_{label}"] = span_hours
+            d[f"coverage_{label}"] = min(1.0, span_hours / max(1.0, float(hours)))
 
             # 用金额本身估算现货占比。这里看绝对值，避免现货卖出/合约买入互相抵消后误判。
             perp_abs = abs(float(row[1] or 0.0))
@@ -2088,15 +2162,18 @@ def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[
     if not rolling:
         return 0.0, [], {}
 
-    # 修正版：滚动窗口是嵌套窗口，不能把同一笔变化在 2h/6h/24h/72h/15d/30d 里重复加分。
-    # 评分方式：短/中/长三组各自取“质量调整后最强窗口”，再叠加小幅连续性分和杠杆质量分。
+    # 稳定版：滚动窗口用于判断“持续建仓”，不是让分数随着数据库历史自然变大。
+    # 关键修复：
+    # 1) 15d/30d 必须真正覆盖足够时间，否则不参与评分。
+    # 2) 2h/6h/24h/72h/15d/30d 是嵌套窗口，默认只取一个主窗口；其他窗口只给小幅确认，不再满额相加。
+    # 3) 长窗口必须有持续性、钱包广度、低杠杆确认；spot-only/单钱包/断跑会明显降权。
     cfg = {
-        "2h":  {"mult": 1.0,  "pts": 0.45, "group": "short", "min_runs": 1, "min_days": 1, "min_wallets": 1},
-        "6h":  {"mult": 1.5,  "pts": 0.75, "group": "short", "min_runs": 2, "min_days": 1, "min_wallets": 1},
-        "24h": {"mult": 2.5,  "pts": 1.20, "group": "mid",   "min_runs": 2, "min_days": 1, "min_wallets": ROLLING_MIN_WALLETS_MID},
-        "72h": {"mult": 4.0,  "pts": 1.60, "group": "mid",   "min_runs": 3, "min_days": 2, "min_wallets": ROLLING_MIN_WALLETS_MID},
-        "15d": {"mult": 7.0,  "pts": 2.10, "group": "long",  "min_runs": 5, "min_days": 3, "min_wallets": ROLLING_MIN_WALLETS_LONG},
-        "30d": {"mult": 10.0, "pts": 2.60, "group": "long",  "min_runs": 8, "min_days": 5, "min_wallets": ROLLING_MIN_WALLETS_LONG},
+        "2h":  {"mult": 1.0,  "pts": 0.45, "group": "short", "min_runs": 2, "min_days": 1, "min_wallets": 1, "min_coverage": ROLLING_MIN_COVERAGE_SHORT},
+        "6h":  {"mult": 1.5,  "pts": 0.75, "group": "short", "min_runs": 3, "min_days": 1, "min_wallets": 1, "min_coverage": ROLLING_MIN_COVERAGE_SHORT},
+        "24h": {"mult": 2.5,  "pts": 1.20, "group": "mid",   "min_runs": 4, "min_days": 1, "min_wallets": ROLLING_MIN_WALLETS_MID,  "min_coverage": ROLLING_MIN_COVERAGE_MID},
+        "72h": {"mult": 4.0,  "pts": 1.60, "group": "mid",   "min_runs": 6, "min_days": 2, "min_wallets": ROLLING_MIN_WALLETS_MID,  "min_coverage": ROLLING_MIN_COVERAGE_MID},
+        "15d": {"mult": 7.0,  "pts": 2.10, "group": "long",  "min_runs": 12, "min_days": 6, "min_wallets": ROLLING_MIN_WALLETS_LONG, "min_coverage": ROLLING_MIN_COVERAGE_LONG},
+        "30d": {"mult": 10.0, "pts": 2.60, "group": "long",  "min_runs": 20, "min_days": 10, "min_wallets": ROLLING_MIN_WALLETS_LONG, "min_coverage": ROLLING_MIN_COVERAGE_LONG},
     }
     group_caps = {"short": 1.0, "mid": 2.0, "long": 2.6}
     group_names = {"short": "短窗口", "mid": "中窗口", "long": "长窗口"}
@@ -2106,22 +2183,22 @@ def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[
     reasons: List[str] = []
     candidates: Dict[str, Dict[str, Any]] = {}
     all_candidate_count = 0
-    signs_by_group: List[int] = []
     risk_flags = {
         "spot_only": False,
         "concentration": False,
         "persistence": False,
         "gap": False,
+        "immature": False,
     }
 
     for hours in ROLLING_FLOW_WINDOWS_HOURS:
         label = rolling_window_label(hours)
         signed = float(rolling.get(f"weighted_{label}") or rolling.get(f"active_{label}") or 0.0)
         parts[f"rolling_{label}"] = signed
-        if label not in cfg:
-            spec = {"mult": 3.0, "pts": 1.0, "group": "mid", "min_runs": 2, "min_days": 1, "min_wallets": ROLLING_MIN_WALLETS_MID}
-        else:
-            spec = cfg[label]
+        parts[f"coverage_{label}"] = float(rolling.get(f"coverage_{label}") or 0.0)
+        parts[f"span_hours_{label}"] = float(rolling.get(f"span_hours_{label}") or 0.0)
+
+        spec = cfg.get(label, {"mult": 3.0, "pts": 1.0, "group": "mid", "min_runs": 3, "min_days": 1, "min_wallets": ROLLING_MIN_WALLETS_MID, "min_coverage": ROLLING_MIN_COVERAGE_MID})
         if abs(signed) < pth * float(spec["mult"]):
             continue
 
@@ -2134,6 +2211,8 @@ def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[
         same_days = int(rolling.get(f"{prefix}_days_{label}") or 0)
         total_runs = int(rolling.get(f"runs_{label}") or 0)
         gaps = int(rolling.get(f"gaps_{label}") or 0)
+        coverage = float(rolling.get(f"coverage_{label}") or 0.0)
+        span_hours = float(rolling.get(f"span_hours_{label}") or 0.0)
         wallet_count = int(rolling.get(f"{prefix}_wallets_{label}") or 0)
         top1_share = float(rolling.get(f"{prefix}_top1_share_{label}") or 0.0)
         top3_share = float(rolling.get(f"{prefix}_top3_share_{label}") or 0.0)
@@ -2152,29 +2231,39 @@ def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[
         notes: List[str] = []
         risk_notes: List[str] = []
 
-        # 持续性：长期窗口必须是多轮/多天同向，不允许“单次大额变化”因为落在 30d 窗口里就拿长期满分。
+        # 窗口成熟度：数据库刚开始积累时，不能把 5 天历史当作 30d 信号。
+        min_coverage = float(spec.get("min_coverage", 0.5))
+        if ROLLING_REQUIRE_WINDOW_MATURITY and coverage < min_coverage:
+            # 长窗口不成熟直接跳过；短/中窗口不成熟则严重降权。
+            risk_flags["immature"] = True
+            risk_notes.append(f"窗口未成熟：覆盖{coverage*100:.0f}%/{min_coverage*100:.0f}% span={span_hours:.1f}h")
+            if group == "long":
+                continue
+            quality_mult *= 0.35
+
+        # 持续性：长期窗口必须是多轮/多天同向，不允许“单次大额变化”因为落在 30d 窗口里就拿长期分。
         min_runs = int(spec["min_runs"])
         min_days = int(spec["min_days"])
         if same_runs < min_runs or same_days < min_days:
             if group == "short":
-                quality_mult *= 0.75
+                quality_mult *= 0.65
             else:
                 quality_mult *= ROLLING_PERSISTENCE_MULT
                 risk_flags["persistence"] = True
-            risk_notes.append(f"持续性不足：{same_runs}轮/{same_days}天")
+            risk_notes.append(f"持续性不足：{same_runs}/{min_runs}轮 {same_days}/{min_days}天")
 
         # 如果窗口里有 gap，窗口累计信号降权，避免断跑后把多小时累计当成普通连续建仓。
         if gaps > 0:
-            quality_mult *= 0.80
+            quality_mult *= 0.75
             risk_flags["gap"] = True
             risk_notes.append(f"含断跑gap={gaps}")
 
         # 钱包广度/集中度：一个钱包贡献绝大部分，不算“集体持续建仓”。
         min_wallets = int(spec["min_wallets"])
         if wallet_count > 0 and wallet_count < min_wallets and group != "short":
-            quality_mult *= 0.65
+            quality_mult *= 0.60
             risk_flags["concentration"] = True
-            risk_notes.append(f"参与钱包少：{wallet_count}个")
+            risk_notes.append(f"参与钱包少：{wallet_count}/{min_wallets}个")
         if top1_share >= ROLLING_TOP1_MAX_SHARE and wallet_count > 0:
             quality_mult *= ROLLING_CONCENTRATION_MULT
             risk_flags["concentration"] = True
@@ -2185,7 +2274,6 @@ def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[
             risk_notes.append(f"Top3占比{top3_share*100:.0f}%")
 
         # 现货-only：现货减少/增加不一定是卖出/买入，可能是转账/归集/划转。
-        # 没有同方向低杠杆合约确认时，不允许现货-only 拉出高分长期单。
         if spot_share >= ROLLING_SPOT_ONLY_SHARE and perp_abs < pth * 0.35 and (lev_health is None or lev_health <= 0.15):
             quality_mult *= ROLLING_SPOT_ONLY_MULT
             risk_flags["spot_only"] = True
@@ -2193,15 +2281,14 @@ def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[
 
         # 异常大额 + 单钱包：多数是转账/归集/数据异常，不直接给满分。
         if abs(signed) >= pth * 20 and (wallet_count <= 1 or top1_share >= 0.85):
-            quality_mult *= 0.35
+            quality_mult *= 0.30
             risk_flags["concentration"] = True
             risk_notes.append("单钱包异常大额，按观察处理")
 
-        quality_mult = max(0.10, min(1.0, quality_mult))
+        quality_mult = max(0.05, min(1.0, quality_mult))
         raw_pts = float(spec["pts"])
         flow_score = raw_pts * quality_mult * sign
 
-        # 杠杆项只给被选中的窗口加，不再每个嵌套窗口都叠加。
         lev_score = 0.0
         if ROLLING_LEVERAGE_MODE and LEVERAGE_QUALITY_MODE and lev_health is not None:
             lev_score = max(-0.60, min(0.60, lev_health * 0.35)) * sign
@@ -2210,9 +2297,9 @@ def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[
             elif lev_score < -0.12:
                 notes.append(f"杠杆风险：高风险{high_ratio*100:.0f}%" + (f" 均{avg_lev:.1f}x" if avg_lev is not None else ""))
 
-        notes.append(f"{label}{fmt_money(signed)} 质量={quality_mult:.2f} 钱包={wallet_count} 持续={same_runs}轮/{same_days}天")
+        notes.append(f"{label}{fmt_money(signed)} 质量={quality_mult:.2f} 覆盖={coverage*100:.0f}% 钱包={wallet_count} 持续={same_runs}轮/{same_days}天")
         if risk_notes:
-            notes.extend(risk_notes[:3])
+            notes.extend(risk_notes[:4])
 
         cand = {
             "label": label,
@@ -2226,6 +2313,8 @@ def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[
             "same_days": same_days,
             "total_runs": total_runs,
             "gap_count": gaps,
+            "coverage": coverage,
+            "span_hours": span_hours,
             "wallet_count": wallet_count,
             "top1_share": top1_share,
             "top3_share": top3_share,
@@ -2241,42 +2330,58 @@ def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[
         if prev is None or abs(cand["flow_score"]) + abs(cand["lev_score"]) > abs(prev["flow_score"]) + abs(prev["lev_score"]):
             candidates[group] = cand
 
-    score = 0.0
     rolling_flow_core_score = 0.0
     rolling_leverage_adj = 0.0
-    selected: List[Dict[str, Any]] = []
-    for group in ("short", "mid", "long"):
-        cand = candidates.get(group)
-        if not cand:
-            continue
-        cap = group_caps.get(group, 2.0)
-        flow_score = max(-cap, min(cap, float(cand["flow_score"])))
-        rolling_flow_core_score += flow_score
-        rolling_leverage_adj += float(cand.get("lev_score") or 0.0)
-        selected.append(cand)
-        signs_by_group.append(int(cand["sign"]))
-        reasons.append(f"{group_names.get(group, group)}取{cand['label']}：{fmt_money(cand['signed'])}，资金分{flow_score:+.1f}")
-        for n in cand.get("notes", [])[:4]:
+    selected: List[Dict[str, Any]] = [candidates[g] for g in ("short", "mid", "long") if g in candidates]
+    signs_by_group = [int(c["sign"]) for c in selected]
+
+    if ROLLING_SCORE_USE_BEST_HORIZON and selected:
+        # 主窗口决定主要滚动分；其他窗口只证明“不是单一时间段噪音”，不再 full add。
+        best = max(selected, key=lambda c: abs(float(c.get("flow_score") or 0.0)) + abs(float(c.get("lev_score") or 0.0)))
+        cap = group_caps.get(str(best.get("group")), 2.0)
+        base_flow = max(-cap, min(cap, float(best.get("flow_score") or 0.0)))
+        rolling_flow_core_score = base_flow
+        rolling_leverage_adj = float(best.get("lev_score") or 0.0)
+        reasons.append(f"主滚动窗口取{best['label']}：{fmt_money(best['signed'])}，资金分{base_flow:+.1f}")
+        for n in best.get("notes", [])[:5]:
             reasons.append(n)
 
-    # 多组同向才给连续性分；不是“窗口数量越多越无脑加”，因为 2h/6h/24h/72h/15d/30d 是嵌套的。
-    if len(selected) >= 2 and signs_by_group and all(x == signs_by_group[0] for x in signs_by_group):
-        sign = signs_by_group[0]
-        # 只有中/长窗口质量不太差时才加连续性，否则只是旧大额/单钱包/现货-only。
-        avg_quality = sum(float(c.get("quality_mult") or 0.0) for c in selected) / max(1, len(selected))
-        if avg_quality >= 0.45:
-            bonus = min(0.9, 0.35 * (len(selected) - 1)) * sign
+        same_side_confirm = [c for c in selected if c is not best and int(c.get("sign") or 0) == int(best.get("sign") or 0) and float(c.get("quality_mult") or 0.0) >= 0.50]
+        opposite = [c for c in selected if int(c.get("sign") or 0) != int(best.get("sign") or 0)]
+        if same_side_confirm:
+            bonus = min(ROLLING_CONTINUITY_BONUS_MAX, 0.25 * len(same_side_confirm)) * int(best.get("sign") or 0)
             rolling_flow_core_score += bonus
-            reasons.append(f"短中长分组同向({len(selected)}组)，连续性加分{bonus:+.1f}")
+            reasons.append(f"其他成熟窗口同向确认{len(same_side_confirm)}组，确认分{bonus:+.1f}")
+        if opposite:
+            penalty = min(0.6, 0.25 * len(opposite)) * int(best.get("sign") or 0)
+            rolling_flow_core_score -= penalty
+            reasons.append(f"存在反向滚动窗口{len(opposite)}组，冲突扣分{-penalty:+.1f}")
+    else:
+        for group in ("short", "mid", "long"):
+            cand = candidates.get(group)
+            if not cand:
+                continue
+            cap = group_caps.get(group, 2.0)
+            flow_score = max(-cap, min(cap, float(cand["flow_score"])))
+            rolling_flow_core_score += flow_score
+            rolling_leverage_adj += float(cand.get("lev_score") or 0.0)
+            reasons.append(f"{group_names.get(group, group)}取{cand['label']}：{fmt_money(cand['signed'])}，资金分{flow_score:+.1f}")
+            for n in cand.get("notes", [])[:4]:
+                reasons.append(n)
+        if len(selected) >= 2 and signs_by_group and all(x == signs_by_group[0] for x in signs_by_group):
+            avg_quality = sum(float(c.get("quality_mult") or 0.0) for c in selected) / max(1, len(selected))
+            if avg_quality >= 0.50:
+                bonus = min(ROLLING_CONTINUITY_BONUS_MAX, 0.25 * (len(selected) - 1)) * signs_by_group[0]
+                rolling_flow_core_score += bonus
+                reasons.append(f"短中长分组同向({len(selected)}组)，连续性加分{bonus:+.1f}")
 
-    rolling_leverage_adj = max(-1.2, min(1.2, rolling_leverage_adj))
+    rolling_leverage_adj = max(-0.8, min(0.8, rolling_leverage_adj))
     score = rolling_flow_core_score + rolling_leverage_adj
 
-    # 如果滚动信号质量明显可疑，rolling 自身封顶，防止再叠加历史/市场/价格位置后变成假强信号。
-    suspect = risk_flags["spot_only"] or risk_flags["concentration"] or risk_flags["persistence"]
+    suspect = risk_flags["spot_only"] or risk_flags["concentration"] or risk_flags["persistence"] or risk_flags["immature"]
     if suspect and abs(score) > ROLLING_SUSPECT_CAP_SCORE:
         score = (1 if score > 0 else -1) * ROLLING_SUSPECT_CAP_SCORE
-        reasons.append(f"滚动信号含现货only/集中度/持续性风险，rolling封顶到{ROLLING_SUSPECT_CAP_SCORE:.1f}")
+        reasons.append(f"滚动信号含现货only/集中度/持续性/窗口未成熟风险，rolling封顶到{ROLLING_SUSPECT_CAP_SCORE:.1f}")
 
     parts["rolling_score"] = round(score, 4)
     parts["rolling_flow_core"] = round(rolling_flow_core_score, 4)
@@ -2287,9 +2392,9 @@ def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[
     parts["rolling_concentration_risk"] = 1 if risk_flags["concentration"] else 0
     parts["rolling_persistence_risk"] = 1 if risk_flags["persistence"] else 0
     parts["rolling_gap_risk"] = 1 if risk_flags["gap"] else 0
+    parts["rolling_immature_risk"] = 1 if risk_flags["immature"] else 0
 
     if selected:
-        # 报告里保留最终选择出的最强质量窗口，而不是原始金额最大的嵌套窗口。
         best = max(selected, key=lambda c: abs(float(c.get("flow_score") or 0.0)) + abs(float(c.get("lev_score") or 0.0)))
         parts.update({
             "best_window": best.get("label"),
@@ -2301,6 +2406,8 @@ def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[
             "best_top3_share": best.get("top3_share"),
             "best_spot_share": best.get("spot_share"),
             "best_quality_mult": best.get("quality_mult"),
+            "best_coverage": best.get("coverage"),
+            "best_span_hours": best.get("span_hours"),
             "best_avg_leverage": best.get("avg_leverage"),
             "best_avg_liq_distance": best.get("avg_liq_distance"),
             "best_longterm_leverage_ratio": best.get("longterm_leverage_ratio"),
@@ -2404,7 +2511,7 @@ def export_rolling_flow_files(run_id: int, rolling_map: Dict[str, Dict[str, Any]
         "【滚动建仓资金流 + 杠杆质量】",
         "说明：短线异动看上一轮；长期建仓看滚动窗口，但已修正嵌套窗口重复加分。",
         "新逻辑：2h/6h、24h/72h、15d/30d 分组取最高；同时检查持续性、钱包广度、单钱包集中度、现货-only、杠杆质量。",
-        f"run_id={run_id} UTC={now_str()}",
+        f"run_id={run_id} | {DISPLAY_TZ_NAME}={signal_time_cn(run_id)} | UTC={now_str()}",
         "",
     ]
     top = [r for r in rows if abs(float(r.get("rolling_score") or 0.0)) > 0]
@@ -3278,7 +3385,7 @@ def export_position_trade_files(run_id: int) -> None:
 
     with open(os.path.join(DETAILS_DIR, "wallet_position_report.txt"), "w", encoding="utf-8") as f:
         f.write("【仓位生命周期收益报告】\n")
-        f.write(f"更新时间 UTC：{now_str()}\n")
+        f.write(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}\n")
         f.write(f"统计窗口：最近 {POSITION_PERF_WINDOW_DAYS} 天\n")
         f.write("说明：本报告只按仓位开仓/加仓/减仓/平仓计算收益，不使用账户权益 ROI，避免充值/提现误判。\n\n")
         counts: Dict[str, int] = defaultdict(int)
@@ -3445,7 +3552,7 @@ def export_leverage_quality_files(run_id: int) -> None:
 
     with open(os.path.join(DETAILS_DIR, "leverage_quality_report.txt"), "w", encoding="utf-8") as f:
         f.write("【合约杠杆质量报告】\n")
-        f.write(f"更新时间 UTC：{now_str()}\n")
+        f.write(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}\n")
         f.write("说明：低杠杆长期型会略加权；高杠杆短线/爆仓边缘会降权，避免影响低杠杆长期单判断。\n\n")
         f.write("【高风险钱包 Top】\n")
         high = [w for w in wallet_rows if (safe_float(w.get("high_risk_ratio")) or 0.0) >= 0.35]
@@ -3576,7 +3683,7 @@ async def build_coin_risk_metrics(run_id: int, candidate_coins: List[str]) -> Di
         sorted_rows = sorted(rows, key=lambda r: ((r.get("liquidity_risk") == "高"), abs(safe_float(r.get("funding_rate_pct")) or 0.0)), reverse=True)
         with open(os.path.join(REPORT_DIR, "coin_risk_report.txt"), "w", encoding="utf-8") as f:
             f.write("【资金费率 / 流动性风险】\n")
-            f.write(f"run_id={run_id} | 更新时间UTC={now_str()}\n\n")
+            f.write(f"run_id={run_id} | 更新时间{DISPLAY_TZ_NAME}={signal_time_cn(run_id)} | UTC={now_str()}\n\n")
             for r in sorted_rows[:50]:
                 f.write(f"{r['coin']} | funding={fmt_pct(r.get('funding_rate_pct'))} 风险={r.get('funding_risk')} | 24h成交额={fmt_money(r.get('day_volume_usd'))} 流动性={r.get('liquidity_risk')} | OI={fmt_money(r.get('open_interest_usd'))}\n")
     return risk_map
@@ -3623,101 +3730,253 @@ def risk_filter_adjust(direction: str, risk: Dict[str, Any]) -> Tuple[float, Lis
     }
 
 
+def _score_sign(v: float) -> int:
+    return 1 if v > 0 else -1 if v < 0 else 0
+
+
+def _same_sign(a: float, b: float) -> bool:
+    return _score_sign(a) != 0 and _score_sign(a) == _score_sign(b)
+
+
+def _signed_cap(v: float, cap: float) -> float:
+    if cap <= 0:
+        return v
+    return max(-cap, min(cap, v))
+
+
 def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: Dict[str, Dict[str, Any]], thresholds: Dict[str, Dict[str, float]], risk_map: Optional[Dict[str, Dict[str, Any]]] = None, rolling_map: Optional[Dict[str, Dict[str, Any]]] = None, gap_minutes: Optional[float] = None) -> List[Dict[str, Any]]:
+    """构建币种信号。双分数版：
+
+    alert_score：短线异动雷达。主要看本轮主动变化，少量参考短窗口滚动确认。
+    long_score：低杠杆长期资格。主要看成熟滚动窗口、持续性、钱包广度、杠杆健康。
+
+    这样避免一个 final_score 同时承担“短线报警”和“长期单”的职责。
+    """
     btc_ctx = ctx_map.get("BTC", {})
     lev_map = build_leverage_signal_map(run_id) if LEVERAGE_QUALITY_MODE else {}
     rows: List[Dict[str, Any]] = []
     rolling_map = rolling_map or {}
     current_gap_ok = (gap_minutes is None) or (gap_minutes <= MAX_SHORT_SIGNAL_GAP_MINUTES)
     coin_universe = set(preliminary.keys()) | set(rolling_map.keys())
+
     for coin in coin_universe:
         d = preliminary.get(coin, {})
         perp_active = float(d.get("perp_active") or 0.0)
         spot_active = float(d.get("spot_active") or 0.0)
         weighted_flow = float(d.get("weighted_flow") or 0.0)
-        score = 0.0
-        reasons: List[str] = []
         pth = threshold(thresholds, coin, "perp")
         sth = threshold(thresholds, coin, "spot")
+        th_score = threshold(thresholds, coin, "score_push")
+        min_watch = threshold(thresholds, coin, "min_watch_score")
+
+        # 1) 本轮/短线异动分，只用于 alert_score。
+        base_score = 0.0
+        base_reasons: List[str] = []
         if current_gap_ok:
             if abs(perp_active) >= pth:
-                score += 3.0 if perp_active > 0 else -3.0
-                reasons.append(f"本轮合约主动变化{fmt_money(perp_active)}")
+                base_score += 3.0 if perp_active > 0 else -3.0
+                base_reasons.append(f"本轮合约主动变化{fmt_money(perp_active)}")
             if abs(spot_active) >= sth:
-                score += 2.0 if spot_active > 0 else -2.0
-                reasons.append(f"本轮现货主动变化{fmt_money(spot_active)}")
+                # 现货只给较低报警分，不直接等同长期方向。
+                base_score += 1.6 if spot_active > 0 else -1.6
+                base_reasons.append(f"本轮现货主动变化{fmt_money(spot_active)}")
             if abs(weighted_flow) >= pth * 3:
-                score += 2.0 if weighted_flow > 0 else -2.0
-                reasons.append(f"本轮钱包质量加权资金流{fmt_money(weighted_flow)}")
+                base_score += 2.0 if weighted_flow > 0 else -2.0
+                base_reasons.append(f"本轮钱包质量加权资金流{fmt_money(weighted_flow)}")
             elif abs(weighted_flow) >= pth:
-                score += 1.0 if weighted_flow > 0 else -1.0
-                reasons.append(f"本轮钱包质量加权资金流{fmt_money(weighted_flow)}")
+                base_score += 1.0 if weighted_flow > 0 else -1.0
+                base_reasons.append(f"本轮钱包质量加权资金流{fmt_money(weighted_flow)}")
         else:
             if abs(perp_active) >= pth or abs(spot_active) >= sth or abs(weighted_flow) >= pth:
-                reasons.append(f"距离上一轮{gap_minutes:.0f}分钟，当前变化只进入滚动窗口，不当作30m短线强信号")
+                base_reasons.append(f"距离上一轮{gap_minutes:.0f}分钟，当前变化只进入滚动窗口，不当作30m短线强信号")
+
+        # 2) 滚动建仓分，只作为长期资格主来源。
         rolling_score, rolling_reasons, rolling_parts = rolling_score_for_coin(coin, rolling_map.get(coin, {}), thresholds) if ROLLING_FLOW_MODE else (0.0, [], {})
-        score += rolling_score
-        reasons.extend(rolling_reasons)
-        if score == 0:
+        if base_score == 0 and rolling_score == 0:
             continue
-        direction = "bullish" if score > 0 else "bearish"
+
+        # 如果本轮和滚动方向冲突，用绝对值更大的方向作为这条记录方向，但默认只观察。
+        primary_seed = rolling_score if abs(rolling_score) > abs(base_score) else base_score
+        if primary_seed == 0:
+            primary_seed = base_score + rolling_score
+        if primary_seed == 0:
+            continue
+        direction = "bullish" if primary_seed > 0 else "bearish"
+        sign = 1 if direction == "bullish" else -1
+        conflict = (_score_sign(base_score) != 0 and _score_sign(rolling_score) != 0 and _score_sign(base_score) != _score_sign(rolling_score))
+
         confidence, conf_reason, conf_adj = confidence_for(coin, direction)
         m_adj, m_reasons = market_adjust(direction, btc_ctx, ctx_map.get(coin, {}))
         p_adj, p_reasons, stype = position_adjust(direction, ctx_map.get(coin, {}))
         lev_adj, lev_reasons, lev_risks, lev_fields = leverage_signal_adjust(direction, lev_map.get(coin, {}))
         risk_adj, risk_reasons, risk_risks, risk_fields = risk_filter_adjust(direction, (risk_map or {}).get(coin, {}))
-        final_score = score + conf_adj + m_adj + p_adj + lev_adj + risk_adj
         state = classify_state(direction, perp_active, spot_active, coin, thresholds, stype)
         if state == "不明确" and abs(rolling_score) > 0:
             state = "滚动建仓/减仓"
-        th_score = threshold(thresholds, coin, "score_push")
-        min_watch = threshold(thresholds, coin, "min_watch_score")
 
-        # 滚动质量封顶：如果滚动信号主要来自现货-only、单钱包集中、持续性不足，
-        # 又没有本轮合约和当前低杠杆确认，则不能直接变成强信号/长期单。
-        rolling_quality_suspect = bool(
-            rolling_parts.get("rolling_spot_only_risk") or
-            rolling_parts.get("rolling_concentration_risk") or
-            rolling_parts.get("rolling_persistence_risk")
+        # 3) alert_score：短线报警。滚动只允许少量同向确认，不能靠30d滚动分打爆强信号。
+        alert_score = base_score
+        if _same_sign(base_score, rolling_score):
+            alert_score += _signed_cap(rolling_score * 0.25, ALERT_SCORE_ROLLING_CONFIRM_CAP)
+        alert_score += conf_adj * 0.25 + m_adj * 0.25 + p_adj * 0.25 + lev_adj * 0.50 + risk_adj * 0.50
+
+        # 4) long_score：长期资格。必须主要来自滚动建仓和杠杆健康，不靠单轮异动。
+        long_score = rolling_score
+        if _same_sign(rolling_score, base_score):
+            long_score += _signed_cap(base_score * 0.15, 0.8)
+        long_score += conf_adj * 0.60 + m_adj * 0.35 + p_adj * 0.50 + lev_adj * 0.90 + risk_adj * 0.70
+
+        # 5) 长期资格门槛/风控：现货-only、单钱包集中、持续性不足、窗口不成熟都不能直接进长期单。
+        spot_only_risk = bool(rolling_parts.get("rolling_spot_only_risk"))
+        concentration_risk = bool(rolling_parts.get("rolling_concentration_risk"))
+        persistence_risk = bool(rolling_parts.get("rolling_persistence_risk"))
+        gap_risk = bool(rolling_parts.get("rolling_gap_risk"))
+        immature_risk = bool(rolling_parts.get("rolling_immature_risk"))
+        rolling_suspect = spot_only_risk or concentration_risk or persistence_risk or gap_risk or immature_risk
+
+        best_long_ratio = safe_float(rolling_parts.get("best_longterm_leverage_ratio")) or 0.0
+        best_high_ratio = safe_float(rolling_parts.get("best_highrisk_leverage_ratio")) or 0.0
+        best_lev_health = safe_float(rolling_parts.get("best_leverage_health"))
+        best_wallet_count = int(rolling_parts.get("best_wallet_count") or 0)
+        best_spot_share = safe_float(rolling_parts.get("best_spot_share")) or 0.0
+        best_window = str(rolling_parts.get("best_window") or "")
+        selected_groups = str(rolling_parts.get("rolling_selected_groups") or "")
+
+        leverage_confirm = (
+            (best_lev_health is not None and best_lev_health >= LONG_SCORE_MIN_LEVERAGE_CONFIRM) or
+            (best_long_ratio >= 0.55 and best_high_ratio <= 0.35) or
+            ((safe_float(lev_fields.get("longterm_leverage_ratio")) or 0.0) >= 0.55 and (safe_float(lev_fields.get("highrisk_leverage_ratio")) or 0.0) <= 0.35) or
+            (abs(lev_adj) >= 0.55 and _score_sign(lev_adj) == _score_sign(rolling_score))
         )
-        if rolling_quality_suspect and abs(perp_active) < pth * 0.5 and abs(lev_adj) < 0.5:
-            cap = min(th_score - 0.2, max(min_watch, ROLLING_SUSPECT_CAP_SCORE))
-            if cap > 0 and abs(final_score) > cap:
-                final_score = (1 if final_score > 0 else -1) * cap
-                reasons.append(f"滚动信号质量不足，缺少合约低杠杆确认，final_score封顶到{cap:.1f}")
+        has_perp_confirm = abs(perp_active) >= pth * 0.35 or abs(float(rolling_map.get(coin, {}).get(f"perp_{best_window}") or 0.0)) >= pth * 0.5 or leverage_confirm
+        mature_window = bool(selected_groups) and not immature_risk
+        long_direction_ok = _score_sign(long_score) == _score_sign(rolling_score) and _score_sign(rolling_score) != 0
+
+        long_block_reasons: List[str] = []
+        if not mature_window:
+            long_block_reasons.append("滚动窗口未成熟")
+        if persistence_risk:
+            long_block_reasons.append("持续性不足")
+        if concentration_risk:
+            long_block_reasons.append("钱包集中度过高")
+        if spot_only_risk:
+            long_block_reasons.append("现货主导，可能是转账/归集/划转")
+        if LONG_SCORE_REQUIRE_PERP_CONFIRM and not has_perp_confirm:
+            long_block_reasons.append("缺少合约/低杠杆确认")
+        if best_high_ratio >= 0.60:
+            long_block_reasons.append("高杠杆占比过高")
+        if conflict:
+            long_block_reasons.append("本轮异动与滚动方向冲突")
+
+        if spot_only_risk and not leverage_confirm:
+            long_score = _signed_cap(long_score, LONG_SCORE_SPOT_ONLY_CAP)
+        if concentration_risk:
+            long_score = _signed_cap(long_score, LONG_SCORE_CONCENTRATION_CAP)
+        if persistence_risk:
+            long_score = _signed_cap(long_score, LONG_SCORE_PERSISTENCE_CAP)
+        if immature_risk or gap_risk:
+            long_score = _signed_cap(long_score, max(min_watch - 0.3, 3.5))
+        if conflict:
+            alert_score *= 0.65
+            long_score *= 0.65
+
+        long_qualified = (
+            DUAL_SCORE_MODE and
+            long_direction_ok and
+            mature_window and
+            not persistence_risk and
+            not concentration_risk and
+            not (spot_only_risk and not leverage_confirm) and
+            (not LONG_SCORE_REQUIRE_PERP_CONFIRM or has_perp_confirm) and
+            best_high_ratio < 0.60 and
+            abs(long_score) >= min_watch
+        )
+
+        # 6) 输出分类：不再只看一个 final_score。
+        category = "只观察"
+        if abs(alert_score) >= th_score:
+            if spot_only_risk and abs(perp_active) < pth * 0.35:
+                category = "现货异常变化"
+            elif best_high_ratio >= 0.60 or (safe_float(lev_fields.get("highrisk_leverage_ratio")) or 0.0) >= 0.60:
+                category = "高杠杆短线异动"
+            else:
+                category = "短线突发异动"
+        if long_qualified and abs(long_score) >= th_score:
+            category = "低杠杆长期候选"
+        elif long_qualified and abs(long_score) >= min_watch and category == "只观察":
+            category = "滚动建仓观察"
+        elif abs(alert_score) >= min_watch and category == "只观察":
+            category = "短线异动观察"
+
+        # final_score 只保留兼容字段：代表当前最应该展示的主分数。
+        if category in ("低杠杆长期候选", "滚动建仓观察"):
+            final_score = long_score
+        else:
+            final_score = alert_score if abs(alert_score) >= abs(long_score) or not long_qualified else long_score
 
         watchlist = "observe"
-        if abs(final_score) >= th_score:
-            watchlist = "long" if direction == "bullish" else "short"
-        elif abs(final_score) >= min_watch:
+        if category == "低杠杆长期候选" and abs(long_score) >= th_score:
+            watchlist = "long" if long_score > 0 else "short"
+        else:
             watchlist = "observe"
-        conclusion = ("做多观察" if watchlist == "long" else "做空观察" if watchlist == "short" else "只观察") + f" / {stype}"
+
+        if category == "低杠杆长期候选":
+            conclusion = ("做多观察" if long_score > 0 else "做空观察") + " / 低杠杆长期候选"
+        elif category in ("短线突发异动", "高杠杆短线异动"):
+            conclusion = ("偏多" if alert_score > 0 else "偏空") + "短线雷达 / 不等于长期单"
+        elif category == "现货异常变化":
+            conclusion = "现货异常观察 / 等待合约低杠杆确认"
+        else:
+            conclusion = "只观察 / 等待确认"
+
         risk_parts: List[str] = []
         if confidence == "低":
             risk_parts.append("历史样本/胜率不足")
         if state in ("可能对冲", "现货流出+合约做多，换杠杆/冲突", "不明确"):
             risk_parts.append(f"信号状态：{state}")
-        if rolling_parts.get("rolling_spot_only_risk"):
+        if spot_only_risk:
             risk_parts.append("滚动信号现货主导，可能是转账/归集/划转，不等于合约方向")
-        if rolling_parts.get("rolling_concentration_risk"):
+        if concentration_risk:
             risk_parts.append("滚动信号钱包集中度过高，可能是单钱包异动")
-        if rolling_parts.get("rolling_persistence_risk"):
+        if persistence_risk:
             risk_parts.append("滚动信号持续性不足，不能按长期建仓处理")
+        if immature_risk:
+            risk_parts.append("长窗口未成熟，不能按15d/30d成熟信号处理")
+        if gap_risk:
+            risk_parts.append("窗口内含断跑gap")
+        if conflict:
+            risk_parts.append("本轮异动与滚动方向冲突")
+        if long_block_reasons and category != "低杠杆长期候选":
+            risk_parts.append("长期资格未通过：" + "、".join(long_block_reasons[:5]))
         if stype in ("高位追多", "低位追空"):
             risk_parts.append("价格位置有追涨杀跌风险")
         risk_parts.extend(lev_risks)
         risk_parts.extend(risk_risks)
         risk = "；".join(risk_parts) if risk_parts else "无明显额外风险"
+
+        reasons: List[str] = []
+        reasons.extend(base_reasons)
+        reasons.extend(rolling_reasons)
+        if long_block_reasons and category != "低杠杆长期候选":
+            reasons.append("长期资格未通过：" + "、".join(long_block_reasons))
         reason = "；".join(reasons + [conf_reason] + m_reasons + p_reasons + lev_reasons + risk_reasons)
+
         score_parts = {
-            "base_flow": round(score - rolling_score, 4),
+            "base_flow": round(base_score, 4),
             "rolling_flow": round(rolling_parts.get("rolling_flow_core", rolling_score - float(rolling_parts.get("rolling_leverage") or 0.0)), 4),
+            "rolling_leverage": round(float(rolling_parts.get("rolling_leverage") or 0.0), 4),
             "confidence": round(conf_adj, 4),
             "market": round(m_adj, 4),
             "price_position": round(p_adj, 4),
             "leverage": round(lev_adj, 4),
             "funding_liquidity": round(risk_adj, 4),
+            "alert_score": round(alert_score, 4),
+            "long_score": round(long_score, 4),
             "final_score": round(final_score, 4),
+            "long_qualified": 1 if long_qualified else 0,
+            "signal_category": category,
+            "leverage_confirm": 1 if leverage_confirm else 0,
+            "has_perp_confirm": 1 if has_perp_confirm else 0,
         }
         score_parts.update(rolling_parts)
         ctx = ctx_map.get(coin, {})
@@ -3725,7 +3984,11 @@ def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: 
             "run_id": run_id,
             "coin": coin,
             "direction": direction,
-            "score": score,
+            "score": base_score + rolling_score,
+            "alert_score": alert_score,
+            "long_score": long_score,
+            "long_qualified": long_qualified,
+            "signal_category": category,
             "confidence": confidence,
             "signal_type": stype,
             "signal_state": state,
@@ -3753,24 +4016,26 @@ def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: 
             "risk": risk,
             "reason": reason,
         })
-    rows.sort(key=lambda x: abs(x["final_score"]), reverse=True)
+    # 先排长期候选，再排短线报警，再排普通观察。
+    rows.sort(key=lambda x: (1 if x.get("signal_category") == "低杠杆长期候选" else 0, abs(x.get("alert_score") or 0.0), abs(x.get("long_score") or 0.0), abs(x["final_score"])), reverse=True)
     save_coin_signals(run_id, rows)
     return rows
-
 
 def save_coin_signals(run_id: int, rows: List[Dict[str, Any]]) -> None:
     conn = db_conn()
     cur = conn.cursor()
     cur.execute("DELETE FROM coin_signals WHERE run_id=?", (run_id,))
+    created_at = now_str()
+    created_at_cn = display_time_from_utc(created_at)
     cur.executemany("""
     INSERT INTO coin_signals (
-        run_id, coin, direction, score, confidence, signal_type, signal_state, watchlist,
+        run_id, created_at, created_at_cn, coin, direction, score, confidence, signal_type, signal_state, watchlist,
         perp_active, spot_active, weighted_flow, price_position, pct_1h, pct_4h, pct_24h,
         final_score, threshold_score, avg_leverage, avg_liq_distance, longterm_leverage_ratio, highrisk_leverage_ratio, leverage_note,
         conclusion, risk, reason
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, [(
-        run_id, r["coin"], r["direction"], r["score"], r["confidence"], r["signal_type"], r["signal_state"], r["watchlist"],
+        run_id, created_at, created_at_cn, r["coin"], r["direction"], r["score"], r["confidence"], r["signal_type"], r["signal_state"], r["watchlist"],
         r["perp_active"], r["spot_active"], r["weighted_flow"], r["price_position"], r["pct_1h"], r["pct_4h"], r["pct_24h"],
         r["final_score"], r["threshold_score"], r.get("avg_leverage"), r.get("avg_liq_distance"), r.get("longterm_leverage_ratio"), r.get("highrisk_leverage_ratio"), r.get("leverage_note"),
         r["conclusion"], r["risk"], r["reason"]
@@ -3790,16 +4055,26 @@ def export_signal_explain_files(run_id: int, signals: List[Dict[str, Any]]) -> N
         parts = s.get("score_parts") or {}
         row = {
             "run_id": run_id,
+            "signal_time_cn": signal_time_cn(run_id),
+            "signal_time_utc": now_str(),
             "coin": s.get("coin"),
             "direction": s.get("direction"),
             "direction_cn": dir_cn(s.get("direction")),
             "final_score": s.get("final_score"),
+            "alert_score": s.get("alert_score"),
+            "long_score": s.get("long_score"),
+            "long_qualified": 1 if s.get("long_qualified") else 0,
+            "signal_category": s.get("signal_category"),
             "threshold_score": s.get("threshold_score"),
             "watchlist": s.get("watchlist"),
             "confidence": s.get("confidence"),
             "signal_state": s.get("signal_state"),
             "signal_type": s.get("signal_type"),
             "base_flow_score": parts.get("base_flow"),
+            "rolling_flow_score": parts.get("rolling_flow"),
+            "rolling_leverage_score": parts.get("rolling_leverage"),
+            "leverage_confirm": parts.get("leverage_confirm"),
+            "has_perp_confirm": parts.get("has_perp_confirm"),
             "confidence_adj": parts.get("confidence"),
             "market_adj": parts.get("market"),
             "price_position_adj": parts.get("price_position"),
@@ -3825,12 +4100,12 @@ def export_signal_explain_files(run_id: int, signals: List[Dict[str, Any]]) -> N
             writer.writeheader(); writer.writerows(rows)
     with open(os.path.join(REPORT_DIR, "signal_explain_report.txt"), "w", encoding="utf-8") as f:
         f.write("【信号解释】\n")
-        f.write(f"run_id={run_id} | 更新时间UTC={now_str()}\n\n")
+        f.write(f"run_id={run_id} | 更新时间{DISPLAY_TZ_NAME}={signal_time_cn(run_id)} | UTC={now_str()}\n\n")
         if not signals:
             f.write("本轮暂无信号。\n")
         for s in signals[:TOP_N]:
             parts = s.get("score_parts") or {}
-            f.write(f"{s['coin']} {dir_cn(s['direction'])} final={s['final_score']:+.2f}/阈值{s['threshold_score']:.1f}\n")
+            f.write(f"{s['coin']} {dir_cn(s['direction'])} 时间={signal_time_cn(run_id)} final={s['final_score']:+.2f}/阈值{s['threshold_score']:.1f}\n")
             f.write(
                 f"  资金={parts.get('base_flow',0):+.2f} | 历史={parts.get('confidence',0):+.2f} | "
                 f"市场={parts.get('market',0):+.2f} | 位置={parts.get('price_position',0):+.2f} | "
@@ -3903,7 +4178,7 @@ def write_data_quality_report(run_id: int, ok_rate: float, wallet_rows: List[Dic
     path = os.path.join(DETAILS_DIR, "data_quality_report.txt")
     with open(path, "w", encoding="utf-8") as f:
         f.write("【数据质量 / API异常保护】\n")
-        f.write(f"run_id={run_id} | UTC={now_str()} | note={note}\n")
+        f.write(f"run_id={run_id} | {DISPLAY_TZ_NAME}={signal_time_cn(run_id)} | UTC={now_str()} | note={note}\n")
         f.write(f"监控钱包={total} | ok={ok} | partial={partial} | failed={failed} | 成功率={ok_rate*100:.2f}% | 最低要求={MIN_OK_RATE*100:.2f}%\n")
         if DATA_ANOMALY_PROTECT_MODE and ok_rate < MIN_OK_RATE:
             f.write("\n⚠️ 本轮成功率低于阈值：脚本会跳过新信号生成/生命周期结算，避免把 API 抽风误判成信号消失或钱包平仓。\n")
@@ -3981,13 +4256,13 @@ def _active_lifecycle_signal_rows(signals: List[Dict[str, Any]]) -> List[Dict[st
     rows: List[Dict[str, Any]] = []
     for s in signals:
         try:
-            if abs(safe_float(s.get("final_score")) or 0.0) >= (safe_float(s.get("threshold_score")) or 0.0):
+            if abs(safe_float(s.get("alert_score")) or 0.0) >= (safe_float(s.get("threshold_score")) or 0.0) and s.get("signal_category") != "低杠杆长期候选":
                 rows.append({
                     "type": "strong",
                     "coin": s.get("coin"),
                     "direction": s.get("direction"),
-                    "score": safe_float(s.get("final_score")) or 0.0,
-                    "reason": s.get("reason") or "强信号仍在",
+                    "score": safe_float(s.get("alert_score")) or 0.0,
+                    "reason": s.get("reason") or "短线强信号仍在",
                 })
         except Exception:
             continue
@@ -4007,7 +4282,7 @@ def _active_lifecycle_longterm_rows(candidates: List[Dict[str, Any]]) -> List[Di
             "coin": c.get("coin"),
             "direction": direction,
             "score": safe_float(c.get("long_term_score")) or safe_float(c.get("final_score")) or 0.0,
-            "reason": f"{action} | final={c.get('final_score')} | 连续={c.get('streak')} | {c.get('signal_state')}",
+            "reason": f"{action} | long={c.get('long_score')} alert={c.get('alert_score')} | 连续={c.get('streak')} | {c.get('signal_state')}",
         })
     return [r for r in rows if r.get("coin") and r.get("direction")]
 
@@ -4205,7 +4480,7 @@ def create_longterm_events(run_id: int, candidates: List[Dict[str, Any]], prices
         if px is None or px <= 0:
             continue
         direction = "bullish" if "多" in str(c.get("direction_cn")) else "bearish"
-        reason = f"长期分={c.get('long_term_score')} final={c.get('final_score')} 连续={c.get('streak')} 动作={c.get('action')}"
+        reason = f"长期分={c.get('long_term_score')} long={c.get('long_score')} alert={c.get('alert_score')} 连续={c.get('streak')} 动作={c.get('action')}"
         try:
             cur.execute("""
             INSERT INTO longterm_events(run_id, created_at, coin, direction, score, entry_px, reason)
@@ -4330,6 +4605,7 @@ def write_last_run_status(run_id: int, wallet_rows: List[Dict[str, Any]], perp_r
     if start_dt:
         duration_minutes = (utc_now() - start_dt).total_seconds() / 60
     payload = {
+        "last_run_cn": display_now_str(),
         "last_run_utc": now_str(),
         "run_id": run_id,
         "trigger_note": note,
@@ -4674,7 +4950,7 @@ def export_wallet_quality_files(rows: List[Dict[str, Any]]) -> None:
 
     with open(txt_path, "w", encoding="utf-8") as f:
         f.write("【钱包质量分类】\n")
-        f.write(f"更新时间 UTC：{now_str()}\n")
+        f.write(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}\n")
         f.write(f"统计窗口：最近 {WALLET_QUALITY_WINDOW_DAYS} 天\n")
         f.write("胜率定义：24h>=+1%算赢；72h>=+2%算赢；7d>=+4%算赢。做空会按方向收益计算。\n\n")
         f.write("等级数量：" + " | ".join([f"{g}:{counts.get(g,0)}" for g in ["S","A","B","C","R","N"]]) + "\n\n")
@@ -4738,7 +5014,7 @@ def recent_wallet_flow(days: int = REPORT_REVIEW_WINDOW_DAYS) -> List[Dict[str, 
 def already_pushed_today(push_type: str) -> bool:
     conn = db_conn()
     cur = conn.cursor()
-    cur.execute("SELECT id FROM push_log WHERE push_type=? AND push_date=?", (push_type, utc_today()))
+    cur.execute("SELECT id FROM push_log WHERE push_type=? AND push_date=?", (push_type, display_today()))
     row = cur.fetchone()
     conn.close()
     return row is not None
@@ -4748,7 +5024,7 @@ def mark_pushed(push_type: str) -> None:
     conn = db_conn()
     cur = conn.cursor()
     try:
-        cur.execute("INSERT INTO push_log(push_type, push_date, pushed_at) VALUES (?, ?, ?)", (push_type, utc_today(), now_str()))
+        cur.execute("INSERT INTO push_log(push_type, push_date, pushed_at) VALUES (?, ?, ?)", (push_type, display_today(), now_str()))
         conn.commit()
     except sqlite3.IntegrityError:
         pass
@@ -4765,8 +5041,8 @@ def should_push_daily() -> bool:
     新逻辑：到达设定小时之后，只要今天还没成功推送过，
     第一轮成功生成报告就会补推一次。
     """
-    now = utc_now()
-    return now.hour >= DAILY_PUSH_HOUR_UTC and not already_pushed_today("daily")
+    now = display_now()
+    return now.hour >= DAILY_PUSH_HOUR_CN and not already_pushed_today("daily")
 
 
 
@@ -4908,16 +5184,19 @@ def build_long_term_candidates(run_id: int, signals: List[Dict[str, Any]], ctx_m
 
     out: List[Dict[str, Any]] = []
     for s in signals:
-        score = abs(safe_float(s.get("final_score")) or 0.0)
-        if score < threshold(load_thresholds(), s["coin"], "min_watch_score"):
-            continue
+        # 双分数版：长期候选只看 long_score + long_qualified，不再用短线 alert/final_score 混进长期单。
         coin = s["coin"]
         direction = s["direction"]
+        score = abs(safe_float(s.get("long_score")) or 0.0)
+        if not s.get("long_qualified"):
+            continue
+        if score < threshold(load_thresholds(), coin, "min_watch_score"):
+            continue
         ctx = ctx_map.get(coin, {})
         streak = signal_streak(coin, direction, run_id, min_abs_score=threshold(load_thresholds(), coin, "min_watch_score"))
         plan = long_term_entry_plan(s, ctx, streak)
 
-        # 长期评分：final_score + 连续性 + 可信度 + 清晰状态 - 风险位置
+        # 长期评分：long_score + 连续性 + 可信度 + 清晰状态 - 风险位置
         lt_score = score
         if streak >= LONG_TERM_MIN_STREAK:
             lt_score += 1.0
@@ -4937,6 +5216,9 @@ def build_long_term_candidates(run_id: int, signals: List[Dict[str, Any]], ctx_m
             "direction": direction,
             "direction_cn": dir_cn(direction),
             "final_score": safe_float(s.get("final_score")) or 0.0,
+            "alert_score": safe_float(s.get("alert_score")) or 0.0,
+            "long_score": safe_float(s.get("long_score")) or 0.0,
+            "signal_category": s.get("signal_category"),
             "long_term_score": lt_score,
             "streak": streak,
             "confidence": s.get("confidence"),
@@ -4968,13 +5250,13 @@ def write_long_term_plan(candidates: List[Dict[str, Any]]) -> None:
     path = os.path.join(REPORT_DIR, "long_term_plan.txt")
     with open(path, "w", encoding="utf-8") as f:
         f.write("【低杠杆长期单观察计划】\n")
-        f.write(f"更新时间 UTC：{now_str()}\n")
+        f.write(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}\n")
         f.write(f"风控默认：单币最大亏损控制在账户 {LONG_TERM_RISK_PCT:.1f}% 左右；建议低杠杆，不一次打满。\n\n")
         if not candidates:
             f.write("暂无适合低杠杆长期单的候选。\n")
             return
         for c in candidates[:TOP_N]:
-            f.write(f"{c['coin']} {c['direction_cn']} | 长期分={c['long_term_score']:.1f} | final={c['final_score']:+.1f} | 连续={c['streak']}轮 | 可信度={c['confidence']}\n")
+            f.write(f"{c['coin']} {c['direction_cn']} | 长期分={c['long_term_score']:.1f} | long={c.get('long_score',0):+.1f} | alert={c.get('alert_score',0):+.1f} | 连续={c['streak']}轮 | 可信度={c['confidence']}\n")
             f.write(f"状态：{c['signal_state']} | 类型：{c['signal_type']} | 建议杠杆：{c['leverage']}\n")
             f.write(f"动作：{c['action']}\n")
             f.write(f"入场：{c['entry']}\n")
@@ -5000,14 +5282,14 @@ def write_watchlists(signals: List[Dict[str, Any]]) -> None:
             if not rows:
                 f.write("暂无。\n")
             for s in rows[:TOP_N]:
-                f.write(f"{s['coin']} {dir_cn(s['direction'])} score={s['final_score']:+.1f}/阈值{s['threshold_score']:.1f} 状态={s['signal_state']}\n")
+                f.write(f"{s['coin']} {dir_cn(s['direction'])} alert={float(s.get('alert_score') or 0):+.1f} long={float(s.get('long_score') or 0):+.1f}/阈值{s['threshold_score']:.1f} 分类={s.get('signal_category','-')} 状态={s['signal_state']}\n")
                 f.write(f"结论：{s['conclusion']}\n")
                 f.write(f"风险：{s['risk']}\n")
                 f.write(f"原因：{s['reason']}\n\n")
 
 
 def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, Dict[str, Any]], actions: List[Dict[str, Any]], cashflows: List[Dict[str, Any]], ok_rate: float, new_signal_events: int, updated_actions: int, updated_signals: int) -> str:
-    strong = [s for s in signals if abs(s["final_score"]) >= s["threshold_score"]]
+    strong = [s for s in signals if abs(s.get("alert_score") or 0.0) >= s["threshold_score"] and s.get("signal_category") != "低杠杆长期候选"]
     longs = [s for s in signals if s["watchlist"] == "long"]
     shorts = [s for s in signals if s["watchlist"] == "short"]
     observes = [s for s in signals if s["watchlist"] == "observe"]
@@ -5016,6 +5298,7 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
     lines: List[str] = []
     lines.append("🧠 Hyperliquid 钱包监控 FINAL")
     lines.append("币种阈值 + 钱包主动变化 + 主导钱包 + 信号解释 + 回测 + 生命周期 + API异常保护 + TG 推送")
+    lines.append(f"{DISPLAY_TZ_NAME}：{signal_time_cn(run_id)}")
     lines.append(f"UTC时间：{now_str()}")
     lines.append(f"run_id：{run_id}")
     stats = run_wallet_stats(run_id)
@@ -5074,12 +5357,12 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
                 for r in risky[:min(TOP_N, 8)]:
                     lines.append(f"{r['coin']} | funding={fmt_pct(r.get('funding_rate_pct'))} 风险={r.get('funding_risk')} | 24h成交额={fmt_money(r.get('day_volume_usd'))} 流动性={r.get('liquidity_risk')}")
     lines.append("")
-    lines.append("【最终强信号】")
+    lines.append("【短线强信号 / 异动雷达】")
     if not strong:
-        lines.append("暂无达到币种专属阈值的强信号。")
+        lines.append("暂无达到币种专属阈值的短线强异动。")
     else:
         for s in strong[:TOP_N]:
-            lines.append(f"🚨 {s['coin']} {dir_cn(s['direction'])} | score={s['final_score']:+.1f}/阈值{s['threshold_score']:.1f} | {s['signal_state']} | 可信度={s['confidence']} | 类型={s['signal_type']}")
+            lines.append(f"🚨 {s['coin']} {dir_cn(s['direction'])} | 时间={signal_time_cn(run_id)} | alert={float(s.get('alert_score') or 0):+.1f}/阈值{s['threshold_score']:.1f} | long={float(s.get('long_score') or 0):+.1f} | {s.get('signal_category','-')} | {s['signal_state']} | 可信度={s['confidence']}")
             lines.append(f"  结论：{s['conclusion']}")
             parts = s.get("score_parts") or {}
             lines.append(f"  分解：本轮资金{parts.get('base_flow',0):+.1f} / 滚动建仓{parts.get('rolling_flow',0):+.1f} / 滚动杠杆{parts.get('rolling_leverage',0):+.1f} / 历史{parts.get('confidence',0):+.1f} / 市场{parts.get('market',0):+.1f} / 位置{parts.get('price_position',0):+.1f} / 当前杠杆{parts.get('leverage',0):+.1f} / 费率流动性{parts.get('funding_liquidity',0):+.1f}")
@@ -5092,21 +5375,21 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
         lines.append("暂无。")
     else:
         for s in longs[:TOP_N]:
-            lines.append(f"{s['coin']} score={s['final_score']:+.1f} | {s['signal_state']} | {s['conclusion']}")
+            lines.append(f"{s['coin']} 时间={signal_time_cn(run_id)} | long={float(s.get('long_score') or 0):+.1f} alert={float(s.get('alert_score') or 0):+.1f} | {s.get('signal_category','-')} | {s['signal_state']} | {s['conclusion']}")
     lines.append("")
     lines.append("【做空观察】")
     if not shorts:
         lines.append("暂无。")
     else:
         for s in shorts[:TOP_N]:
-            lines.append(f"{s['coin']} score={s['final_score']:+.1f} | {s['signal_state']} | {s['conclusion']}")
+            lines.append(f"{s['coin']} 时间={signal_time_cn(run_id)} | long={float(s.get('long_score') or 0):+.1f} alert={float(s.get('alert_score') or 0):+.1f} | {s.get('signal_category','-')} | {s['signal_state']} | {s['conclusion']}")
     lines.append("")
     lines.append("【只观察 / 信号不足】")
     if not observes:
         lines.append("暂无。")
     else:
         for s in observes[:TOP_N]:
-            lines.append(f"{s['coin']} {dir_cn(s['direction'])} score={s['final_score']:+.1f} | {s['signal_state']} | 风险：{s['risk']}")
+            lines.append(f"{s['coin']} {dir_cn(s['direction'])} 时间={signal_time_cn(run_id)} | alert={float(s.get('alert_score') or 0):+.1f} long={float(s.get('long_score') or 0):+.1f} | {s.get('signal_category','-')} | {s['signal_state']} | 风险：{s['risk']}")
     lines.append("")
     if LONG_TERM_MODE:
         lt_candidates = build_long_term_candidates(run_id, signals, ctx_map)
@@ -5116,8 +5399,8 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
         else:
             for c in lt_candidates[:TOP_N]:
                 lines.append(
-                    f"{c['coin']} {c['direction_cn']} | 长期分={c['long_term_score']:.1f} | "
-                    f"final={c['final_score']:+.1f} | 连续={c['streak']}轮 | "
+                    f"{c['coin']} {c['direction_cn']} | 时间={signal_time_cn(run_id)} | 长期分={c['long_term_score']:.1f} | "
+                    f"long={c.get('long_score',0):+.1f} alert={c.get('alert_score',0):+.1f} | 连续={c['streak']}轮 | "
                     f"可信度={c['confidence']} | 建议杠杆={c['leverage']}"
                 )
                 lines.append(f"  动作：{c['action']}")
@@ -5210,7 +5493,7 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
 
 def save_report(run_id: int, signals: List[Dict[str, Any]], report: str) -> None:
     ensure_dirs()
-    strong_count = sum(1 for s in signals if abs(s["final_score"]) >= s["threshold_score"])
+    strong_count = sum(1 for s in signals if abs(s.get("alert_score") or 0.0) >= s["threshold_score"] and s.get("signal_category") != "低杠杆长期候选")
     long_count = sum(1 for s in signals if s["watchlist"] == "long")
     short_count = sum(1 for s in signals if s["watchlist"] == "short")
     with open(os.path.join(REPORT_DIR, "final_latest_report.txt"), "w", encoding="utf-8") as f:
@@ -5303,7 +5586,7 @@ def save_daily_archive(run_id: int, report: str) -> None:
     if not DAILY_ARCHIVE:
         return
     ensure_dirs()
-    today = utc_today()
+    today = display_today()
     daily_root = os.path.join(REPORT_DIR, "daily")
     day_dir = os.path.join(daily_root, today)
     os.makedirs(day_dir, exist_ok=True)
@@ -5352,8 +5635,9 @@ def save_daily_archive(run_id: int, report: str) -> None:
     # 4) 写一个索引，方便打开目录时先看这个
     index = (
         f"Hyperliquid Monitor Daily Archive\n"
-        f"date_utc: {today}\n"
+        f"date_cn: {today}\n"
         f"run_id: {run_id}\n"
+        f"updated_at_cn: {signal_time_cn(run_id)}\n"
         f"updated_at_utc: {now_str()}\n\n"
         f"主要看：final_report.txt、long_term_plan.txt、signal_explain_report.txt、coin_risk_report.txt、rolling_flow_report.txt\n"
         f"关键 CSV：coin_signals.csv、rolling_flow.csv、wallet_quality.csv、wallet_position_performance.csv、signal_backtest.csv、longterm_backtest.csv、signal_lifecycle.csv\n"
@@ -5438,7 +5722,7 @@ async def run_once(args: argparse.Namespace) -> None:
         stats = run_wallet_stats(run_id)
         report = (
             f"🧠 Hyperliquid 钱包监控 FINAL\n"
-            f"UTC时间：{now_str()}\n"
+            f"{DISPLAY_TZ_NAME}：{display_now_str()} | UTC时间：{now_str()}\n"
             f"run_id：{run_id}\n\n"
             f"【扫描健康】\n"
             f"监控钱包：{stats['total']} | 成功：{stats['ok']} | "
@@ -5520,7 +5804,7 @@ async def run_once(args: argparse.Namespace) -> None:
     prune_reports()
     save_daily_archive(run_id, report)
 
-    strong = [s for s in signals if abs(s["final_score"]) >= s["threshold_score"]]
+    strong = [s for s in signals if (abs(s.get("alert_score") or 0.0) >= s["threshold_score"] and s.get("signal_category") != "低杠杆长期候选") or (s.get("signal_category") == "低杠杆长期候选" and abs(s.get("long_score") or 0.0) >= s["threshold_score"])]
     daily_due = should_push_daily()
     should_push = PUSH_EVERY_RUN or bool(strong) or bool(closed_lifecycle_events) or daily_due
     pushed = False
