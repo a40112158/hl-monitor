@@ -23,6 +23,7 @@ RAW_TABLES = [
 EVENT_TABLES = [
     "wallet_actions",
     "coin_flow_snapshots",
+    "price_snapshots",
     "signal_events",
     "longterm_events",
     "position_trade_events",
@@ -135,9 +136,11 @@ def compact(db_path: Path, raw_keep: int, history_days: int, final_reports_days:
             if before != after:
                 print(f"[hardcap] runs: {before}->{after}", flush=True)
 
-        if table_exists(cur, "push_log") and col_exists(cur, "push_log", "created_at"):
+        if table_exists(cur, "push_log") and col_exists(cur, "push_log", "pushed_at"):
             push_cutoff = (dt.datetime.utcnow() - dt.timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
-            deleted = delete_old_by_created_at(cur, "push_log", push_cutoff)
+            before = count_rows(cur, "push_log")
+            cur.execute("DELETE FROM push_log WHERE pushed_at < ?", (push_cutoff,))
+            deleted = max(0, before - count_rows(cur, "push_log"))
             if deleted:
                 print(f"[hardcap] push_log: deleted {deleted} old rows", flush=True)
 
