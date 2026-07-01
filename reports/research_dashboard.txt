@@ -1,0 +1,40 @@
+【研究面板 / 信号验证摘要】
+更新时间北京时间：2026-07-02 00:35:25 | UTC：2026-07-01 16:35:25
+说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
+
+【信号回测摘要】
+alert_signal / long | 样本=1 | 72h胜率=None% 门槛=None% 平均=None% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
+alert_signal / short | 样本=10 | 72h胜率=None% 门槛=None% 平均=None% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
+alert_signal / all | 样本=11 | 72h胜率=None% 门槛=None% 平均=None% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
+longterm_candidate / short | 样本=8 | 72h胜率=None% 门槛=None% 平均=None% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
+longterm_candidate / all | 样本=8 | 72h胜率=None% 门槛=None% 平均=None% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
+
+【Top 钱包画像】
+0x5323...b23c [smart_money] grade=B score=68.1 样本=25 72h胜率=None 30d胜率=None 主币=HYPE,SOL,ZEC
+0xa445...329d [money_printer] grade=C score=61.8 样本=21 72h胜率=None 30d胜率=None 主币=BTC,ETH
+0xffff...ffff [money_printer] grade=C score=56.5 样本=74 72h胜率=None 30d胜率=None 主币=QONE,QUANT
+0x9cc5...ab3d [money_printer] grade=N score=50.0 样本=12 72h胜率=None 30d胜率=None 主币=BTC
+0x7c93...c8fd [money_printer] grade=N score=50.0 样本=11 72h胜率=None 30d胜率=None 主币=ETH,BTC
+0x152e...c9dc [money_printer] grade=N score=50.0 样本=10 72h胜率=None 30d胜率=None 主币=HYPE,BTC,SOL
+0x350e...fcfb [money_printer] grade=N score=50.0 样本=10 72h胜率=None 30d胜率=None 主币=ETH,BTC
+0x3e7a...1589 [money_printer] grade=N score=50.0 样本=10 72h胜率=None 30d胜率=None 主币=BTC,ETH
+0x3b88...04a7 [money_printer] grade=N score=50.0 样本=8 72h胜率=None 30d胜率=None 主币=ZEC,HYPE,XRP
+0x4f67...5b79 [smart_money] grade=N score=50.0 样本=8 72h胜率=None 30d胜率=None 主币=BASED
+
+【Top 币种画像】
+SOL alert/short | 事件=3 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
+QONE alert/short | 事件=2 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
+SOL longterm/short | 事件=2 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
+QONE longterm/short | 事件=2 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
+HYPE alert/short | 事件=1 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
+ZEC alert/long | 事件=1 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
+MAX alert/short | 事件=1 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
+BASED alert/short | 事件=1 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
+UPUMP alert/short | 事件=1 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
+ENA alert/short | 事件=1 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
+MAX longterm/short | 事件=1 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
+BASED longterm/short | 事件=1 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
+UPUMP longterm/short | 事件=1 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
+ENA longterm/short | 事件=1 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
+
+输出文件：reports/details/research_signal_summary_latest.csv、coin_profile_latest.csv、wallet_profile_latest.csv
