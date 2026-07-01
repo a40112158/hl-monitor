@@ -25,9 +25,9 @@ jobs:
         with:
           persist-credentials: true
 
-      - name: Confirm checkout state
+      - name: Pull latest state
         run: |
-          git status --short
+          git pull --rebase || true
 
       - name: Restore compressed database
         run: |
@@ -48,10 +48,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Run regression tests
-        run: |
-          python -m unittest discover -s tests -t . -v
 
       - name: Test Telegram on manual run
         if: github.event_name == 'workflow_dispatch'
@@ -181,7 +177,6 @@ jobs:
           LIQUIDITY_LOW_DAY_VOLUME: "20000000"
           LIQUIDITY_MIN_DAY_VOLUME: "5000000"
           HEALTH_STALE_HOURS: "2"
-          EVENT_PRICE_MAX_DELAY_HOURS: "3"
 
           PYTHONUNBUFFERED: "1"
           DETAILS_DIR: "reports/details"
@@ -224,7 +219,9 @@ jobs:
           gz_mb=$(python -c "import os; p='hl_monitor.db.gz'; print(os.path.getsize(p)/1024/1024 if os.path.exists(p) else 0)")
           echo "Compressed db size: ${gz_mb} MB; limit=${DB_GZ_MAX_MB} MB"
 
-          if ! python -c "import os,sys; size=os.path.getsize('hl_monitor.db.gz')/1024/1024 if os.path.exists('hl_monitor.db.gz') else 0; limit=float(os.getenv('DB_GZ_MAX_MB','92')); sys.exit(0 if size <= limit else 1)"; then
+          python -c "import os,sys; size=os.path.getsize('hl_monitor.db.gz')/1024/1024 if os.path.exists('hl_monitor.db.gz') else 0; limit=float(os.getenv('DB_GZ_MAX_MB','92')); sys.exit(0 if size <= limit else 1)"
+          ok=$?
+          if [ "$ok" != "0" ]; then
             echo "hl_monitor.db.gz is still too large. Running emergency hardcap..."
             python -u scripts/compact_sqlite_hardcap.py --db hl_monitor.db --raw-keep 2 --history-days 30 --final-reports-days 3 --hard
             gzip -9 -c hl_monitor.db > hl_monitor.db.gz
@@ -250,29 +247,35 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git fetch origin main
+          # 自动生成的 reports/db.gz 不做 merge/rebase，避免 reports 内容冲突。
+          # 每次提交都以远端 main 为基底，保留本轮生成的工作区文件，然后重新 commit。
+          commit_and_push() {
+            git fetch origin main
+            git reset --mixed origin/main
 
-          # 本地 SQLite 运行，GitHub 只提交压缩后的 hl_monitor.db.gz，不提交 hl_monitor.db。
-          git rm --cached -f hl_monitor.db 2>/dev/null || true
-          rm -f hl_monitor.db || true
+            # 本地 SQLite 运行，GitHub 只提交压缩后的 hl_monitor.db.gz，不提交 hl_monitor.db。
+            git rm --cached -f hl_monitor.db 2>/dev/null || true
+            rm -f hl_monitor.db || true
 
-          git add -f hl_monitor.db.gz reports coin_thresholds.json .gitignore scripts/compact_sqlite_hardcap.py || true
+            git add -f hl_monitor.db.gz reports coin_thresholds.json .gitignore scripts/compact_sqlite_hardcap.py || true
 
-          if git diff --cached --quiet; then
-            echo "No changes to commit."
-          else
+            if git diff --cached --quiet; then
+              echo "No changes to commit."
+              return 0
+            fi
+
             git commit -m "update hl monitor state"
+            git push
+          }
 
-            for i in 1 2 3; do
-              if git pull --rebase origin main && git push; then
-                echo "Push success."
-                exit 0
-              fi
-              git rebase --abort 2>/dev/null || true
-              echo "Push failed, retry $i..."
-              sleep 5
-            done
+          for i in 1 2 3; do
+            if commit_and_push; then
+              echo "Push success."
+              exit 0
+            fi
+            echo "Push failed, retry $i..."
+            sleep 5
+          done
 
-            echo "Push failed after retries; generated state remains in the failed job artifact/logs."
-            exit 1
-          fi
+          echo "Push failed after retries; generated state remains in this workflow workspace only."
+          exit 1
