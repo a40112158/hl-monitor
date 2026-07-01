@@ -135,6 +135,11 @@ FUNDING_DANGER_ABS_PCT = float(os.getenv("FUNDING_DANGER_ABS_PCT", "0.08"))
 LIQUIDITY_LOW_DAY_VOLUME = float(os.getenv("LIQUIDITY_LOW_DAY_VOLUME", "20000000"))
 LIQUIDITY_MIN_DAY_VOLUME = float(os.getenv("LIQUIDITY_MIN_DAY_VOLUME", "5000000"))
 HEALTH_STALE_HOURS = float(os.getenv("HEALTH_STALE_HOURS", "2"))
+# 回测只接受目标时点附近的历史价格；超出容许延迟就留空。
+EVENT_PRICE_MAX_DELAY_HOURS = float(os.getenv("EVENT_PRICE_MAX_DELAY_HOURS", "3"))
+
+# 当前运行仅用于异常兜底；正常完成后会清空。
+_ACTIVE_RUN_ID: Optional[int] = None
 
 # 数据异常保护：API 成功率低时不更新信号生命周期，避免把 API 抽风误判成信号消失/平仓。
 DATA_ANOMALY_PROTECT_MODE = os.getenv("DATA_ANOMALY_PROTECT_MODE", "1") == "1"
@@ -585,7 +590,9 @@ def init_db() -> None:
         perp_rows INTEGER,
         spot_rows INTEGER,
         ok_rate REAL,
-        pushed INTEGER DEFAULT 0
+        pushed INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'running',
+        error TEXT
     )
     """)
 
@@ -773,6 +780,17 @@ def init_db() -> None:
         rel_btc_24h REAL,
         regime TEXT,
         created_at TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS price_snapshots (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        run_id INTEGER,
+        created_at TEXT,
+        coin TEXT,
+        px REAL,
+        UNIQUE(run_id, coin)
     )
     """)
 
@@ -1028,6 +1046,18 @@ def init_db() -> None:
     for col in ("win_15d", "avg_15d", "win_30d", "avg_30d", "expectancy_30d"):
         add_col_if_missing("wallet_quality", col, "REAL")
 
+    add_col_if_missing("runs", "status", "TEXT")
+    add_col_if_missing("runs", "error", "TEXT")
+    cur.execute("""
+        UPDATE runs
+        SET status = CASE
+            WHEN finished_at IS NULL THEN 'failed'
+            WHEN COALESCE(total_wallets, 0) >= ? AND COALESCE(ok_rate, 0) >= ? THEN 'completed'
+            ELSE 'degraded'
+        END
+        WHERE status IS NULL OR status = ''
+    """, (MIN_WALLET_COUNT, MIN_OK_RATE))
+
     add_col_if_missing("wallet_states", "perp_account_leverage", "REAL")
     for col in ("margin_mode", "leverage_style", "leverage_note"):
         add_col_if_missing("perp_positions", col, "TEXT")
@@ -1067,6 +1097,7 @@ def init_db() -> None:
     cur.execute("CREATE INDEX IF NOT EXISTS idx_coin_flow_run ON coin_flow_snapshots(run_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_coin_flow_created_coin ON coin_flow_snapshots(created_at, coin)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_risk_run_coin ON coin_risk_metrics(run_id, coin)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_price_snapshots_coin_time ON price_snapshots(coin, created_at)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_longterm_coin ON longterm_events(coin)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_lifecycles_status ON signal_lifecycles(lifecycle_type, status, coin, direction)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_lifecycles_exit_run ON signal_lifecycles(exit_run_id)")
@@ -1076,46 +1107,87 @@ def init_db() -> None:
     conn.close()
 
 
+def is_data_healthy(total_wallets: int, ok_rate: float) -> bool:
+    return total_wallets >= MIN_WALLET_COUNT and ok_rate >= MIN_OK_RATE
+
+
 def create_run(note: str) -> int:
+    global _ACTIVE_RUN_ID
     conn = db_conn()
     cur = conn.cursor()
-    cur.execute("INSERT INTO runs(started_at, note, pushed) VALUES (?, ?, 0)", (now_str(), note))
-    run_id = cur.lastrowid
+    cur.execute("INSERT INTO runs(started_at, note, pushed, status) VALUES (?, ?, 0, 'running')", (now_str(), note))
+    run_id = int(cur.lastrowid)
     conn.commit()
     conn.close()
-    return int(run_id)
+    _ACTIVE_RUN_ID = run_id
+    return run_id
 
 
 def finish_run(run_id: int, wallet_rows: List[Dict[str, Any]], perp_rows: List[Dict[str, Any]], spot_rows: List[Dict[str, Any]], pushed: bool) -> None:
+    global _ACTIVE_RUN_ID
     total = len(wallet_rows)
     ok = sum(1 for w in wallet_rows if w.get("status") == "ok")
     partial = sum(1 for w in wallet_rows if w.get("status") == "partial")
     failed = sum(1 for w in wallet_rows if w.get("status") == "failed")
     ok_rate = (ok + partial * 0.5) / total if total else 0.0
+    healthy = is_data_healthy(total, ok_rate)
+    status = "completed" if healthy else "degraded"
+    error = None if healthy else f"data_quality: wallets={total}, ok_rate={ok_rate:.4f}"
 
     conn = db_conn()
     cur = conn.cursor()
     cur.execute("""
     UPDATE runs
     SET finished_at=?, total_wallets=?, ok_wallets=?, partial_wallets=?, failed_wallets=?,
-        perp_rows=?, spot_rows=?, ok_rate=?, pushed=?
+        perp_rows=?, spot_rows=?, ok_rate=?, pushed=?, status=?, error=?
     WHERE run_id=?
-    """, (now_str(), total, ok, partial, failed, len(perp_rows), len(spot_rows), ok_rate, 1 if pushed else 0, run_id))
+    """, (now_str(), total, ok, partial, failed, len(perp_rows), len(spot_rows), ok_rate,
+          1 if pushed else 0, status, error, run_id))
     conn.commit()
     conn.close()
+    if _ACTIVE_RUN_ID == run_id:
+        _ACTIVE_RUN_ID = None
+
+
+def mark_run_failed(run_id: Optional[int], error: Any) -> None:
+    global _ACTIVE_RUN_ID
+    if not run_id:
+        return
+    conn = db_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE runs
+            SET finished_at=COALESCE(finished_at, ?), status='failed', error=?
+            WHERE run_id=? AND COALESCE(status, 'running')='running'
+        """, (now_str(), str(error)[:2000], run_id))
+        conn.commit()
+    finally:
+        conn.close()
+    if _ACTIVE_RUN_ID == run_id:
+        _ACTIVE_RUN_ID = None
 
 
 def get_previous_run_id(run_id: int) -> Optional[int]:
+    """只选择完整且数据质量达标的运行作为差分基准。"""
     conn = db_conn()
     cur = conn.cursor()
-    cur.execute("SELECT run_id FROM runs WHERE run_id < ? ORDER BY run_id DESC LIMIT 1", (run_id,))
+    cur.execute("""
+        SELECT run_id FROM runs
+        WHERE run_id < ?
+          AND finished_at IS NOT NULL
+          AND status = 'completed'
+          AND COALESCE(total_wallets, 0) >= ?
+          AND COALESCE(ok_rate, 0) >= ?
+        ORDER BY run_id DESC LIMIT 1
+    """, (run_id, MIN_WALLET_COUNT, MIN_OK_RATE))
     row = cur.fetchone()
     conn.close()
     return int(row[0]) if row else None
 
 
 def load_rows(table: str, run_id: int) -> List[Dict[str, Any]]:
-    allowed = {"wallet_states", "perp_positions", "spot_balances", "wallet_actions", "coin_signals", "coin_flow_snapshots", "market_context", "wallet_quality", "position_trades", "position_trade_events", "wallet_position_performance", "coin_risk_metrics"}
+    allowed = {"wallet_states", "perp_positions", "spot_balances", "wallet_actions", "coin_signals", "coin_flow_snapshots", "market_context", "price_snapshots", "wallet_quality", "position_trades", "position_trade_events", "wallet_position_performance", "coin_risk_metrics"}
     if table not in allowed:
         raise ValueError("bad table")
     conn = db_conn()
@@ -1657,6 +1729,18 @@ def signed_perp_value(row: Optional[Dict[str, Any]]) -> float:
 
 def map_addr_coin(rows: List[Dict[str, Any]]) -> Dict[Tuple[str, str], Dict[str, Any]]:
     return {(r["address"], r["coin"]): r for r in rows}
+
+
+def wallet_market_ok_map(wallet_rows: List[Dict[str, Any]], market: str) -> Dict[str, bool]:
+    """记录某一市场是否真实查询成功；partial 不能被当作空仓。"""
+    marker = f"{market}="
+    out: Dict[str, bool] = {}
+    for row in wallet_rows:
+        addr = (row.get("address") or "").lower()
+        status = row.get("status") or ""
+        error = row.get("error") or ""
+        out[addr] = bool(status == "ok" or (status == "partial" and marker not in error))
+    return out
 
 
 def group_base_weight(groups: str) -> float:
@@ -2552,8 +2636,14 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
     pre_perp = load_rows("perp_positions", prev_run_id)
     cur_spot = load_rows("spot_balances", run_id)
     pre_spot = load_rows("spot_balances", prev_run_id)
-    cur_wallet = {w["address"]: w for w in load_rows("wallet_states", run_id)}
-    pre_wallet = {w["address"]: w for w in load_rows("wallet_states", prev_run_id)}
+    cur_wallet_rows = load_rows("wallet_states", run_id)
+    pre_wallet_rows = load_rows("wallet_states", prev_run_id)
+    cur_wallet = {w["address"]: w for w in cur_wallet_rows}
+    pre_wallet = {w["address"]: w for w in pre_wallet_rows}
+    cur_perp_ok = wallet_market_ok_map(cur_wallet_rows, "perp")
+    pre_perp_ok = wallet_market_ok_map(pre_wallet_rows, "perp")
+    cur_spot_ok = wallet_market_ok_map(cur_wallet_rows, "spot")
+    pre_spot_ok = wallet_market_ok_map(pre_wallet_rows, "spot")
 
     curp = map_addr_coin(cur_perp)
     prep = map_addr_coin(pre_perp)
@@ -2577,6 +2667,9 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
         cur = curp.get(key)
         pre = prep.get(key)
         addr, coin = key
+        # 两轮该市场都查询成功才允许做差；否则“缺行”可能只是 API 失败。
+        if not (cur_perp_ok.get(addr.lower(), False) and pre_perp_ok.get(addr.lower(), False)):
+            continue
         cur_szi = safe_float(cur.get("szi")) if cur else 0.0
         pre_szi = safe_float(pre.get("szi")) if pre else 0.0
         cur_px = safe_float(cur.get("mark_px")) if cur else None
@@ -2630,6 +2723,8 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
         cur = curs.get(key)
         pre = pres.get(key)
         addr, coin = key
+        if not (cur_spot_ok.get(addr.lower(), False) and pre_spot_ok.get(addr.lower(), False)):
+            continue
         if coin.upper() == "USDC":
             continue
         cur_qty = safe_float(cur.get("total")) if cur else 0.0
@@ -2669,7 +2764,7 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
     cashflows: List[Dict[str, Any]] = []
     for addr, cw in cur_wallet.items():
         pw = pre_wallet.get(addr)
-        if not pw:
+        if not pw or not (cur_spot_ok.get(addr.lower(), False) and pre_spot_ok.get(addr.lower(), False)):
             continue
         usdc_delta = (safe_float(cw.get("spot_usdc_value")) or 0.0) - (safe_float(pw.get("spot_usdc_value")) or 0.0)
         spot_delta = (safe_float(cw.get("spot_total_value")) or 0.0) - (safe_float(pw.get("spot_total_value")) or 0.0)
@@ -2719,48 +2814,78 @@ def save_wallet_actions(run_id: int, actions: List[Dict[str, Any]]) -> int:
     return inserted
 
 
-def evaluate_events(prices: Dict[str, float]) -> Tuple[int, int]:
+def save_price_snapshots(run_id: int, prices: Dict[str, float]) -> int:
+    """保存本轮可用价格，供未来按目标时点回测。"""
+    created_at = (get_run_started_at(run_id) or utc_now()).strftime("%Y-%m-%d %H:%M:%S")
+    rows = []
+    for coin, raw_px in prices.items():
+        px = safe_float(raw_px)
+        if coin and px is not None and px > 0:
+            rows.append((run_id, created_at, str(coin), px))
+    conn = db_conn()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM price_snapshots WHERE run_id=?", (run_id,))
+    if rows:
+        cur.executemany("""
+            INSERT OR REPLACE INTO price_snapshots(run_id, created_at, coin, px)
+            VALUES (?, ?, ?, ?)
+        """, rows)
+    conn.commit()
+    conn.close()
+    return len(rows)
+
+
+def _historical_price_for(cur: sqlite3.Cursor, coin: str, target: dt.datetime) -> Optional[float]:
+    """取目标时点之后最早的价格；延迟过大时宁可缺失，也不伪造回测。"""
+    end = target + dt.timedelta(hours=EVENT_PRICE_MAX_DELAY_HOURS)
+    cur.execute("""
+        SELECT px FROM price_snapshots
+        WHERE coin=? AND created_at>=? AND created_at<=? AND px IS NOT NULL
+        ORDER BY created_at ASC LIMIT 1
+    """, (coin, target.strftime("%Y-%m-%d %H:%M:%S"), end.strftime("%Y-%m-%d %H:%M:%S")))
+    row = cur.fetchone()
+    return safe_float(row[0]) if row else None
+
+
+def evaluate_events(_prices: Optional[Dict[str, float]] = None) -> Tuple[int, int]:
     conn = db_conn()
     cur = conn.cursor()
     now_dt = utc_now()
     updated_actions = 0
     updated_signals = 0
+    horizons = (
+        ("ret_1h", 1), ("ret_4h", 4), ("ret_24h", 24), ("ret_72h", 72),
+        ("ret_7d", 168), ("ret_15d", 360), ("ret_30d", 720),
+    )
 
     def eval_table(table: str, id_col: str) -> int:
-        cur.execute(f"SELECT * FROM {table} WHERE ret_1h IS NULL OR ret_4h IS NULL OR ret_24h IS NULL OR ret_72h IS NULL OR ret_7d IS NULL OR ret_15d IS NULL OR ret_30d IS NULL")
+        pending = " OR ".join(f"{col} IS NULL" for col, _ in horizons)
+        cur.execute(f"SELECT * FROM {table} WHERE {pending}")
         rows = [dict(x) for x in cur.fetchall()]
         n = 0
-        for r in rows:
-            coin = r.get("coin")
-            current_px = prices.get(coin)
-            entry_px = safe_float(r.get("entry_px"))
-            created = parse_time(r.get("created_at"))
-            if current_px is None or entry_px is None or entry_px <= 0 or not created:
+        for row in rows:
+            coin = str(row.get("coin") or "")
+            entry_px = safe_float(row.get("entry_px"))
+            created = parse_time(row.get("created_at"))
+            if not coin or entry_px is None or entry_px <= 0 or not created:
                 continue
-            elapsed = (now_dt - created).total_seconds() / 3600
-            raw_ret = (current_px - entry_px) / entry_px * 100
-            dir_ret = raw_ret if r.get("direction") == "bullish" else -raw_ret
             updates: Dict[str, Any] = {}
-            if elapsed >= 1 and r.get("ret_1h") is None:
-                updates["ret_1h"] = dir_ret
-            if elapsed >= 4 and r.get("ret_4h") is None:
-                updates["ret_4h"] = dir_ret
-            if elapsed >= 24 and r.get("ret_24h") is None:
-                updates["ret_24h"] = dir_ret
-            if elapsed >= 72 and r.get("ret_72h") is None:
-                updates["ret_72h"] = dir_ret
-            if elapsed >= 168 and r.get("ret_7d") is None:
-                updates["ret_7d"] = dir_ret
-            if elapsed >= 360 and r.get("ret_15d") is None:
-                updates["ret_15d"] = dir_ret
-            if elapsed >= 720 and r.get("ret_30d") is None:
-                updates["ret_30d"] = dir_ret
+            for column, hours in horizons:
+                if row.get(column) is not None:
+                    continue
+                target = created + dt.timedelta(hours=hours)
+                if now_dt < target:
+                    continue
+                historical_px = _historical_price_for(cur, coin, target)
+                if historical_px is None:
+                    continue
+                raw_ret = (historical_px - entry_px) / entry_px * 100
+                updates[column] = raw_ret if row.get("direction") == "bullish" else -raw_ret
             if not updates:
                 continue
             updates["evaluated_at"] = now_str()
-            set_sql = ", ".join([f"{k}=?" for k in updates])
-            values = list(updates.values()) + [r[id_col]]
-            cur.execute(f"UPDATE {table} SET {set_sql} WHERE {id_col}=?", values)
+            set_sql = ", ".join(f"{key}=?" for key in updates)
+            cur.execute(f"UPDATE {table} SET {set_sql} WHERE {id_col}=?", list(updates.values()) + [row[id_col]])
             n += 1
         return n
 
@@ -2773,7 +2898,6 @@ def evaluate_events(prices: Dict[str, float]) -> Tuple[int, int]:
     conn.commit()
     conn.close()
     return updated_actions, updated_signals
-
 
 def get_signal_perf(coin: str, direction: str) -> Dict[str, Any]:
     conn = db_conn()
@@ -3990,6 +4114,8 @@ def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: 
             "long_score": round(long_score, 4),
             "final_score": round(final_score, 4),
             "long_qualified": 1 if long_qualified else 0,
+            "long_direction": "bullish" if long_score > 0 else "bearish" if long_score < 0 else "neutral",
+            "long_block_reasons": "、".join(long_block_reasons),
             "signal_category": category,
             "leverage_confirm": 1 if leverage_confirm else 0,
             "has_perp_confirm": 1 if has_perp_confirm else 0,
@@ -5691,7 +5817,7 @@ def prune_daily_archives(keep_days: int) -> None:
             print(f"删除旧每日归档失败：{path} -> {e}", flush=True)
 
 
-async def run_once(args: argparse.Namespace) -> None:
+async def _run_once_impl(args: argparse.Namespace) -> None:
     ensure_dirs()
     step_log(f"启动脚本 | backend={'turso' if USE_TURSO else 'sqlite'} | DB_BACKEND={DB_BACKEND} | USE_TURSO={USE_TURSO}")
     init_db()
@@ -5715,7 +5841,8 @@ async def run_once(args: argparse.Namespace) -> None:
     wallet_rows, perp_rows, spot_rows, mid_prices, _token_price, spot_coin_price = await fetch_all(addresses, args.rpm, args.concurrency)
     step_log("钱包扫描完成，准备写入快照")
     save_snapshot(run_id, wallet_rows, perp_rows, spot_rows)
-    step_log("快照写入完成，开始更新仓位生命周期")
+    price_count = save_price_snapshots(run_id, {**spot_coin_price, **mid_prices})
+    step_log(f"快照写入完成，价格历史={price_count}，开始更新仓位生命周期")
     update_position_trades(run_id, {**spot_coin_price, **mid_prices})
     step_log("仓位生命周期完成，开始导出杠杆质量")
     export_leverage_quality_files(run_id)
@@ -5726,7 +5853,7 @@ async def run_once(args: argparse.Namespace) -> None:
     ok = sum(1 for w in wallet_rows if w.get("status") == "ok")
     partial = sum(1 for w in wallet_rows if w.get("status") == "partial")
     ok_rate = (ok + partial * 0.5) / total if total else 0.0
-    data_quality_ok = ok_rate >= MIN_OK_RATE
+    data_quality_ok = is_data_healthy(total, ok_rate)
     write_data_quality_report(run_id, ok_rate, wallet_rows, args.note)
     step_log(f"数据质量报告完成 | ok_rate={ok_rate*100:.2f}%")
 
@@ -5774,7 +5901,10 @@ async def run_once(args: argparse.Namespace) -> None:
     preliminary, actions, cashflows = compute_preliminary(run_id, prev_id, thresholds, quality_map)
     gap_minutes = get_run_gap_minutes(run_id, prev_id)
     step_log(f"主动变化计算完成 | actions={len(actions)} cashflows={len(cashflows)} coins={len(preliminary)} gap_min={gap_minutes if gap_minutes is not None else 'N/A'}")
-    save_coin_flow_snapshots(run_id, prev_id, preliminary)
+    if data_quality_ok:
+        save_coin_flow_snapshots(run_id, prev_id, preliminary)
+    else:
+        print("本轮数据质量不合格：不写入滚动资金流，避免污染后续 2h-30d 信号。", flush=True)
     rolling_map = build_rolling_flow_metrics(run_id)
     export_rolling_flow_files(run_id, rolling_map, thresholds)
     export_operation_detail_files(actions, cashflows)
@@ -5911,7 +6041,7 @@ def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: 
                 pass
 
         # 事件类保留 30d 回测窗口 + 缓冲。
-        for t in ("wallet_actions", "coin_flow_snapshots", "signal_events", "longterm_events", "position_trade_events", "signal_lifecycle_events", "final_reports"):
+        for t in ("wallet_actions", "coin_flow_snapshots", "price_snapshots", "signal_events", "longterm_events", "position_trade_events", "signal_lifecycle_events", "final_reports"):
             try:
                 cur.execute(f"DELETE FROM {t} WHERE created_at < ?", (cutoff_str,))
             except sqlite3.OperationalError:
@@ -5936,7 +6066,7 @@ def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: 
             except sqlite3.OperationalError:
                 pass
             try:
-                cur.execute("DELETE FROM push_log WHERE created_at < ?", ((utc_now() - dt.timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S"),))
+                cur.execute("DELETE FROM push_log WHERE pushed_at < ?", ((utc_now() - dt.timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S"),))
             except sqlite3.OperationalError:
                 pass
             try:
@@ -6008,9 +6138,57 @@ def _candidate_side_cn(direction: str) -> str:
     return "长期多单" if direction == "bullish" else "长期空单"
 
 
+def get_candidate_recent_rows(coin: str, run_id: int, limit: int = 8, include_current: bool = True) -> List[Dict[str, Any]]:
+    """候选连续性只使用健康完成轮；构建中的当前轮可按需包含。"""
+    conn = db_conn()
+    cur = conn.cursor()
+    op = "<=" if include_current else "<"
+    current_clause = "OR cs.run_id = ?" if include_current else ""
+    params: List[Any] = [coin, run_id, MIN_WALLET_COUNT, MIN_OK_RATE]
+    if include_current:
+        params.append(run_id)
+    params.append(limit)
+    try:
+        cur.execute(f"""
+            SELECT cs.run_id, cs.long_score, cs.long_candidate_score, cs.short_candidate_score,
+                   cs.candidate_side, cs.candidate_gate
+            FROM coin_signals cs
+            JOIN runs r ON r.run_id = cs.run_id
+            WHERE cs.coin=? AND cs.run_id {op} ?
+              AND ((r.status='completed' AND COALESCE(r.total_wallets, 0)>=? AND COALESCE(r.ok_rate, 0)>=?) {current_clause})
+            ORDER BY cs.run_id DESC LIMIT ?
+        """, tuple(params))
+        rows = [dict(row) for row in cur.fetchall()]
+    except Exception:
+        rows = []
+    conn.close()
+    return rows
+
+
+def candidate_streak(coin: str, side: str, run_id: int, min_score: float, include_current: bool = True) -> int:
+    streak = 0
+    for row in get_candidate_recent_rows(coin, run_id, limit=8, include_current=include_current):
+        row_side = row.get("candidate_side")
+        long_score = safe_float(row.get("long_score")) or 0.0
+        if row_side not in {"long", "short"}:
+            row_side = "long" if long_score > 0 else "short" if long_score < 0 else ""
+        score_key = "long_candidate_score" if side == "long" else "short_candidate_score"
+        score = safe_float(row.get(score_key))
+        if score is None:
+            score = abs(long_score) if row_side == side else 0.0
+        if row_side == side and score >= min_score and row.get("candidate_gate") == "PASS":
+            streak += 1
+        else:
+            break
+    return streak
+
+
 def _long_short_gate(sig: Dict[str, Any], direction: str) -> Tuple[bool, List[str]]:
     parts = sig.get("score_parts") or {}
     reasons: List[str] = []
+    if not _bool_from_parts(parts, "long_qualified"):
+        raw_blocks = str(parts.get("long_block_reasons") or "").strip()
+        reasons.extend([x for x in raw_blocks.split("、") if x] or ["基础长期资格未通过"])
     if _bool_from_parts(parts, "rolling_spot_only_risk"):
         reasons.append("spot-only/现货主导")
     if _bool_from_parts(parts, "rolling_concentration_risk"):
@@ -6056,6 +6234,7 @@ def _long_short_gate(sig: Dict[str, Any], direction: str) -> Tuple[bool, List[st
         reasons.append("资金费率风险高")
     if sig.get("liquidity_risk") == "高":
         reasons.append("流动性风险高")
+    reasons = list(dict.fromkeys(reasons))
     return (len(reasons) == 0), reasons
 
 
@@ -6064,7 +6243,8 @@ def _candidate_state_for(sig: Dict[str, Any], direction: str, run_id: int, score
         return "WATCH"
     if not gate_ok:
         return "BLOCKED"
-    streak = signal_streak(sig.get("coin"), direction, run_id, min_abs_score=min_watch)
+    side = _candidate_side_name(direction)
+    streak = candidate_streak(sig.get("coin"), side, run_id, min_watch, include_current=False) + 1
     if score >= th_score and streak >= LONG_SHORT_MIN_STREAK_CANDIDATE:
         return "CANDIDATE"
     if streak >= LONG_SHORT_MIN_STREAK_FORMING and score >= min_watch + 1.0:
@@ -6078,21 +6258,22 @@ def enhance_long_short_state(run_id: int, signals: List[Dict[str, Any]], thresho
     out: List[Dict[str, Any]] = []
     for s in signals:
         coin = s.get("coin")
-        direction = s.get("direction")
+        alert_direction = s.get("direction")
         th_score = threshold(thresholds, coin, "score_push")
         min_watch = threshold(thresholds, coin, "min_watch_score")
-        abs_long = abs(safe_float(s.get("long_score")) or 0.0)
-        long_candidate_score = abs_long if direction == "bullish" else 0.0
-        short_candidate_score = abs_long if direction == "bearish" else 0.0
-        candidate_score = long_candidate_score if direction == "bullish" else short_candidate_score
-        gate_ok, gate_reasons = _long_short_gate(s, direction)
-        state = _candidate_state_for(s, direction, run_id, candidate_score, gate_ok, min_watch, th_score)
-        side = _candidate_side_name(direction)
+        long_value = safe_float(s.get("long_score")) or 0.0
+        candidate_direction = "bullish" if long_value > 0 else "bearish" if long_value < 0 else alert_direction
+        long_candidate_score = max(long_value, 0.0)
+        short_candidate_score = max(-long_value, 0.0)
+        candidate_score = long_candidate_score if candidate_direction == "bullish" else short_candidate_score
+        gate_ok, gate_reasons = _long_short_gate(s, candidate_direction)
+        state = _candidate_state_for(s, candidate_direction, run_id, candidate_score, gate_ok, min_watch, th_score)
+        side = _candidate_side_name(candidate_direction)
         old_category = s.get("signal_category") or "只观察"
         category = old_category
         if candidate_score >= min_watch:
             if gate_ok:
-                if direction == "bullish":
+                if candidate_direction == "bullish":
                     category = "长期多单候选" if state == "CANDIDATE" and candidate_score >= th_score else "多单建仓观察"
                 else:
                     category = "长期空单候选" if state == "CANDIDATE" and candidate_score >= th_score else "空单建仓观察"
@@ -6103,11 +6284,11 @@ def enhance_long_short_state(run_id: int, signals: List[Dict[str, Any]], thresho
             category = old_category
         watchlist = side if (gate_ok and state == "CANDIDATE" and candidate_score >= th_score) else "observe"
         if gate_ok and state == "CANDIDATE":
-            conclusion = f"{_candidate_side_cn(direction)}候选 / 已通过硬门槛"
+            conclusion = f"{_candidate_side_cn(candidate_direction)}候选 / 已通过硬门槛"
         elif gate_ok and state in {"FORMING", "CONFIRMED"}:
-            conclusion = f"{_candidate_side_cn(direction)}形成中 / 等待连续确认"
+            conclusion = f"{_candidate_side_cn(candidate_direction)}形成中 / 等待连续确认"
         elif not gate_ok and candidate_score >= min_watch:
-            conclusion = f"{_candidate_side_cn(direction)}未通过 / " + "、".join(gate_reasons[:3])
+            conclusion = f"{_candidate_side_cn(candidate_direction)}未通过 / " + "、".join(gate_reasons[:3])
         else:
             conclusion = s.get("conclusion") or "只观察 / 等待确认"
         risk = s.get("risk") or ""
@@ -6121,6 +6302,7 @@ def enhance_long_short_state(run_id: int, signals: List[Dict[str, Any]], thresho
             "candidate_state": state,
             "candidate_gate": "PASS" if gate_ok else "BLOCK",
             "candidate_side": side,
+            "candidate_direction": candidate_direction,
             "candidate_block_reasons": "、".join(gate_reasons),
         })
         s2 = dict(s)
@@ -6131,6 +6313,7 @@ def enhance_long_short_state(run_id: int, signals: List[Dict[str, Any]], thresho
             "candidate_state": state,
             "candidate_gate": "PASS" if gate_ok else "BLOCK",
             "candidate_side": side,
+            "candidate_direction": candidate_direction,
             "candidate_block_reasons": "、".join(gate_reasons),
             "signal_category": category,
             "watchlist": watchlist,
@@ -6261,7 +6444,7 @@ def build_long_term_candidates(run_id: int, signals: List[Dict[str, Any]], ctx_m
         ctx = ctx_map.get(coin, {})
         s_for_plan = dict(s)
         s_for_plan["final_score"] = score if direction == "bullish" else -score
-        streak = signal_streak(coin, direction, run_id, min_abs_score=min_watch)
+        streak = candidate_streak(coin, side, run_id, min_watch, include_current=True)
         plan = long_term_entry_plan(s_for_plan, ctx, streak)
         state_bonus = {"FORMING": 0.3, "CONFIRMED": 1.0, "CANDIDATE": 1.8}.get(state, 0.0)
         lt_score = score + state_bonus
@@ -6349,6 +6532,15 @@ def write_long_term_plan(candidates: List[Dict[str, Any]]) -> None:
             writer.writeheader(); writer.writerows(candidates)
 
 # ===== end long-short-state-final overrides =====
+
+async def run_once(args: argparse.Namespace) -> None:
+    """运行失败时把 running 状态落库；异常继续抛出，让 Actions 正确失败。"""
+    try:
+        await _run_once_impl(args)
+    except Exception as exc:
+        mark_run_failed(_ACTIVE_RUN_ID, exc)
+        raise
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Hyperliquid Wallet Monitor FINAL")
