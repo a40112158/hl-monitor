@@ -1,6 +1,6 @@
 ﻿run_id,source,side,sample_events,24h_n,24h_win,24h_hurdle_win,24h_avg_ret,24h_median_ret,72h_n,72h_win,72h_hurdle_win,72h_avg_ret,72h_median_ret,7d_n,7d_win,7d_hurdle_win,7d_avg_ret,7d_median_ret,15d_n,15d_win,15d_hurdle_win,15d_avg_ret,15d_median_ret,30d_n,30d_win,30d_hurdle_win,30d_avg_ret,30d_median_ret
-177,alert_signal,long,1,0,,,,,0,,,,,0,,,,,0,,,,,0,,,,
-177,alert_signal,short,10,8,50.0,37.5,1.8852,0.5611,0,,,,,0,,,,,0,,,,,0,,,,
-177,alert_signal,all,11,8,50.0,37.5,1.8852,0.5611,0,,,,,0,,,,,0,,,,,0,,,,
-177,longterm_candidate,short,8,8,50.0,37.5,1.8852,0.5611,0,,,,,0,,,,,0,,,,,0,,,,
-177,longterm_candidate,all,8,8,50.0,37.5,1.8852,0.5611,0,,,,,0,,,,,0,,,,,0,,,,
+178,alert_signal,long,1,0,,,,,0,,,,,0,,,,,0,,,,,0,,,,
+178,alert_signal,short,10,8,50.0,37.5,1.8852,0.5611,0,,,,,0,,,,,0,,,,,0,,,,
+178,alert_signal,all,11,8,50.0,37.5,1.8852,0.5611,0,,,,,0,,,,,0,,,,,0,,,,
+178,longterm_candidate,short,8,8,50.0,37.5,1.8852,0.5611,0,,,,,0,,,,,0,,,,,0,,,,
+178,longterm_candidate,all,8,8,50.0,37.5,1.8852,0.5611,0,,,,,0,,,,,0,,,,,0,,,,
