@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-02 17:23:03",
+  "generated_at": "2026-07-02 17:44:22",
   "mode": "guarded",
   "raw_events": 11,
   "events": 9,
   "coins": 8,
   "mature_counts": {
     "7d": 0,
-    "72h": 3,
+    "72h": 4,
     "24h": 9
   },
   "changes_applied": 0,
