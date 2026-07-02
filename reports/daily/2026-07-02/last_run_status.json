@@ -1,7 +1,7 @@
 {
-  "last_run_cn": "2026-07-02 07:03:54",
-  "last_run_utc": "2026-07-01 23:03:54",
-  "run_id": 177,
+  "last_run_cn": "2026-07-02 07:33:50",
+  "last_run_utc": "2026-07-01 23:33:50",
+  "run_id": 178,
   "trigger_note": "github hourly",
   "wallet_count": 2421,
   "ok": 2421,
@@ -9,7 +9,7 @@
   "failed": 0,
   "success_rate": 1.0,
   "perp_rows": 10751,
-  "spot_rows": 12097,
+  "spot_rows": 12098,
   "tg_sent": false,
   "duration_minutes": null,
   "health_stale_hours_threshold": 2.0
