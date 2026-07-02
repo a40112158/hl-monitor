@@ -1,0 +1,13 @@
+【自动优化分析层】
+更新时间 UTC：2026-07-02 13:52:03 | 模式：guarded
+只优化监控 score_push，不修改手工阈值、不触发交易。
+原始/去重评估事件：10/8 | 币种：7 | 24h/72h/7d成熟样本：8/0/0 | 本轮应用：0
+护栏：最少样本=24，验证集=8，单次步长=0.25，最小双段提升=0.1，每轮最多修改=3
+
+BASED | insufficient_samples | 当前=8.0 | 建议=8.0 | 周期= | 样本=1 | 验证提升=None
+ENA | insufficient_samples | 当前=8.0 | 建议=8.0 | 周期= | 样本=1 | 验证提升=None
+MAX | insufficient_samples | 当前=8.0 | 建议=8.0 | 周期= | 样本=1 | 验证提升=None
+QONE | insufficient_samples | 当前=8.0 | 建议=8.0 | 周期= | 样本=1 | 验证提升=None
+SOL | insufficient_samples | 当前=8.0 | 建议=8.0 | 周期= | 样本=2 | 验证提升=None
+UPUMP | insufficient_samples | 当前=8.0 | 建议=8.0 | 周期= | 样本=1 | 验证提升=None
+ZEC | insufficient_samples | 当前=8.0 | 建议=8.0 | 周期= | 样本=1 | 验证提升=None
