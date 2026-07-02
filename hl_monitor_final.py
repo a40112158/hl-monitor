@@ -49,6 +49,8 @@ REPORT_DIR = os.getenv("REPORT_DIR", "reports")
 # 精简报告结构：根目录只放每天要看的核心报告；全量 CSV 和辅助报告放 reports/details/
 DETAILS_DIR = os.getenv("DETAILS_DIR", os.path.join(REPORT_DIR, "details"))
 THRESHOLD_FILE = os.getenv("THRESHOLD_FILE", "coin_thresholds.json")
+AUTO_THRESHOLD_FILE = os.getenv("AUTO_THRESHOLD_FILE", "coin_thresholds_auto.json")
+AUTO_THRESHOLD_ENABLED = os.getenv("AUTO_THRESHOLD_ENABLED", "1") == "1"
 
 ADDRESS_SOURCES = {
     "money_printer": "money_printer_all_addresses.txt",
@@ -208,6 +210,11 @@ DB_PRUNE_MODE = os.getenv("DB_PRUNE_MODE", "1") == "1"
 DB_RAW_KEEP_RUNS = int(os.getenv("DB_RAW_KEEP_RUNS", "24"))
 DB_HISTORY_KEEP_DAYS = int(os.getenv("DB_HISTORY_KEEP_DAYS", "35"))
 DB_MAX_MB = float(os.getenv("DB_MAX_MB", "85"))
+# auto: only rebuild the SQLite file when enough free pages accumulated;
+# always/off are useful for one-off maintenance and CI workflows.
+DB_VACUUM_MODE = os.getenv("DB_VACUUM_MODE", "auto").strip().lower()
+DB_VACUUM_MIN_FREE_RATIO = float(os.getenv("DB_VACUUM_MIN_FREE_RATIO", "0.10"))
+DB_VACUUM_MIN_FREE_MB = float(os.getenv("DB_VACUUM_MIN_FREE_MB", "16"))
 
 # 默认阈值，可被 coin_thresholds.json 覆盖
 DEFAULT_THRESHOLDS = {
@@ -221,7 +228,7 @@ ADDRESS_RE = re.compile(r"^0x[a-fA-F0-9]{40}$")
 
 
 def utc_now() -> dt.datetime:
-    return dt.datetime.utcnow().replace(microsecond=0)
+    return dt.datetime.now(dt.timezone.utc).replace(tzinfo=None, microsecond=0)
 
 
 def now_str() -> str:
@@ -544,23 +551,40 @@ def db_conn():
             pass
         return conn
 
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_FILE, timeout=30)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA busy_timeout=30000")
     return conn
 
 
 def load_thresholds() -> Dict[str, Dict[str, float]]:
-    if not os.path.exists(THRESHOLD_FILE):
-        return {"DEFAULT": DEFAULT_THRESHOLDS.copy()}
+    data: Dict[str, Dict[str, float]] = {"DEFAULT": DEFAULT_THRESHOLDS.copy()}
     try:
-        with open(THRESHOLD_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        if "DEFAULT" not in data:
-            data["DEFAULT"] = DEFAULT_THRESHOLDS.copy()
-        return data
+        if os.path.exists(THRESHOLD_FILE):
+            with open(THRESHOLD_FILE, "r", encoding="utf-8") as f:
+                loaded = json.load(f)
+            if isinstance(loaded, dict):
+                data.update({str(k): v for k, v in loaded.items() if isinstance(v, dict)})
     except Exception as e:
         print("读取 coin_thresholds.json 失败，使用默认阈值：", e)
-        return {"DEFAULT": DEFAULT_THRESHOLDS.copy()}
+
+    # 自动优化配置与手工配置分开保存。这里只允许覆盖经过护栏优化的
+    # score_push；资金流阈值和观察阈值仍完全由人工配置控制。
+    try:
+        if AUTO_THRESHOLD_ENABLED and os.path.exists(AUTO_THRESHOLD_FILE):
+            with open(AUTO_THRESHOLD_FILE, "r", encoding="utf-8") as f:
+                auto_data = json.load(f)
+            overrides = auto_data.get("overrides", {}) if isinstance(auto_data, dict) else {}
+            for coin, values in overrides.items():
+                if not isinstance(values, dict) or "score_push" not in values:
+                    continue
+                score_push = safe_float(values.get("score_push"))
+                if score_push is None:
+                    continue
+                data.setdefault(str(coin).upper(), {})["score_push"] = score_push
+    except Exception as e:
+        print("读取自动优化阈值失败，继续使用手工阈值：", e)
+    return data
 
 
 def threshold(ths: Dict[str, Dict[str, float]], coin: str, key: str) -> float:
@@ -1193,13 +1217,17 @@ async def post_info(session: aiohttp.ClientSession, limiter: Optional[RateLimite
                     except Exception:
                         return False, f"不是JSON: {text[:200]}"
                 if resp.status in (429, 500, 502, 503, 504):
-                    await asyncio.sleep(attempt * 3)
-                    continue
+                    if attempt < MAX_RETRIES:
+                        retry_after = safe_float(resp.headers.get("Retry-After"))
+                        delay = retry_after if retry_after is not None else min(30.0, float(2 ** attempt))
+                        await asyncio.sleep(max(0.0, delay))
+                        continue
+                    return False, f"HTTP {resp.status}: {text[:200]}"
                 return False, f"HTTP {resp.status}: {text[:200]}"
         except Exception as e:
-            await asyncio.sleep(attempt * 3)
             if attempt == MAX_RETRIES:
                 return False, str(e)
+            await asyncio.sleep(min(30.0, float(2 ** attempt)))
     return False, "重试失败"
 
 
@@ -1438,8 +1466,12 @@ def parse_spot_state(address: str, groups: str, data: Dict[str, Any], token_pric
 
 async def fetch_wallet(session: aiohttp.ClientSession, limiter: RateLimiter, address: str, groups_list: List[str], mid_prices: Dict[str, float], token_price: Dict[int, float], coin_price: Dict[str, float]) -> Tuple[Dict[str, Any], List[Dict[str, Any]], List[Dict[str, Any]]]:
     groups = ",".join(groups_list)
-    perp_ok, perp_data = await post_info(session, limiter, {"type": "clearinghouseState", "user": address})
-    spot_ok, spot_data = await post_info(session, limiter, {"type": "spotClearinghouseState", "user": address})
+    # The two account-state endpoints are independent. Starting them together
+    # hides network latency while the shared limiter still enforces the RPM cap.
+    (perp_ok, perp_data), (spot_ok, spot_data) = await asyncio.gather(
+        post_info(session, limiter, {"type": "clearinghouseState", "user": address}),
+        post_info(session, limiter, {"type": "spotClearinghouseState", "user": address}),
+    )
     errors = []
     wallet = {
         "address": address,
@@ -6025,6 +6057,34 @@ def db_file_size_mb() -> float:
         return 0.0
 
 
+def sqlite_free_space() -> Tuple[int, int, int, float, float]:
+    """Return page count, free pages, page size, free MB and free ratio."""
+    if USE_TURSO or not os.path.exists(DB_FILE):
+        return 0, 0, 0, 0.0, 0.0
+    conn = sqlite3.connect(DB_FILE, timeout=30)
+    try:
+        page_count = int(conn.execute("PRAGMA page_count").fetchone()[0] or 0)
+        free_pages = int(conn.execute("PRAGMA freelist_count").fetchone()[0] or 0)
+        page_size = int(conn.execute("PRAGMA page_size").fetchone()[0] or 0)
+    finally:
+        conn.close()
+    free_mb = free_pages * page_size / 1024 / 1024
+    free_ratio = free_pages / page_count if page_count else 0.0
+    return page_count, free_pages, page_size, free_mb, free_ratio
+
+
+def should_vacuum_sqlite(db_size_mb: float, free_mb: float, free_ratio: float) -> bool:
+    mode = DB_VACUUM_MODE if DB_VACUUM_MODE in {"auto", "always", "off"} else "auto"
+    if mode == "off":
+        return False
+    if mode == "always":
+        return True
+    return db_size_mb > DB_MAX_MB or (
+        free_mb >= max(0.0, DB_VACUUM_MIN_FREE_MB)
+        and free_ratio >= max(0.0, DB_VACUUM_MIN_FREE_RATIO)
+    )
+
+
 def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: bool = False, emergency: bool = False) -> None:
     """控制数据库体积。
 
@@ -6125,20 +6185,42 @@ def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: 
         print(f"Turso 数据库裁剪({mode})完成 | raw_keep={raw_keep} | history_days={history_days}", flush=True)
         return
 
-    # VACUUM 必须在事务外执行，才能真正缩小 SQLite 文件。
+    # If the physical file already exceeds the limit, finish all progressively
+    # stronger DELETE passes first and VACUUM only once in the final pass.
+    if db_file_size_mb() > DB_MAX_MB:
+        if not aggressive and not emergency:
+            prune_database_for_github(current_run_id=current_run_id, aggressive=True, emergency=False)
+            return
+        if aggressive and not emergency:
+            prune_database_for_github(current_run_id=current_run_id, aggressive=True, emergency=True)
+            return
+
+    # WAL checkpoint 很便宜；VACUUM 会重写整个数据库，只在确有收益时执行。
+    # CI 后面还有 hardcap 兜底，避免每轮重复执行两次完整 VACUUM。
     try:
         conn = db_conn()
         conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-        conn.execute("VACUUM")
         conn.close()
     except Exception as e:
-        print(f"数据库 VACUUM 失败：{e}", flush=True)
+        print(f"数据库 WAL checkpoint 失败：{e}", flush=True)
+
+    _pages, _free_pages, _page_size, free_mb, free_ratio = sqlite_free_space()
+    if should_vacuum_sqlite(db_file_size_mb(), free_mb, free_ratio):
+        try:
+            conn = db_conn()
+            conn.execute("VACUUM")
+            conn.close()
+            print(f"数据库 VACUUM 完成 | free={free_mb:.2f}MB ({free_ratio:.1%})", flush=True)
+        except Exception as e:
+            print(f"数据库 VACUUM 失败：{e}", flush=True)
+    else:
+        print(f"数据库 VACUUM 跳过 | mode={DB_VACUUM_MODE} | free={free_mb:.2f}MB ({free_ratio:.1%})", flush=True)
 
     after = db_file_size_mb()
     mode = "emergency" if emergency else ("aggressive" if aggressive else "normal")
     print(f"数据库体积控制({mode})：{before:.2f}MB -> {after:.2f}MB | raw_keep={raw_keep} | history_days={history_days}", flush=True)
 
-    # 如果仍接近 GitHub 单文件限制，逐级加大裁剪。
+    # 极少数情况下 VACUUM 后仍超限，再逐级加大裁剪。
     if not aggressive and not emergency and after > DB_MAX_MB:
         prune_database_for_github(current_run_id=current_run_id, aggressive=True, emergency=False)
     elif aggressive and not emergency and after > DB_MAX_MB:
