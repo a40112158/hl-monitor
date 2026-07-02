@@ -1,18 +1,18 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-03 02:32:30 | UTC：2026-07-02 18:32:30
+更新时间北京时间：2026-07-03 02:54:11 | UTC：2026-07-02 18:54:11
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 alert_signal / long | 样本=1 | 72h胜率=None% 门槛=None% 平均=None% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
-alert_signal / short | 样本=11 | 72h胜率=28.57% 门槛=14.29% 平均=-2.4741% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
-alert_signal / all | 样本=12 | 72h胜率=28.57% 门槛=14.29% 平均=-2.4741% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
-longterm_candidate / short | 样本=8 | 72h胜率=28.57% 门槛=14.29% 平均=-2.4741% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
-longterm_candidate / all | 样本=8 | 72h胜率=28.57% 门槛=14.29% 平均=-2.4741% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
+alert_signal / short | 样本=11 | 72h胜率=25.0% 门槛=12.5% 平均=-2.2817% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
+alert_signal / all | 样本=12 | 72h胜率=25.0% 门槛=12.5% 平均=-2.2817% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
+longterm_candidate / short | 样本=8 | 72h胜率=25.0% 门槛=12.5% 平均=-2.2817% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
+longterm_candidate / all | 样本=8 | 72h胜率=25.0% 门槛=12.5% 平均=-2.2817% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
 
 【Top 钱包画像】
 0x9cc5...ab3d [money_printer] grade=B score=64.2 样本=14 72h胜率=0.25 30d胜率=None 主币=BTC
 0xffff...ffff [money_printer] grade=C score=61.9 样本=105 72h胜率=0.38461538461538464 30d胜率=None 主币=QONE,QUANT,WOW
-0x3e7a...1589 [money_printer] grade=C score=59.3 样本=14 72h胜率=0.0 30d胜率=None 主币=BTC,ETH
+0x3e7a...1589 [money_printer] grade=C score=59.3 样本=14 72h胜率=0.25 30d胜率=None 主币=BTC,ETH
 0x7c93...c8fd [money_printer] grade=C score=53.8 样本=12 72h胜率=0.5 30d胜率=None 主币=ETH,BTC
 0xa6ee...5078 [money_printer] grade=N score=50.0 样本=14 72h胜率=0.0 30d胜率=None 主币=ETH
 0xc7ab...2bf8 [smart_money] grade=N score=50.0 样本=14 72h胜率=0.5 30d胜率=None 主币=ETH,HYPE,BTC
@@ -28,11 +28,11 @@ SOL longterm/short | 事件=2 | 72h胜率=0.0% 平均=-8.0306% | 7d胜率=None% 
 QONE longterm/short | 事件=2 | 72h胜率=0.0% 平均=-3.7703% | 7d胜率=None% 平均=None%
 HYPE alert/short | 事件=1 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
 ZEC alert/long | 事件=1 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
-MAX alert/short | 事件=1 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
+MAX alert/short | 事件=1 | 72h胜率=0.0% 平均=-0.9345% | 7d胜率=None% 平均=None%
 BASED alert/short | 事件=1 | 72h胜率=100.0% 平均=0.4074% | 7d胜率=None% 平均=None%
 UPUMP alert/short | 事件=1 | 72h胜率=0.0% 平均=0.0% | 7d胜率=None% 平均=None%
 ENA alert/short | 事件=1 | 72h胜率=100.0% 平均=5.8756% | 7d胜率=None% 平均=None%
-MAX longterm/short | 事件=1 | 72h胜率=None% 平均=None% | 7d胜率=None% 平均=None%
+MAX longterm/short | 事件=1 | 72h胜率=0.0% 平均=-0.9345% | 7d胜率=None% 平均=None%
 BASED longterm/short | 事件=1 | 72h胜率=100.0% 平均=0.4074% | 7d胜率=None% 平均=None%
 UPUMP longterm/short | 事件=1 | 72h胜率=0.0% 平均=0.0% | 7d胜率=None% 平均=None%
 ENA longterm/short | 事件=1 | 72h胜率=100.0% 平均=5.8756% | 7d胜率=None% 平均=None%
