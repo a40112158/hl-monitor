@@ -1,6 +1,7 @@
 ﻿coin,action,current,recommended,horizon,samples,train_gain,validation_gain,quality_gap,status
 BASED,insufficient_samples,8.0,8.0,,1,,,,
 ENA,insufficient_samples,8.0,8.0,,1,,,,
+HYPE,insufficient_samples,7.0,7.0,,1,,,,
 MAX,insufficient_samples,8.0,8.0,,1,,,,
 QONE,insufficient_samples,8.0,8.0,,1,,,,
 SOL,insufficient_samples,8.0,8.0,,2,,,,

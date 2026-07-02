@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-07-02 16:32:00",
+  "generated_at": "2026-07-02 17:01:56",
   "mode": "guarded",
-  "raw_events": 10,
-  "events": 8,
-  "coins": 7,
+  "raw_events": 11,
+  "events": 9,
+  "coins": 8,
   "mature_counts": {
     "7d": 0,
-    "72h": 1,
-    "24h": 8
+    "72h": 3,
+    "24h": 9
   },
   "changes_applied": 0,
   "guardrails": {
@@ -43,6 +43,18 @@
       "action": "insufficient_samples",
       "current": 8.0,
       "recommended": 8.0,
+      "horizon": "",
+      "samples": 1,
+      "train_gain": null,
+      "validation_gain": null,
+      "baseline_validation": {},
+      "candidate_validation": {}
+    },
+    {
+      "coin": "HYPE",
+      "action": "insufficient_samples",
+      "current": 7.0,
+      "recommended": 7.0,
       "horizon": "",
       "samples": 1,
       "train_gain": null,
