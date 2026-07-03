@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-07-03 11:07:49",
+  "generated_at": "2026-07-03 11:32:05",
   "mode": "guarded",
   "raw_events": 12,
   "events": 9,
   "sample_store": {
-    "inserted": 9,
+    "inserted": 0,
     "updated": 0,
     "deleted": 0,
     "total": 9
