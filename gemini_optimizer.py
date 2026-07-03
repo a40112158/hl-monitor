@@ -13,8 +13,45 @@ ENABLED = os.getenv("GEMINI_OPTIMIZE_ENABLED", "0") == "1"
 REQUIRED = os.getenv("GEMINI_OPTIMIZE_REQUIRED", "1") == "1"
 MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 MIN_CONFIDENCE = max(0.0, min(1.0, float(os.getenv("GEMINI_MIN_CONFIDENCE", "0.70"))))
-MAX_RETRIES = max(1, min(3, int(os.getenv("GEMINI_MAX_RETRIES", "2"))))
+MAX_RETRIES = max(1, min(6, int(os.getenv("GEMINI_MAX_RETRIES", "3"))))
 TIMEOUT_MS = max(10_000, int(os.getenv("GEMINI_TIMEOUT_MS", "60000")))
+PROVIDER_ORDER = [
+    item.strip().lower()
+    for item in os.getenv("GEMINI_PROVIDER_ORDER", "developer,vertex").split(",")
+    if item.strip()
+]
+VERTEX_ENABLED = os.getenv("GEMINI_VERTEX_ENABLED", "0") == "1" or "vertex" in PROVIDER_ORDER
+VERTEX_PROJECT = (
+    os.getenv("GEMINI_VERTEX_PROJECT")
+    or os.getenv("GOOGLE_CLOUD_PROJECT")
+    or os.getenv("GCP_PROJECT")
+    or ""
+).strip()
+VERTEX_LOCATION = (
+    os.getenv("GEMINI_VERTEX_LOCATION")
+    or os.getenv("GOOGLE_CLOUD_LOCATION")
+    or os.getenv("VERTEX_AI_LOCATION")
+    or "global"
+).strip()
+VERTEX_MODEL = os.getenv("GEMINI_VERTEX_MODEL", MODEL).strip() or MODEL
+VERTEX_API_VERSION = os.getenv("GEMINI_VERTEX_API_VERSION", "v1").strip() or "v1"
+DEVELOPER_MODEL = os.getenv("GEMINI_DEVELOPER_MODEL", MODEL).strip() or MODEL
+FALLBACK_TO_VERTEX_ON_ANY_ERROR = os.getenv("GEMINI_FALLBACK_TO_VERTEX_ON_ANY_ERROR", "1") == "1"
+
+
+def _parse_backoff_seconds(raw: str) -> list[float]:
+    values: list[float] = []
+    for item in str(raw or "").split(","):
+        try:
+            seconds = float(item.strip())
+        except (TypeError, ValueError):
+            continue
+        if seconds >= 0:
+            values.append(min(seconds, 300.0))
+    return values or [20.0, 60.0, 120.0]
+
+
+RETRY_BACKOFF_SECONDS = _parse_backoff_seconds(os.getenv("GEMINI_RETRY_BACKOFF_SECONDS", "20,60,120"))
 CIRCUIT_FAILURES = max(2, int(os.getenv("GEMINI_CIRCUIT_FAILURES", "3")))
 CIRCUIT_COOLDOWN_MINUTES = max(30, int(os.getenv("GEMINI_CIRCUIT_COOLDOWN_MINUTES", "120")))
 CIRCUIT_STATE_FILE = Path(
@@ -92,6 +129,60 @@ SCAN_SCHEMA = {
         "focus_items", "risk_warnings", "parameter_notes", "next_checks",
     ],
 }
+
+
+
+def _has_developer_key() -> bool:
+    return bool(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"))
+
+
+def _has_vertex_config() -> bool:
+    # Vertex AI uses Google Cloud auth. In GitHub Actions, set
+    # GOOGLE_APPLICATION_CREDENTIALS via a service-account JSON secret, and set
+    # GEMINI_VERTEX_PROJECT / GOOGLE_CLOUD_PROJECT. Location defaults to global.
+    return bool(VERTEX_ENABLED and VERTEX_PROJECT)
+
+
+def has_available_credentials() -> bool:
+    return _has_developer_key() or _has_vertex_config()
+
+
+def _provider_sequence() -> list[str]:
+    order = PROVIDER_ORDER or ["developer", "vertex"]
+    out: list[str] = []
+    for provider in order:
+        if provider in {"developer", "ai_studio", "aistudio"} and _has_developer_key():
+            out.append("developer")
+        elif provider in {"vertex", "vertexai", "cloud"} and _has_vertex_config():
+            out.append("vertex")
+    return list(dict.fromkeys(out))
+
+
+def _sleep_before_retry(provider: str, attempt: int) -> None:
+    idx = min(max(attempt - 1, 0), len(RETRY_BACKOFF_SECONDS) - 1)
+    delay = RETRY_BACKOFF_SECONDS[idx]
+    if delay > 0:
+        print(f"[gemini] retry provider={provider} attempt={attempt + 1} after {delay:.0f}s", flush=True)
+        time.sleep(delay)
+
+
+def _client_for_provider(provider: str):
+    from google import genai
+    from google.genai import types
+
+    http_options = types.HttpOptions(timeout=TIMEOUT_MS, api_version=VERTEX_API_VERSION if provider == "vertex" else None)
+    if provider == "vertex":
+        return genai.Client(
+            vertexai=True,
+            project=VERTEX_PROJECT,
+            location=VERTEX_LOCATION,
+            http_options=http_options,
+        )
+    return genai.Client(http_options=types.HttpOptions(timeout=TIMEOUT_MS))
+
+
+def _model_for_provider(provider: str) -> str:
+    return VERTEX_MODEL if provider == "vertex" else DEVELOPER_MODEL
 
 
 def is_enabled() -> bool:
@@ -259,45 +350,57 @@ def _generate_json(
     allowed, budget_reason = _budget_allow(category)
     if not allowed:
         return None, budget_reason
-    client = None
+
+    providers = _provider_sequence()
+    if not providers:
+        return None, "missing_credentials: set GEMINI_API_KEY or configure Vertex AI service-account/project"
+
     last_error = "unknown Gemini error"
-    for attempt in range(1, MAX_RETRIES + 1):
-        try:
-            _budget_record(category)
-            from google import genai
-            from google.genai import types
-            client = genai.Client(http_options=types.HttpOptions(timeout=TIMEOUT_MS))
-            response = client.models.generate_content(
-                model=MODEL,
-                contents=prompt,
-                config={
-                    "temperature": 0,
-                    "max_output_tokens": max_output_tokens,
-                    "response_mime_type": "application/json",
-                    "response_json_schema": schema,
-                },
-            )
-            parsed = getattr(response, "parsed", None)
-            if not isinstance(parsed, dict):
-                parsed = json.loads(response.text or "{}")
-            _record_success()
-            return parsed, None
-        except Exception as exc:
-            last_error = f"{type(exc).__name__}: {exc}"[:500]
-            if attempt < MAX_RETRIES:
+    provider_errors: list[str] = []
+    for provider in providers:
+        model_name = _model_for_provider(provider)
+        for attempt in range(1, MAX_RETRIES + 1):
+            client = None
+            try:
                 allowed, budget_reason = _budget_allow(category)
                 if not allowed:
                     return None, budget_reason
-                time.sleep(2 * attempt)
-        finally:
-            if client is not None:
-                try:
-                    client.close()
-                except Exception:
-                    pass
-                client = None
-    _record_failure(last_error)
-    return None, last_error
+                _budget_record(category)
+                print(f"[gemini] provider={provider} model={model_name} attempt={attempt}/{MAX_RETRIES} category={category}", flush=True)
+                client = _client_for_provider(provider)
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config={
+                        "temperature": 0,
+                        "max_output_tokens": max_output_tokens,
+                        "response_mime_type": "application/json",
+                        "response_json_schema": schema,
+                    },
+                )
+                parsed = getattr(response, "parsed", None)
+                if not isinstance(parsed, dict):
+                    parsed = json.loads(response.text or "{}")
+                _record_success()
+                return parsed, None
+            except Exception as exc:
+                last_error = f"{provider}:{type(exc).__name__}: {exc}"[:800]
+                provider_errors.append(last_error)
+                if attempt < MAX_RETRIES:
+                    _sleep_before_retry(provider, attempt)
+            finally:
+                if client is not None:
+                    try:
+                        client.close()
+                    except Exception:
+                        pass
+
+        if provider == "developer" and "vertex" in providers and not FALLBACK_TO_VERTEX_ON_ANY_ERROR:
+            break
+
+    combined_error = " | ".join(provider_errors[-6:]) or last_error
+    _record_failure(combined_error)
+    return None, combined_error[:1000]
 
 
 def review_candidate(candidate: Dict[str, Any]) -> Dict[str, Any]:
@@ -312,8 +415,8 @@ def review_candidate(candidate: Dict[str, Any]) -> Dict[str, Any]:
             "confidence": 1.0, "risk_level": "low", "reason": "Gemini review disabled",
             "warnings": [], "model": MODEL,
         }
-    if not (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")):
-        return _blocked("missing_key", "GEMINI_API_KEY is not configured")
+    if not has_available_credentials():
+        return _blocked("missing_key", "Set GEMINI_API_KEY or configure Vertex AI service-account/project")
 
     prompt = (
         "You are a conservative statistical reviewer for a read-only cryptocurrency wallet "
@@ -371,7 +474,7 @@ def analyze_outcome(outcome: Dict[str, Any]) -> Dict[str, Any]:
     }
     if not ENABLED:
         return unavailable
-    if not (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")):
+    if not has_available_credentials():
         return unavailable
     prompt = (
         "You are evaluating the measured result of a bounded score_push threshold adjustment "
@@ -408,7 +511,7 @@ def analyze_scan(scan: Dict[str, Any]) -> Dict[str, Any]:
     }
     if not ENABLED:
         return unavailable
-    if not (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")):
+    if not has_available_credentials():
         return unavailable
     prompt = (
         "You are a conservative research analyst for a read-only Hyperliquid wallet monitor. "
