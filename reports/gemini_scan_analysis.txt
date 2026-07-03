@@ -4,7 +4,7 @@
 说明：AI 只分析已生成的聚合报告，不控制交易或绕过本地风控。
 
 【执行摘要】
-developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48) | developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48) | developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48)
+circuit_open failures=6 remaining=6m
 
 【数据质量】
 unknown
