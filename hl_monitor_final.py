@@ -227,6 +227,36 @@ DEFAULT_THRESHOLDS = {
 ADDRESS_RE = re.compile(r"^0x[a-fA-F0-9]{40}$")
 
 
+def prioritized_coins(
+    candidates: List[str], required: Optional[List[str]] = None, limit: int = 30
+) -> List[str]:
+    """Stable de-duplication that keeps candidate priority and required benchmarks."""
+    required = required or []
+    ordered: List[str] = []
+    seen = set()
+    for value in list(candidates) + list(required):
+        coin = str(value or "").strip()
+        if not coin or coin in seen:
+            continue
+        seen.add(coin)
+        ordered.append(coin)
+    limit = max(len(required), int(limit))
+    if len(ordered) <= limit:
+        return ordered
+    selected = ordered[:limit]
+    required_set = set(required)
+    for coin in required:
+        if coin in selected:
+            continue
+        replace_at = next(
+            (i for i in range(len(selected) - 1, -1, -1) if selected[i] not in required_set),
+            None,
+        )
+        if replace_at is not None:
+            selected[replace_at] = coin
+    return selected
+
+
 def utc_now() -> dt.datetime:
     return dt.datetime.now(dt.timezone.utc).replace(tzinfo=None, microsecond=0)
 
@@ -568,20 +598,27 @@ def load_thresholds() -> Dict[str, Dict[str, float]]:
     except Exception as e:
         print("读取 coin_thresholds.json 失败，使用默认阈值：", e)
 
-    # 自动优化配置与手工配置分开保存。这里只允许覆盖经过护栏优化的
-    # score_push；资金流阈值和观察阈值仍完全由人工配置控制。
+    # 自动优化配置与手工配置分开保存。只允许覆盖经过护栏验证的低风险阈值：
+    # - score_push：强信号推送阈值
+    # - min_watch_score：观察池最低分数。该项只允许自动提高，避免因缺失低分历史样本而盲目放宽。
     try:
         if AUTO_THRESHOLD_ENABLED and os.path.exists(AUTO_THRESHOLD_FILE):
             with open(AUTO_THRESHOLD_FILE, "r", encoding="utf-8") as f:
                 auto_data = json.load(f)
             overrides = auto_data.get("overrides", {}) if isinstance(auto_data, dict) else {}
             for coin, values in overrides.items():
-                if not isinstance(values, dict) or "score_push" not in values:
+                if not isinstance(values, dict):
                     continue
+                coin_key = str(coin).upper()
+                manual_coin = data.setdefault(coin_key, {})
                 score_push = safe_float(values.get("score_push"))
-                if score_push is None:
-                    continue
-                data.setdefault(str(coin).upper(), {})["score_push"] = score_push
+                if score_push is not None:
+                    manual_coin["score_push"] = score_push
+                min_watch = safe_float(values.get("min_watch_score"))
+                if min_watch is not None:
+                    base_watch = threshold(data, coin_key, "min_watch_score")
+                    # 自动观察阈值只收紧，不自动放宽。放宽需要手工改 coin_thresholds.json。
+                    manual_coin["min_watch_score"] = max(base_watch, min_watch)
     except Exception as e:
         print("读取自动优化阈值失败，继续使用手工阈值：", e)
     return data
@@ -2849,7 +2886,9 @@ def confidence_for(coin: str, direction: str) -> Tuple[str, str, float]:
 
 async def build_market_context(run_id: int, candidate_coins: List[str], prices: Dict[str, float]) -> Dict[str, Dict[str, Any]]:
     ensure_dirs()
-    coins = sorted(set([c for c in candidate_coins if c] + ["BTC", "ETH"]))[:30]
+    # candidate_coins is already ordered by capital-flow importance. Keep that
+    # priority; alphabetic sorting here used to drop high-ranked tail symbols.
+    coins = prioritized_coins(candidate_coins, ["BTC", "ETH"], limit=30)
     timeout = aiohttp.ClientTimeout(total=60)
     limiter = RateLimiter(120)
     ctx_map: Dict[str, Dict[str, Any]] = {}
@@ -3699,9 +3738,11 @@ async def build_coin_risk_metrics(run_id: int, candidate_coins: List[str]) -> Di
     risk_map: Dict[str, Dict[str, Any]] = {}
     async with aiohttp.ClientSession(timeout=timeout) as session:
         all_ctx = await fetch_perp_asset_contexts(session, limiter)
-    wanted = set([c for c in candidate_coins if c]) | {"BTC", "ETH"}
+    wanted = prioritized_coins(
+        candidate_coins, ["BTC", "ETH"], limit=max(2, len(candidate_coins) + 2)
+    )
     rows: List[Dict[str, Any]] = []
-    for coin in sorted(wanted):
+    for coin in wanted:
         if coin not in all_ctx:
             continue
         r = classify_coin_risk(all_ctx[coin])

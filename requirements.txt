@@ -1,2 +1,1 @@
-aiohttp
-libsql
+aiohttp>=3.10,<4
