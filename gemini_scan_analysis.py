@@ -31,6 +31,8 @@ HISTORY_RUNS = max(2, min(12, int(os.getenv("GEMINI_SCAN_HISTORY_RUNS", "4"))))
 STRONG_TRIGGER_ENABLED = os.getenv("GEMINI_SCAN_STRONG_TRIGGER", "1") == "1"
 TG_ENABLED = os.getenv("GEMINI_SCAN_TG_ENABLED", "1") == "1"
 TG_MIN_URGENCY = os.getenv("GEMINI_SCAN_TG_MIN_URGENCY", "watch").strip().lower()
+GEMINI_ERROR_TG_ENABLED = os.getenv("GEMINI_ERROR_TG_ENABLED", "1") == "1"
+GEMINI_ERROR_TG_ONCE_PER_DAY = os.getenv("GEMINI_ERROR_TG_ONCE_PER_DAY", "1") == "1"
 REQUIRE_DATA_QUALITY = os.getenv("GEMINI_SCAN_REQUIRE_DATA_QUALITY", "1") == "1"
 DATA_QUALITY_MIN_SUCCESS_RATE = max(0.0, min(1.0, float(os.getenv("DATA_QUALITY_MIN_SUCCESS_RATE", os.getenv("MIN_OK_RATE", "0.85")))))
 ADDRESS_RE = re.compile(r"0x[a-fA-F0-9]{40}")
@@ -553,6 +555,96 @@ def send_telegram(text: str) -> bool:
     return ok
 
 
+QUOTA_ERROR_PATTERNS = (
+    "resourceexhausted",
+    "quota",
+    "429",
+    "insufficient credits",
+    "insufficient_credit",
+    "credit exhausted",
+    "credits exhausted",
+    "billing",
+    "daily_budget_exhausted",
+    "scan_budget_exhausted",
+    "budget_exhausted",
+    "rate limit",
+    "ratelimit",
+)
+
+
+def classify_gemini_error(result: Dict[str, Any]) -> Tuple[str, str]:
+    """Classify Gemini failures that should be surfaced to Telegram.
+
+    Returns (kind, reason). Empty kind means no alert is needed.
+    This intentionally catches both provider-side quota errors and the script's
+    own daily budget guard, because both mean the AI layer did not run.
+    """
+    status = str(result.get("status") or "").lower()
+    combined = " ".join(
+        str(result.get(key) or "")
+        for key in ("status", "executive_summary", "data_quality", "market_structure")
+    )
+    lowered = combined.lower()
+    if status == "missing_key" or "missing_key" in lowered or "api_key" in lowered:
+        return "missing_key", combined[:1200] or "GEMINI_API_KEY missing"
+    if status == "api_error" and any(pattern in lowered for pattern in QUOTA_ERROR_PATTERNS):
+        return "quota_or_budget", combined[:1200]
+    if any(pattern in lowered for pattern in ("daily_budget_exhausted", "scan_budget_exhausted", "budget_exhausted")):
+        return "quota_or_budget", combined[:1200]
+    return "", ""
+
+
+def format_gemini_error_tg(kind: str, reason: str, result: Dict[str, Any]) -> str:
+    if kind == "missing_key":
+        title = "⚠️ Gemini API Key 未生效"
+        suggestion = "检查 GitHub Secrets 里的 GEMINI_API_KEY 名字和值是否正确，然后重新 Run workflow。"
+    else:
+        title = "⚠️ Gemini API 额度/配额异常"
+        suggestion = "检查 Google AI Studio / Google Cloud Billing 的 credits、quota 和 API usage；也可以临时提高脚本预算或降低分析频率。"
+    reason = sanitize(str(reason or "unknown"))[:1500]
+    lines = [
+        title,
+        "",
+        f"状态：{result.get('status', '-')}",
+        f"模型：{result.get('model', '-')}",
+        "",
+        "【原因】",
+        reason,
+        "",
+        "【影响】",
+        "钱包扫描和本地报告仍会继续；本轮 Gemini AI 分析/自动解读可能为空或跳过。",
+        "",
+        "【建议】",
+        suggestion,
+    ]
+    return "\n".join(lines)
+
+
+def maybe_send_gemini_error_alert(result: Dict[str, Any], details_dir: Path) -> bool:
+    if not GEMINI_ERROR_TG_ENABLED:
+        return False
+    kind, reason = classify_gemini_error(result)
+    if not kind:
+        return False
+    today = utc_now().strftime("%Y-%m-%d")
+    state_path = details_dir / "gemini_error_alert_state.json"
+    state = load_state(state_path)
+    if GEMINI_ERROR_TG_ONCE_PER_DAY and state.get(f"last_{kind}_date") == today:
+        print(f"[gemini-scan] Gemini error alert already sent today kind={kind}; skip TG", flush=True)
+        return False
+    sent = send_telegram(format_gemini_error_tg(kind, reason, result))
+    if sent:
+        state[f"last_{kind}_date"] = today
+        state[f"last_{kind}_at"] = utc_now().isoformat() + "Z"
+        state[f"last_{kind}_reason"] = reason[:800]
+        try:
+            details_dir.mkdir(parents=True, exist_ok=True)
+            state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        except OSError as exc:
+            print(f"[gemini-scan] failed to write Gemini error alert state: {type(exc).__name__}: {exc}", flush=True)
+    return sent
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Analyze the latest HL Monitor scan with Gemini")
     parser.add_argument("--report-dir", default=str(REPORT_DIR))
@@ -640,11 +732,13 @@ def main() -> None:
     result["force_analysis"] = bool(force_due)
     result["force_reason"] = "manual" if args.force else strong_reason
     write_outputs(result, report_dir, details_dir)
+    error_tg_sent = maybe_send_gemini_error_alert(result, details_dir)
     tg_sent = False
     if should_push_tg(result, force_due):
         tg_sent = send_telegram(format_tg_message(result))
     result["tg_sent"] = tg_sent
-    # Re-write with tg_sent included.
+    result["error_tg_sent"] = error_tg_sent
+    # Re-write with tg_sent/error_tg_sent included.
     write_outputs(result, report_dir, details_dir)
     record_ai_signal_reviews(result, DB_FILE, report_dir)
     if result.get("status") == "completed":
