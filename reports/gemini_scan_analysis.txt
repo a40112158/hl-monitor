@@ -1,10 +1,10 @@
 【Gemini 本轮扫描分析】
-状态：api_error | 模型：gemini-2.5-flash-lite | 紧急度：normal
+状态：api_error | 模型：gemini-2.5-flash | 紧急度：normal
 触发：manual
 说明：AI 只分析已生成的聚合报告，不控制交易或绕过本地风控。
 
 【执行摘要】
-circuit_open failures=3 remaining=86m
+developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48) | developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48) | developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48)
 
 【数据质量】
 unknown
