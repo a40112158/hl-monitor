@@ -2,6 +2,8 @@
   "version": 1,
   "overrides": {},
   "meta": {},
-  "updated_at": "2026-07-03 10:15:58",
-  "mode": "guarded"
+  "updated_at": "2026-07-03 11:07:49",
+  "mode": "guarded",
+  "shadows": {},
+  "review_top_n": 5
 }

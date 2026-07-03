@@ -1,0 +1,27 @@
+【Gemini 本轮扫描分析】
+状态：api_error | 模型：gemini-2.5-flash-lite | 紧急度：normal
+触发：manual
+说明：AI 只分析已生成的聚合报告，不控制交易或绕过本地风控。
+
+【执行摘要】
+ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}
+
+【数据质量】
+unknown
+
+【市场与资金结构】
+unknown
+
+【相比上次 AI 分析】
+- 暂无可比较的上次分析。
+
+【重点观察】
+
+【风险提示】
+- 暂无新增风险提示。
+
+【参数观察】
+- 暂无参数异常。
+
+【下一轮重点检查】
+- 继续等待下一轮数据。

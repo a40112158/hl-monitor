@@ -1,8 +1,14 @@
 {
-  "generated_at": "2026-07-03 10:15:58",
+  "generated_at": "2026-07-03 11:07:49",
   "mode": "guarded",
   "raw_events": 12,
   "events": 9,
+  "sample_store": {
+    "inserted": 9,
+    "updated": 0,
+    "deleted": 0,
+    "total": 9
+  },
   "coins": 8,
   "mature_counts": {
     "7d": 0,
@@ -10,6 +16,10 @@
     "24h": 9
   },
   "changes_applied": 0,
+  "shadows_started": 0,
+  "candidate_recommendations": 0,
+  "candidate_reviews_limit": 5,
+  "gemini_review_enabled": true,
   "guardrails": {
     "min_samples": 24,
     "validation_samples": 8,
@@ -18,16 +28,26 @@
     "cooldown_hours": 24.0,
     "post_samples": 12,
     "max_changes_per_run": 3,
-    "threshold_range": [
+    "review_top_n": 5,
+    "score_push_range": [
       4.0,
       12.0
     ],
+    "min_watch_score_range": [
+      4.0,
+      8.0
+    ],
+    "min_watch_score_tighten_only": true,
+    "data_quality_min_success_rate": 0.85,
     "event_gap_hours": 24.0,
-    "max_pending_days": 30.0
+    "max_pending_days": 30.0,
+    "sample_retention_days": 180,
+    "history_max_lines": 2000
   },
   "results": [
     {
       "coin": "BASED",
+      "parameter": "score_push",
       "action": "insufficient_samples",
       "current": 8.0,
       "recommended": 8.0,
@@ -40,6 +60,7 @@
     },
     {
       "coin": "ENA",
+      "parameter": "score_push",
       "action": "insufficient_samples",
       "current": 8.0,
       "recommended": 8.0,
@@ -52,6 +73,7 @@
     },
     {
       "coin": "HYPE",
+      "parameter": "score_push",
       "action": "insufficient_samples",
       "current": 7.0,
       "recommended": 7.0,
@@ -64,6 +86,7 @@
     },
     {
       "coin": "MAX",
+      "parameter": "score_push",
       "action": "insufficient_samples",
       "current": 8.0,
       "recommended": 8.0,
@@ -76,6 +99,7 @@
     },
     {
       "coin": "QONE",
+      "parameter": "score_push",
       "action": "insufficient_samples",
       "current": 8.0,
       "recommended": 8.0,
@@ -88,6 +112,7 @@
     },
     {
       "coin": "SOL",
+      "parameter": "score_push",
       "action": "insufficient_samples",
       "current": 8.0,
       "recommended": 8.0,
@@ -100,6 +125,7 @@
     },
     {
       "coin": "UPUMP",
+      "parameter": "score_push",
       "action": "insufficient_samples",
       "current": 8.0,
       "recommended": 8.0,
@@ -112,6 +138,7 @@
     },
     {
       "coin": "ZEC",
+      "parameter": "score_push",
       "action": "insufficient_samples",
       "current": 8.0,
       "recommended": 8.0,
