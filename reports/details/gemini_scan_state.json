@@ -1,0 +1,8 @@
+{
+  "last_success_at": "2026-07-03T16:58:26Z",
+  "model": "gemini-2.5-flash",
+  "interval_minutes": 30,
+  "force_analysis": true,
+  "force_reason": "manual",
+  "tg_sent": false
+}
