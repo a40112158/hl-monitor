@@ -248,7 +248,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_OPTIMIZE_ENABLED: "1"
-          GEMINI_MODEL: "gemini-2.5-flash-lite"
+          GEMINI_MODEL: "gemini-2.5-flash"
           GEMINI_MAX_RETRIES: "2"
           GEMINI_TIMEOUT_MS: "60000"
           GEMINI_CIRCUIT_FAILURES: "3"
