@@ -1,6 +1,6 @@
 {
-  "consecutive_failures": 5,
-  "last_failure_at": "2026-07-03T14:05:57Z",
-  "last_error": "developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:JSONDecodeError: Unterminated string starting at: ",
+  "consecutive_failures": 6,
+  "last_failure_at": "2026-07-03T14:33:56Z",
+  "last_error": "developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48) | developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48) | developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48)",
   "model": "gemini-2.5-flash"
 }
