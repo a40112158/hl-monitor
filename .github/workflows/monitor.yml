@@ -263,6 +263,8 @@ jobs:
           GEMINI_SCAN_STRONG_TRIGGER: "1"
           GEMINI_SCAN_TG_ENABLED: "1"
           GEMINI_SCAN_TG_MIN_URGENCY: "watch"
+          GEMINI_ERROR_TG_ENABLED: "1"
+          GEMINI_ERROR_TG_ONCE_PER_DAY: "1"
           GEMINI_SCAN_REQUIRE_DATA_QUALITY: "1"
           DATA_QUALITY_MIN_SUCCESS_RATE: "0.85"
           GEMINI_BUDGET_STATE_FILE: "reports/details/gemini_budget_state.json"
