@@ -1,7 +1,7 @@
 {
   "status": "api_error",
   "urgency": "normal",
-  "executive_summary": "ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}",
+  "executive_summary": "circuit_open failures=3 remaining=86m",
   "data_quality": "unknown",
   "market_structure": "unknown",
   "changes_since_previous": [],
@@ -10,7 +10,7 @@
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash-lite",
-  "generated_at": "2026-07-03T12:02:37Z",
+  "generated_at": "2026-07-03T12:36:32Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
