@@ -377,6 +377,15 @@ def write_outputs(result: Dict[str, Any], report_dir: Path, details_dir: Path) -
     (details_dir / "gemini_scan_analysis_latest.json").write_text(
         json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
+
+    # New no-JSON scan mode: Gemini returns a complete Markdown report.
+    # Write it directly so the human-facing report never depends on parsing
+    # Gemini output as JSON. The JSON file above is only local metadata/state.
+    markdown_report = str(result.get("markdown_report") or "").strip()
+    if markdown_report:
+        (report_dir / "gemini_scan_analysis.txt").write_text(markdown_report + "\n", encoding="utf-8")
+        return
+
     with (report_dir / "gemini_scan_analysis.txt").open("w", encoding="utf-8") as handle:
         print("【Gemini 本轮扫描分析】", file=handle)
         print(f"状态：{result.get('status')} | 模型：{result.get('model', '-')} | 紧急度：{result.get('urgency', '-')}", file=handle)
@@ -571,6 +580,18 @@ QUOTA_ERROR_PATTERNS = (
     "ratelimit",
 )
 
+SERVICE_ERROR_PATTERNS = (
+    "503",
+    "unavailable",
+    "overloaded",
+    "servererror",
+    "internal",
+    "deadline",
+    "timeout",
+    "502",
+    "504",
+)
+
 
 def classify_gemini_error(result: Dict[str, Any]) -> Tuple[str, str]:
     """Classify Gemini failures that should be surfaced to Telegram.
@@ -591,13 +612,18 @@ def classify_gemini_error(result: Dict[str, Any]) -> Tuple[str, str]:
         return "quota_or_budget", combined[:1200]
     if any(pattern in lowered for pattern in ("daily_budget_exhausted", "scan_budget_exhausted", "budget_exhausted")):
         return "quota_or_budget", combined[:1200]
+    if status == "api_error" and any(pattern in lowered for pattern in SERVICE_ERROR_PATTERNS):
+        return "service_unavailable", combined[:1200]
     return "", ""
 
 
 def format_gemini_error_tg(kind: str, reason: str, result: Dict[str, Any]) -> str:
     if kind == "missing_key":
-        title = "⚠️ Gemini API Key 未生效"
-        suggestion = "检查 GitHub Secrets 里的 GEMINI_API_KEY 名字和值是否正确，然后重新 Run workflow。"
+        title = "⚠️ Gemini API Key / Vertex AI 凭证未生效"
+        suggestion = "检查 GitHub Secrets：GEMINI_API_KEY；如果启用 Vertex AI，还要检查 GCP_SA_KEY_JSON、GOOGLE_CLOUD_PROJECT、GOOGLE_CLOUD_LOCATION。"
+    elif kind == "service_unavailable":
+        title = "⚠️ Gemini 服务端暂时不可用"
+        suggestion = "这通常是 503/overloaded/timeout。脚本已启用重试、退避和 Vertex AI fallback；如果持续出现，检查 Vertex AI 凭证或等下一轮。"
     else:
         title = "⚠️ Gemini API 额度/配额异常"
         suggestion = "检查 Google AI Studio / Google Cloud Billing 的 credits、quota 和 API usage；也可以临时提高脚本预算或降低分析频率。"
