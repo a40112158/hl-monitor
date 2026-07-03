@@ -1,6 +1,6 @@
 {
   "consecutive_failures": 7,
-  "last_failure_at": "2026-07-03T15:21:26Z",
-  "last_error": "developer:JSONDecodeError: Unterminated string starting at: line 1 column 41 (char 40) | developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48) | developer:JSONDecodeError: Unterminated string starting at: line 1 column 41 (char 40)",
+  "last_failure_at": "2026-07-03T15:44:26Z",
+  "last_error": "developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48) | developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48) | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.",
   "model": "gemini-2.5-flash"
 }
