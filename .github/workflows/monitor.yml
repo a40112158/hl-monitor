@@ -289,7 +289,7 @@ jobs:
           GEMINI_CIRCUIT_COOLDOWN_MINUTES: "30"
           GEMINI_CIRCUIT_STATE_FILE: "reports/details/gemini_scan_circuit_state.json"
           GEMINI_SCAN_MAX_CHARS: "24000"
-          GEMINI_SCAN_MAX_OUTPUT_TOKENS: "1200"
+          GEMINI_SCAN_MAX_OUTPUT_TOKENS: "4096"
           # 每次扫描都分析：workflow 每30分钟跑一次，这里用 --force 跳过2小时冷却。
           GEMINI_SCAN_INTERVAL_MINUTES: "30"
           GEMINI_SCAN_CONTEXT_TOP_N: "20"
