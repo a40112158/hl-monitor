@@ -1,7 +1,7 @@
 {
   "status": "api_error",
   "urgency": "normal",
-  "executive_summary": "circuit_open failures=6 remaining=6m",
+  "executive_summary": "developer:JSONDecodeError: Unterminated string starting at: line 1 column 41 (char 40) | developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48) | developer:JSONDecodeError: Unterminated string starting at: line 1 column 41 (char 40)",
   "data_quality": "unknown",
   "market_structure": "unknown",
   "changes_since_previous": [],
@@ -10,7 +10,7 @@
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "generated_at": "2026-07-03T14:58:20Z",
+  "generated_at": "2026-07-03T15:21:26Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",

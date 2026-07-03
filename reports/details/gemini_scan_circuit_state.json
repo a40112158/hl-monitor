@@ -1,6 +1,6 @@
 {
-  "consecutive_failures": 6,
-  "last_failure_at": "2026-07-03T14:33:56Z",
-  "last_error": "developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48) | developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48) | developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48)",
+  "consecutive_failures": 7,
+  "last_failure_at": "2026-07-03T15:21:26Z",
+  "last_error": "developer:JSONDecodeError: Unterminated string starting at: line 1 column 41 (char 40) | developer:JSONDecodeError: Unterminated string starting at: line 3 column 24 (char 48) | developer:JSONDecodeError: Unterminated string starting at: line 1 column 41 (char 40)",
   "model": "gemini-2.5-flash"
 }
