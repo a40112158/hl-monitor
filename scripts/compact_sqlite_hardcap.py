@@ -65,6 +65,12 @@ def delete_old_by_created_at(cur: sqlite3.Cursor, table: str, cutoff: str) -> in
     return execute_delete(cur, f"DELETE FROM {table} WHERE created_at < ?", (cutoff,))
 
 
+def delete_old_by_column(cur: sqlite3.Cursor, table: str, column: str, cutoff: str) -> int:
+    if not col_exists(cur, table, column):
+        return 0
+    return execute_delete(cur, f"DELETE FROM {table} WHERE {column} < ?", (cutoff,))
+
+
 def free_space(conn: sqlite3.Connection) -> tuple[float, float]:
     page_count = int(conn.execute("PRAGMA page_count").fetchone()[0] or 0)
     free_pages = int(conn.execute("PRAGMA freelist_count").fetchone()[0] or 0)
@@ -133,9 +139,9 @@ def compact(db_path: Path, raw_keep: int, history_days: int, final_reports_days:
             if deleted:
                 print(f"[hardcap] runs: deleted {deleted} old rows", flush=True)
 
-        if table_exists(cur, "push_log") and col_exists(cur, "push_log", "created_at"):
+        if table_exists(cur, "push_log") and col_exists(cur, "push_log", "pushed_at"):
             push_cutoff = (utc_now() - dt.timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
-            deleted = delete_old_by_created_at(cur, "push_log", push_cutoff)
+            deleted = delete_old_by_column(cur, "push_log", "pushed_at", push_cutoff)
             if deleted:
                 print(f"[hardcap] push_log: deleted {deleted} old rows", flush=True)
 
