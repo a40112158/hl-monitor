@@ -368,6 +368,11 @@ jobs:
       - name: Clean report archives
         run: |
           mkdir -p reports/details
+          # reports/ 只能保存运行产物。清除误传的源码/配置，避免定时任务再次提交它们。
+          rm -f reports/*.py reports/*.pyc reports/*.md reports/*.yml reports/*.yaml
+          rm -f reports/requirements*.txt reports/.gitignore reports/.env reports/VERSION.txt
+          rm -f reports/coin_thresholds*.json reports/*_addresses.txt reports/*.db reports/*.db.gz
+          rm -rf reports/.github reports/scripts reports/tests reports/__pycache__
           # 新版不再保留小时级 final_report_run_x.txt，历史遗留文件也删除
           rm -f reports/final_report_run_*.txt
           # 精简版：根目录只保留核心报告，旧版遗留的全量 CSV / 辅助报告从根目录清掉
@@ -384,9 +389,20 @@ jobs:
 
           # 自动生成的 reports/db.gz 不做 merge/rebase，避免 reports 内容冲突。
           # 每次提交都以远端 main 为基底，保留本轮生成的工作区文件，然后重新 commit。
+          clean_report_code_leaks() {
+            rm -f reports/*.py reports/*.pyc reports/*.md reports/*.yml reports/*.yaml
+            rm -f reports/requirements*.txt reports/.gitignore reports/.env reports/VERSION.txt
+            rm -f reports/coin_thresholds*.json reports/*_addresses.txt reports/*.db reports/*.db.gz
+            rm -rf reports/.github reports/scripts reports/tests reports/__pycache__
+          }
+
           commit_and_push() {
             git fetch origin main
             git reset --mixed origin/main
+
+            # reset --mixed 不会刷新工作区。再次清理，防止运行期间刚删除的误传文件
+            # 被旧 runner 工作区重新带回 reports/ 并提交。
+            clean_report_code_leaks
 
             # 本地 SQLite 运行，GitHub 只提交压缩后的 hl_monitor.db.gz，不提交 hl_monitor.db。
             git rm --cached -f hl_monitor.db 2>/dev/null || true
