@@ -1,5 +1,192 @@
 【数据质量 / API异常保护】
-run_id=281 | 北京时间=2026-07-04 15:53:58 | UTC=2026-07-04 08:10:14 | note=github half-hourly
-监控钱包=2421 | ok=2421 | partial=0 | failed=0 | 成功率=100.00% | 最低要求=85.00%
+run_id=281 | 北京时间=2026-07-04 16:15:33 | UTC=2026-07-04 08:34:21 | note=github half-hourly
+监控钱包=2421 | ok=2403 | partial=5 | failed=13 | 成功率=99.36% | 最低要求=85.00%
 
 本轮数据质量通过，可以正常参考信号。
+
+异常钱包样例：
+  0xe52e...ac63 status=partial err=spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0xbcc7...e764 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0xe5a1...2156 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x4b66...78b8 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x9dcf...302d status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x4b1e...a06e status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x9d73...729f status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x2113...ca4a status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x5df2...1256 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x811e...0ad4 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x211d...a2cb status=failed err=perp=HTTP 504: <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML><HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>ERROR: The; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x4ba0...b13a status=partial err=spot=HTTP 504: <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML><HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>ERROR: The
+  0x215d...f80a status=partial err=spot=HTTP 504: <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML><HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>ERROR: The
+  0x8184...01a1 status=partial err=perp=HTTP 504: <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML><HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>ERROR: The
+  0x5e0c...8e69 status=failed err=perp=HTTP 504: <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML><HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>ERROR: The; spot=HTTP 504: <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML><HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>ERROR: The
+  0x8171...2fec status=failed err=perp=HTTP 504: <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML><HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>ERROR: The; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0xe5aa...6232 status=partial err=spot=HTTP 504: <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML><HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>ERROR: The
+  0x5e8e...00af status=failed err=perp=HTTP 504: <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML><HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>ERROR: The; spot=HTTP 504: <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML><HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>ERROR: The
