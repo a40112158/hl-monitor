@@ -4,7 +4,7 @@
 276,SOL,longterm,short,2,0.0,0.0,-8.0306,,,,,,
 276,QONE,longterm,short,2,0.0,0.0,-3.7703,,,,,,
 276,HYPE,alert,short,1,,,,,,,,,
-276,ZEC,alert,long,1,,,,,,,,,
+276,ZEC,alert,long,1,100.0,100.0,12.434,,,,,,
 276,MAX,alert,short,1,0.0,0.0,-0.9345,,,,,,
 276,BASED,alert,short,1,100.0,0.0,0.4074,,,,,,
 276,UPUMP,alert,short,1,0.0,0.0,0.0,,,,,,
