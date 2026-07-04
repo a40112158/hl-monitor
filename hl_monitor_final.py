@@ -638,6 +638,8 @@ def init_db() -> None:
         run_id INTEGER PRIMARY KEY AUTOINCREMENT,
         started_at TEXT,
         finished_at TEXT,
+        snapshot_complete INTEGER DEFAULT 0,
+        price_data_ok INTEGER DEFAULT 0,
         note TEXT,
         total_wallets INTEGER,
         ok_wallets INTEGER,
@@ -658,6 +660,8 @@ def init_db() -> None:
         groups TEXT,
         status TEXT,
         error TEXT,
+        perp_ok INTEGER,
+        spot_ok INTEGER,
         perp_account_value REAL,
         perp_total_ntl_pos REAL,
         perp_withdrawable REAL,
@@ -1072,11 +1076,13 @@ def init_db() -> None:
     """)
 
     # 兼容旧数据库：给 wallet_actions / signal_events / wallet_quality 补充新增评估字段
-    def add_col_if_missing(table: str, col: str, decl: str) -> None:
+    def add_col_if_missing(table: str, col: str, decl: str) -> bool:
         cur.execute(f"PRAGMA table_info({table})")
         cols = {r[1] for r in cur.fetchall()}
         if col not in cols:
             cur.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
+            return True
+        return False
 
     for t in ("wallet_actions", "signal_events", "longterm_events"):
         add_col_if_missing(t, "ret_72h", "REAL")
@@ -1090,6 +1096,20 @@ def init_db() -> None:
         add_col_if_missing("wallet_quality", col, "REAL")
 
     add_col_if_missing("wallet_states", "perp_account_leverage", "REAL")
+    add_col_if_missing("wallet_states", "perp_ok", "INTEGER")
+    add_col_if_missing("wallet_states", "spot_ok", "INTEGER")
+    snapshot_marker_added = add_col_if_missing("runs", "snapshot_complete", "INTEGER DEFAULT 0")
+    price_marker_added = add_col_if_missing("runs", "price_data_ok", "INTEGER DEFAULT 0")
+    # Existing databases predate the explicit snapshot marker. A finished run
+    # necessarily passed the old snapshot-writing path, so it is safe to
+    # migrate those rows to complete. Unfinished rows stay fail-closed.
+    if snapshot_marker_added:
+        cur.execute("UPDATE runs SET snapshot_complete=1 WHERE finished_at IS NOT NULL")
+    if price_marker_added:
+        # Legacy runs never recorded whether the two global price endpoints
+        # succeeded. Treat that state as unknown/untrusted instead of guessing
+        # healthy. The first healthy v10 scan establishes a fresh baseline.
+        cur.execute("UPDATE runs SET price_data_ok=0")
     for col in ("margin_mode", "leverage_style", "leverage_note"):
         add_col_if_missing("perp_positions", col, "TEXT")
     for col in ("margin_used", "liq_distance_pct", "account_leverage", "leverage_weight", "leverage_risk_score"):
@@ -1140,7 +1160,10 @@ def init_db() -> None:
 def create_run(note: str) -> int:
     conn = db_conn()
     cur = conn.cursor()
-    cur.execute("INSERT INTO runs(started_at, note, pushed) VALUES (?, ?, 0)", (now_str(), note))
+    cur.execute(
+        "INSERT INTO runs(started_at, snapshot_complete, price_data_ok, note, pushed) VALUES (?, 0, 0, ?, 0)",
+        (now_str(), note),
+    )
     run_id = cur.lastrowid
     conn.commit()
     conn.close()
@@ -1169,7 +1192,15 @@ def finish_run(run_id: int, wallet_rows: List[Dict[str, Any]], perp_rows: List[D
 def get_previous_run_id(run_id: int) -> Optional[int]:
     conn = db_conn()
     cur = conn.cursor()
-    cur.execute("SELECT run_id FROM runs WHERE run_id < ? ORDER BY run_id DESC LIMIT 1", (run_id,))
+    # Never compare against a run whose chunked snapshot write was interrupted.
+    # Missing position rows in such a run can otherwise look like genuine
+    # closes/sells on the next scan.
+    cur.execute(
+        "SELECT run_id FROM runs "
+        "WHERE run_id < ? AND COALESCE(snapshot_complete, 0)=1 AND COALESCE(price_data_ok, 0)=1 "
+        "ORDER BY run_id DESC LIMIT 1",
+        (run_id,),
+    )
     row = cur.fetchone()
     conn.close()
     return int(row[0]) if row else None
@@ -1307,6 +1338,10 @@ async def fetch_spot_prices(session: aiohttp.ClientSession, limiter: Optional[Ra
                     coin_price[str(name)] = px
     except Exception as e:
         print("解析 spotMetaAndAssetCtxs 失败：", e)
+        # Parsing is all-or-nothing. Keeping prices accumulated before a later
+        # malformed item would let a partial response pass the global health
+        # guard and contaminate valuation/signal calculations.
+        return {0: 1.0}, {"USDC": 1.0}
     return token_price, coin_price
 
 
@@ -1515,6 +1550,8 @@ async def fetch_wallet(session: aiohttp.ClientSession, limiter: RateLimiter, add
         "groups": groups,
         "status": "ok",
         "error": "",
+        "perp_ok": 1 if perp_ok else 0,
+        "spot_ok": 1 if spot_ok else 0,
         "perp_account_value": None,
         "perp_total_ntl_pos": None,
         "perp_withdrawable": None,
@@ -1582,7 +1619,24 @@ def _chunks(seq: List[Any], size: int):
         yield i, seq[i:i + size]
 
 
-def save_snapshot(run_id: int, wallet_rows: List[Dict[str, Any]], perp_rows: List[Dict[str, Any]], spot_rows: List[Dict[str, Any]]) -> None:
+def _wallet_endpoint_ok_from_state(w: Dict[str, Any], endpoint: str) -> bool:
+    """Infer endpoint health from explicit flags, with legacy string fallback."""
+    raw_flag = w.get(f"{endpoint}_ok")
+    if raw_flag is not None:
+        return bool(int(raw_flag or 0))
+    status = str(w.get("status") or "")
+    err = str(w.get("error") or "")
+    marker = f"{endpoint}="
+    return bool(status == "ok" or (status == "partial" and marker not in err))
+
+
+def save_snapshot(
+    run_id: int,
+    wallet_rows: List[Dict[str, Any]],
+    perp_rows: List[Dict[str, Any]],
+    spot_rows: List[Dict[str, Any]],
+    price_data_ok: bool = True,
+) -> None:
     """保存本轮快照。
 
     Turso 是远程数据库，单次大事务在 GitHub Actions 里可能长时间无输出，
@@ -1599,15 +1653,17 @@ def save_snapshot(run_id: int, wallet_rows: List[Dict[str, Any]], perp_rows: Lis
     try:
         wallet_payload = [(
             run_id, w.get("address"), w.get("groups"), w.get("status"), w.get("error"),
+            1 if _wallet_endpoint_ok_from_state(w, "perp") else 0,
+            1 if _wallet_endpoint_ok_from_state(w, "spot") else 0,
             w.get("perp_account_value"), w.get("perp_total_ntl_pos"), w.get("perp_withdrawable"), w.get("perp_account_leverage"), w.get("perp_position_count"),
             w.get("spot_total_value"), w.get("spot_usdc_value"), w.get("spot_token_count")
         ) for w in wallet_rows]
         cur.executemany("""
         INSERT INTO wallet_states (
-            run_id, address, groups, status, error,
+            run_id, address, groups, status, error, perp_ok, spot_ok,
             perp_account_value, perp_total_ntl_pos, perp_withdrawable, perp_account_leverage, perp_position_count,
             spot_total_value, spot_usdc_value, spot_token_count
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, wallet_payload)
         conn.commit()
         step_log(f"wallet_states 写入完成：{len(wallet_payload)} 行 | elapsed={time.time()-t0:.1f}s")
@@ -1644,12 +1700,55 @@ def save_snapshot(run_id: int, wallet_rows: List[Dict[str, Any]], perp_rows: Lis
             inserted += len(chunk)
             step_log(f"spot_balances 写入进度：{inserted}/{len(spot_payload)} 行 | elapsed={time.time()-t0:.1f}s")
 
+        # The marker is written only after every snapshot table has completed.
+        # If the process dies during any earlier chunk, the run remains
+        # snapshot_complete=0 and is excluded as a future comparison baseline.
+        cur.execute(
+            "UPDATE runs SET snapshot_complete=1, price_data_ok=? WHERE run_id=?",
+            (1 if price_data_ok else 0, run_id),
+        )
+        conn.commit()
         step_log(f"本轮快照写入完成 run_id={run_id} | total_elapsed={time.time()-t0:.1f}s")
     finally:
         try:
             conn.close()
         except Exception:
             pass
+
+def _write_empty_latest_csv(path: str, label: str = "empty") -> None:
+    """Overwrite a latest CSV with an explicit empty marker.
+
+    latest files should represent the current run.  If a table has no rows for
+    this run, leaving a previous run's CSV in place is misleading, so write a
+    tiny marker file instead.
+    """
+    with open(path, "w", encoding="utf-8-sig", newline="") as f:
+        f.write(f"{label}\n")
+
+
+def _current_run_skip_file_exists(path: str, run_id: int) -> bool:
+    """Return True only when a guard already wrote a current-run skip artifact.
+
+    This intentionally parses the CSV marker instead of doing a loose substring
+    search.  A stale skip file can contain the current run id as part of a date
+    or note, and must not prevent this run from overwriting the file with an
+    explicit empty marker.
+    """
+    try:
+        with open(path, "r", encoding="utf-8-sig", newline="") as f:
+            reader = csv.DictReader(f)
+            row = next(reader, None)
+    except FileNotFoundError:
+        return False
+    except Exception:
+        return False
+    if not row:
+        return False
+    return (
+        str(row.get("status") or "") == "skipped_low_data_quality"
+        and safe_int(row.get("run_id"), -1) == int(run_id)
+    )
+
 
 def export_latest_csv(run_id: int) -> None:
     ensure_dirs()
@@ -1663,9 +1762,12 @@ def export_latest_csv(run_id: int) -> None:
         ("coin_risk_metrics", "coin_risk_latest.csv"),
     ]:
         rows = load_rows(table, run_id)
-        if not rows:
-            continue
         path = os.path.join(DETAILS_DIR, filename)
+        if not rows:
+            if _current_run_skip_file_exists(path, run_id):
+                continue
+            _write_empty_latest_csv(path)
+            continue
         with open(path, "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
             writer.writeheader()
@@ -1726,6 +1828,116 @@ def signed_perp_value(row: Optional[Dict[str, Any]]) -> float:
 
 def map_addr_coin(rows: List[Dict[str, Any]]) -> Dict[Tuple[str, str], Dict[str, Any]]:
     return {(r["address"], r["coin"]): r for r in rows}
+
+
+def _wallet_endpoint_ok_map(run_id: int, endpoint: str) -> Dict[str, bool]:
+    """Return per-wallet endpoint health for one run.
+
+    Diff-based flow calculations must not treat missing rows from a failed
+    endpoint as a real close/sell.  New snapshots store explicit ``perp_ok``
+    and ``spot_ok`` flags; old databases are still supported by falling back
+    to the legacy ``status/error`` strings.
+    """
+    if endpoint not in {"perp", "spot"}:
+        raise ValueError("endpoint must be 'perp' or 'spot'")
+    out: Dict[str, bool] = {}
+    # Explicit endpoint flags are preferred; legacy rows fall back to status/error.
+    for w in load_rows("wallet_states", run_id):
+        addr = str(w.get("address") or "")
+        if not addr:
+            continue
+        ok = _wallet_endpoint_ok_from_state(w, endpoint)
+        out[addr] = ok
+        out[addr.lower()] = ok
+    return out
+
+
+def _endpoint_ok(ok_map: Dict[str, bool], address: str) -> bool:
+    addr = str(address or "")
+    return bool(ok_map.get(addr, ok_map.get(addr.lower(), False)))
+
+
+def global_price_data_health(
+    mid_prices: Dict[str, float],
+    token_prices: Dict[int, float],
+    spot_coin_prices: Dict[str, float],
+) -> Dict[str, Any]:
+    """Return whether both global price sources produced usable market data.
+
+    The fallback maps always contain USDC. Those placeholders must not make a
+    failed ``spotMetaAndAssetCtxs`` request look healthy.
+    """
+    perp_count = sum(1 for value in (mid_prices or {}).values() if (safe_float(value) or 0.0) > 0)
+    spot_token_count = sum(
+        1 for token, value in (token_prices or {}).items()
+        if safe_int(token, -1) != 0 and (safe_float(value) or 0.0) > 0
+    )
+    spot_coin_count = sum(
+        1 for coin, value in (spot_coin_prices or {}).items()
+        if str(coin).upper() != "USDC" and (safe_float(value) or 0.0) > 0
+    )
+    missing: List[str] = []
+    if perp_count == 0:
+        missing.append("allMids")
+    if spot_token_count == 0 and spot_coin_count == 0:
+        missing.append("spotMetaAndAssetCtxs")
+    return {
+        "ok": not missing,
+        "perp_price_count": perp_count,
+        "spot_token_price_count": spot_token_count,
+        "spot_coin_price_count": spot_coin_count,
+        "missing_sources": missing,
+    }
+
+
+def data_quality_block_reason(ok_rate: float, price_health: Optional[Dict[str, Any]] = None) -> str:
+    reasons: List[str] = []
+    if (safe_float(ok_rate) or 0.0) < MIN_OK_RATE:
+        reasons.append(f"钱包成功率 {ok_rate*100:.2f}% < {MIN_OK_RATE*100:.2f}%")
+    if price_health is not None and not bool(price_health.get("ok")):
+        missing = ", ".join(str(x) for x in (price_health.get("missing_sources") or [])) or "unknown"
+        reasons.append(f"全局价格数据不可用：{missing}")
+    return "；".join(reasons)
+
+
+def data_quality_allows_signal_writes(ok_rate: float, price_data_ok: bool = True) -> bool:
+    """Whether this run may write diff-based flow/signal/lifecycle outputs.
+
+    When DATA_ANOMALY_PROTECT_MODE is disabled, low ok_rate is still reported
+    but it no longer blocks writes.  The per-wallet endpoint guard remains
+    active independently to prevent single-wallet false close/sell signals.
+    """
+    return (not DATA_ANOMALY_PROTECT_MODE) or (
+        safe_float(ok_rate) >= MIN_OK_RATE and bool(price_data_ok)
+    )
+
+
+LONG_CANDIDATE_CATEGORIES = {"低杠杆长期候选", "长期多单候选", "长期空单候选"}
+LONG_OBSERVE_CATEGORIES = {"多单建仓观察", "空单建仓观察", "滚动建仓观察", "长期资格未通过"}
+
+
+def is_long_candidate_signal(row: Dict[str, Any]) -> bool:
+    category = str((row or {}).get("signal_category") or "")
+    if category in LONG_CANDIDATE_CATEGORIES:
+        return True
+    gate = str((row or {}).get("candidate_gate") or "").upper()
+    state = str((row or {}).get("candidate_state") or "").upper()
+    watchlist = str((row or {}).get("watchlist") or "").lower()
+    return gate == "PASS" and state in {"CANDIDATE", "CONFIRMED"} and watchlist in {"long", "short"}
+
+
+def is_pushable_signal(row: Dict[str, Any]) -> bool:
+    threshold_score = safe_float((row or {}).get("threshold_score")) or 0.0
+    if threshold_score <= 0:
+        return False
+    if is_long_candidate_signal(row):
+        long_side_score = max(
+            abs(safe_float(row.get("long_candidate_score")) or 0.0),
+            abs(safe_float(row.get("short_candidate_score")) or 0.0),
+            abs(safe_float(row.get("long_score")) or 0.0),
+        )
+        return long_side_score >= threshold_score
+    return abs(safe_float(row.get("alert_score")) or 0.0) >= threshold_score
 
 
 def group_base_weight(groups: str) -> float:
@@ -2628,6 +2840,10 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
     prep = map_addr_coin(pre_perp)
     curs = map_addr_coin(cur_spot)
     pres = map_addr_coin(pre_spot)
+    cur_perp_ok = _wallet_endpoint_ok_map(run_id, "perp")
+    pre_perp_ok = _wallet_endpoint_ok_map(prev_run_id, "perp")
+    cur_spot_ok = _wallet_endpoint_ok_map(run_id, "spot")
+    pre_spot_ok = _wallet_endpoint_ok_map(prev_run_id, "spot")
 
     coins: Dict[str, Dict[str, Any]] = defaultdict(lambda: {
         "coin": "",
@@ -2646,6 +2862,8 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
         cur = curp.get(key)
         pre = prep.get(key)
         addr, coin = key
+        if not _endpoint_ok(cur_perp_ok, addr) or not _endpoint_ok(pre_perp_ok, addr):
+            continue
         cur_szi = safe_float(cur.get("szi")) if cur else 0.0
         pre_szi = safe_float(pre.get("szi")) if pre else 0.0
         cur_px = safe_float(cur.get("mark_px")) if cur else None
@@ -2699,6 +2917,8 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
         cur = curs.get(key)
         pre = pres.get(key)
         addr, coin = key
+        if not _endpoint_ok(cur_spot_ok, addr) or not _endpoint_ok(pre_spot_ok, addr):
+            continue
         if coin.upper() == "USDC":
             continue
         cur_qty = safe_float(cur.get("total")) if cur else 0.0
@@ -2739,6 +2959,8 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
     for addr, cw in cur_wallet.items():
         pw = pre_wallet.get(addr)
         if not pw:
+            continue
+        if not _endpoint_ok(cur_spot_ok, addr) or not _endpoint_ok(pre_spot_ok, addr):
             continue
         usdc_delta = (safe_float(cw.get("spot_usdc_value")) or 0.0) - (safe_float(pw.get("spot_usdc_value")) or 0.0)
         spot_delta = (safe_float(cw.get("spot_total_value")) or 0.0) - (safe_float(pw.get("spot_total_value")) or 0.0)
@@ -3150,14 +3372,13 @@ def _current_perp_map(run_id: int) -> Dict[Tuple[str, str], Dict[str, Any]]:
 
 
 def _wallet_perp_ok_map(run_id: int) -> Dict[str, bool]:
-    out: Dict[str, bool] = {}
-    for w in load_rows("wallet_states", run_id):
-        addr = (w.get("address") or "").lower()
-        status = w.get("status") or ""
-        err = w.get("error") or ""
-        # failed 或 perp 请求失败时，不把“当前没有仓位”误判成平仓。
-        out[addr] = bool(status == "ok" or (status == "partial" and "perp=" not in err))
-    return out
+    """Return wallets whose perp endpoint is trustworthy for lifecycle updates.
+
+    Keep this lifecycle helper aligned with the newer endpoint-health model so
+    position tracking uses explicit ``perp_ok`` flags when available, while
+    remaining compatible with old rows that only have status/error strings.
+    """
+    return _wallet_endpoint_ok_map(run_id, "perp")
 
 
 def _insert_position_event(cur: sqlite3.Cursor, run_id: int, trade_id: int, event_type: str, row: Dict[str, Any], qty_delta: float, px: Optional[float], ret_pct: Optional[float], note: str = "") -> None:
@@ -3381,11 +3602,14 @@ def export_position_trade_files(run_id: int) -> None:
     """, (since,))
     trade_rows = [dict(x) for x in cur.fetchall()]
 
+    trades_path = os.path.join(DETAILS_DIR, "wallet_position_trades_latest.csv")
     if trade_rows:
-        with open(os.path.join(DETAILS_DIR, "wallet_position_trades_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
+        with open(trades_path, "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(trade_rows[0].keys()))
             writer.writeheader()
             writer.writerows(trade_rows)
+    else:
+        _write_empty_latest_csv(trades_path)
 
     by_addr: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     for r in trade_rows:
@@ -3463,12 +3687,15 @@ def export_position_trade_files(run_id: int) -> None:
     conn.commit()
     conn.close()
 
+    perf_path = os.path.join(DETAILS_DIR, "wallet_position_performance_latest.csv")
     if perf_rows:
         perf_rows.sort(key=lambda x: safe_float(x.get("position_score")) or 0.0, reverse=True)
-        with open(os.path.join(DETAILS_DIR, "wallet_position_performance_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
+        with open(perf_path, "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(perf_rows[0].keys()))
             writer.writeheader()
             writer.writerows(perf_rows)
+    else:
+        _write_empty_latest_csv(perf_path)
 
     with open(os.path.join(DETAILS_DIR, "wallet_position_report.txt"), "w", encoding="utf-8") as f:
         f.write("【仓位生命周期收益报告】\n")
@@ -3522,6 +3749,13 @@ def export_leverage_quality_files(run_id: int) -> None:
     ensure_dirs()
     rows = load_rows("perp_positions", run_id)
     if not rows:
+        for fn in ["leverage_quality_latest.csv", "wallet_leverage_profile_latest.csv", "coin_leverage_summary_latest.csv"]:
+            _write_empty_latest_csv(os.path.join(DETAILS_DIR, fn))
+        with open(os.path.join(DETAILS_DIR, "leverage_quality_report.txt"), "w", encoding="utf-8") as f:
+            f.write("【合约杠杆质量报告】\n")
+            f.write(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}\n\n")
+            f.write("本轮没有合约持仓 rows，杠杆质量报告已清空。\n")
+        print("杠杆质量报告已导出：0 个合约仓位", flush=True)
         return
 
     pos_fields = [
@@ -3605,11 +3839,14 @@ def export_leverage_quality_files(run_id: int) -> None:
             "style_mix": ",".join([f"{k}:{fmt_money(v)}" for k, v in styles[:5]]),
         })
     wallet_rows.sort(key=lambda x: (safe_float(x.get("high_risk_ratio")) or 0.0, safe_float(x.get("total_position_value")) or 0.0), reverse=True)
+    wallet_profile_path = os.path.join(DETAILS_DIR, "wallet_leverage_profile_latest.csv")
     if wallet_rows:
-        with open(os.path.join(DETAILS_DIR, "wallet_leverage_profile_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
+        with open(wallet_profile_path, "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(wallet_rows[0].keys()))
             writer.writeheader()
             writer.writerows(wallet_rows)
+    else:
+        _write_empty_latest_csv(wallet_profile_path)
 
     lev_map = build_leverage_signal_map(run_id)
     coin_rows: List[Dict[str, Any]] = []
@@ -3631,11 +3868,14 @@ def export_leverage_quality_files(run_id: int) -> None:
             "style_mix": d.get("style_mix"),
         })
     coin_rows.sort(key=lambda x: (abs(safe_float(x.get("long_value")) or 0.0) + abs(safe_float(x.get("short_value")) or 0.0)), reverse=True)
+    coin_summary_path = os.path.join(DETAILS_DIR, "coin_leverage_summary_latest.csv")
     if coin_rows:
-        with open(os.path.join(DETAILS_DIR, "coin_leverage_summary_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
+        with open(coin_summary_path, "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(coin_rows[0].keys()))
             writer.writeheader()
             writer.writerows(coin_rows)
+    else:
+        _write_empty_latest_csv(coin_summary_path)
 
     with open(os.path.join(DETAILS_DIR, "leverage_quality_report.txt"), "w", encoding="utf-8") as f:
         f.write("【合约杠杆质量报告】\n")
@@ -3775,6 +4015,13 @@ async def build_coin_risk_metrics(run_id: int, candidate_coins: List[str]) -> Di
             f.write(f"run_id={run_id} | 更新时间{DISPLAY_TZ_NAME}={signal_time_cn(run_id)} | UTC={now_str()}\n\n")
             for r in sorted_rows[:50]:
                 f.write(f"{r['coin']} | funding={fmt_pct(r.get('funding_rate_pct'))} 风险={r.get('funding_risk')} | 24h成交额={fmt_money(r.get('day_volume_usd'))} 流动性={r.get('liquidity_risk')} | OI={fmt_money(r.get('open_interest_usd'))}\n")
+    else:
+        with open(os.path.join(DETAILS_DIR, "coin_risk_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
+            f.write("empty\n")
+        with open(os.path.join(REPORT_DIR, "coin_risk_report.txt"), "w", encoding="utf-8") as f:
+            f.write("【资金费率 / 流动性风险】\n")
+            f.write(f"run_id={run_id} | 更新时间{DISPLAY_TZ_NAME}={signal_time_cn(run_id)} | UTC={now_str()}\n\n")
+            f.write("本轮暂无币种风险指标。\n")
     return risk_map
 
 
@@ -3833,7 +4080,7 @@ def _signed_cap(v: float, cap: float) -> float:
     return max(-cap, min(cap, v))
 
 
-def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: Dict[str, Dict[str, Any]], thresholds: Dict[str, Dict[str, float]], risk_map: Optional[Dict[str, Dict[str, Any]]] = None, rolling_map: Optional[Dict[str, Dict[str, Any]]] = None, gap_minutes: Optional[float] = None) -> List[Dict[str, Any]]:
+def _build_signals_dualscore_base(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: Dict[str, Dict[str, Any]], thresholds: Dict[str, Dict[str, float]], risk_map: Optional[Dict[str, Dict[str, Any]]] = None, rolling_map: Optional[Dict[str, Dict[str, Any]]] = None, gap_minutes: Optional[float] = None) -> List[Dict[str, Any]]:
     """构建币种信号。双分数版：
 
     alert_score：短线异动雷达。主要看本轮主动变化，少量参考短窗口滚动确认。
@@ -4106,11 +4353,10 @@ def build_signals(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: 
             "reason": reason,
         })
     # 先排长期候选，再排短线报警，再排普通观察。
-    rows.sort(key=lambda x: (1 if x.get("signal_category") == "低杠杆长期候选" else 0, abs(x.get("alert_score") or 0.0), abs(x.get("long_score") or 0.0), abs(x["final_score"])), reverse=True)
-    save_coin_signals(run_id, rows)
+    rows.sort(key=lambda x: (1 if x.get("signal_category") in LONG_CANDIDATE_CATEGORIES else 0, abs(x.get("alert_score") or 0.0), abs(x.get("long_score") or 0.0), abs(x["final_score"])), reverse=True)
     return rows
 
-def save_coin_signals(run_id: int, rows: List[Dict[str, Any]]) -> None:
+def _save_coin_signals_legacy(run_id: int, rows: List[Dict[str, Any]]) -> None:
     conn = db_conn()
     cur = conn.cursor()
     cur.execute("DELETE FROM coin_signals WHERE run_id=?", (run_id,))
@@ -4134,7 +4380,7 @@ def save_coin_signals(run_id: int, rows: List[Dict[str, Any]]) -> None:
 
 
 
-def export_signal_explain_files(run_id: int, signals: List[Dict[str, Any]]) -> None:
+def export_signal_explain_files(run_id: int, signals: List[Dict[str, Any]], skip_reason: str = "", skip_ok_rate: Optional[float] = None) -> None:
     """导出每个信号的加减分来源，解决“为什么出这个信号”的问题。"""
     if not SIGNAL_EXPLAIN_MODE:
         return
@@ -4187,10 +4433,20 @@ def export_signal_explain_files(run_id: int, signals: List[Dict[str, Any]]) -> N
         with open(os.path.join(DETAILS_DIR, "signal_explain_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
             writer.writeheader(); writer.writerows(rows)
+    else:
+        with open(os.path.join(DETAILS_DIR, "signal_explain_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
+            if skip_reason:
+                skip_rows = _guard_skip_rows(run_id, safe_float(skip_ok_rate) if skip_ok_rate is not None else 0.0, note=skip_reason)
+                writer = csv.DictWriter(f, fieldnames=list(skip_rows[0].keys()))
+                writer.writeheader(); writer.writerows(skip_rows)
+            else:
+                f.write("empty\n")
     with open(os.path.join(REPORT_DIR, "signal_explain_report.txt"), "w", encoding="utf-8") as f:
         f.write("【信号解释】\n")
         f.write(f"run_id={run_id} | 更新时间{DISPLAY_TZ_NAME}={signal_time_cn(run_id)} | UTC={now_str()}\n\n")
-        if not signals:
+        if skip_reason:
+            f.write(f"⚠️ 本轮未生成/解释新信号：{skip_reason}\n")
+        elif not signals:
             f.write("本轮暂无信号。\n")
         for s in signals[:TOP_N]:
             parts = s.get("score_parts") or {}
@@ -4256,7 +4512,13 @@ def attach_dominant_wallets(signals: List[Dict[str, Any]], actions: List[Dict[st
         s["dominant_wallets"] = dom.get(s.get("coin"), "-")
 
 
-def write_data_quality_report(run_id: int, ok_rate: float, wallet_rows: List[Dict[str, Any]], note: str = "") -> None:
+def write_data_quality_report(
+    run_id: int,
+    ok_rate: float,
+    wallet_rows: List[Dict[str, Any]],
+    note: str = "",
+    price_health: Optional[Dict[str, Any]] = None,
+) -> None:
     """导出本轮数据质量报告。低成功率时用于提醒：本轮信号/生命周期不应被过度解读。"""
     ensure_dirs()
     total = len(wallet_rows or [])
@@ -4269,14 +4531,253 @@ def write_data_quality_report(run_id: int, ok_rate: float, wallet_rows: List[Dic
         f.write("【数据质量 / API异常保护】\n")
         f.write(f"run_id={run_id} | {DISPLAY_TZ_NAME}={signal_time_cn(run_id)} | UTC={now_str()} | note={note}\n")
         f.write(f"监控钱包={total} | ok={ok} | partial={partial} | failed={failed} | 成功率={ok_rate*100:.2f}% | 最低要求={MIN_OK_RATE*100:.2f}%\n")
-        if DATA_ANOMALY_PROTECT_MODE and ok_rate < MIN_OK_RATE:
-            f.write("\n⚠️ 本轮成功率低于阈值：脚本会跳过新信号生成/生命周期结算，避免把 API 抽风误判成信号消失或钱包平仓。\n")
+        if price_health is not None:
+            f.write(
+                "全局价格："
+                f"allMids={int(price_health.get('perp_price_count') or 0)} | "
+                f"spot_token={int(price_health.get('spot_token_price_count') or 0)} | "
+                f"spot_coin={int(price_health.get('spot_coin_price_count') or 0)} | "
+                f"状态={'ok' if price_health.get('ok') else 'failed'}\n"
+            )
+        blocked_reason = data_quality_block_reason(ok_rate, price_health)
+        if DATA_ANOMALY_PROTECT_MODE and blocked_reason:
+            f.write(f"\n⚠️ 本轮数据质量未通过：{blocked_reason}。\n")
+            f.write("脚本会跳过新信号生成/生命周期结算，避免把 API 异常误判成资金变化、信号消失或钱包平仓。\n")
         else:
             f.write("\n本轮数据质量通过，可以正常参考信号。\n")
         if bad_examples:
             f.write("\n异常钱包样例：\n")
             for w in bad_examples:
                 f.write(f"  {short_addr(w.get('address') or '')} status={w.get('status')} err={w.get('error') or '-'}\n")
+
+
+def write_quality_guard_skipped_artifacts(run_id: int, ok_rate: float, note: str = "") -> None:
+    """Overwrite latest quality/lifecycle artifacts with an explicit skip notice.
+
+    When a low-quality API round is blocked, leaving yesterday's ``latest`` CSV
+    or report in place is misleading.  These lightweight artifacts make it
+    clear that this run intentionally did not update position lifecycle or
+    wallet quality outputs.
+    """
+    ensure_dirs()
+    reason = f"run_id={run_id} 数据质量未通过"
+    if ok_rate < MIN_OK_RATE:
+        reason += f"：ok_rate={ok_rate*100:.2f}% < MIN_OK_RATE={MIN_OK_RATE*100:.2f}%"
+    if note:
+        reason += f"；{note}"
+
+    skipped_rows = [{
+        "run_id": run_id,
+        "calculated_at": now_str(),
+        "status": "skipped_low_data_quality",
+        "ok_rate": ok_rate,
+        "min_ok_rate": MIN_OK_RATE,
+        "note": reason,
+    }]
+    for fn in [
+        "wallet_position_trades_latest.csv",
+        "wallet_position_performance_latest.csv",
+        "wallet_quality_latest.csv",
+    ]:
+        with open(os.path.join(DETAILS_DIR, fn), "w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=list(skipped_rows[0].keys()))
+            writer.writeheader()
+            writer.writerows(skipped_rows)
+
+    with open(os.path.join(DETAILS_DIR, "wallet_position_report.txt"), "w", encoding="utf-8") as f:
+        f.write("【仓位生命周期收益报告】\n")
+        f.write(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}\n\n")
+        f.write("⚠️ 本轮未更新仓位生命周期。\n")
+        f.write(reason + "\n")
+        f.write("说明：为避免 API 大面积异常污染 position_trades / wallet_position_performance，本轮只保存原始快照，不更新仓位生命周期。\n")
+
+    with open(os.path.join(DETAILS_DIR, "wallet_quality_report.txt"), "w", encoding="utf-8") as f:
+        f.write("【钱包质量分类】\n")
+        f.write(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}\n\n")
+        f.write("⚠️ 本轮未刷新钱包质量。\n")
+        f.write(reason + "\n")
+        f.write("说明：为避免低成功率轮次污染 wallet_quality，本轮沿用数据库中上一轮/历史质量数据用于后续参考。\n")
+
+
+def _guard_skip_rows(run_id: int, ok_rate: float, note: str = "", source_run_id: Optional[int] = None) -> List[Dict[str, Any]]:
+    reason = f"run_id={run_id} 数据质量未通过"
+    if ok_rate < MIN_OK_RATE:
+        reason += f"：ok_rate={ok_rate*100:.2f}% < MIN_OK_RATE={MIN_OK_RATE*100:.2f}%"
+    if note:
+        reason += f"；{note}"
+    return [{
+        "run_id": run_id,
+        "source_run_id": source_run_id if source_run_id is not None else "",
+        "calculated_at": now_str(),
+        "status": "skipped_low_data_quality",
+        "ok_rate": ok_rate,
+        "min_ok_rate": MIN_OK_RATE,
+        "note": reason,
+    }]
+
+
+def _write_guard_skip_csv(filename: str, run_id: int, ok_rate: float, note: str = "", source_run_id: Optional[int] = None) -> None:
+    rows = _guard_skip_rows(run_id, ok_rate, note=note, source_run_id=source_run_id)
+    with open(os.path.join(DETAILS_DIR, filename), "w", encoding="utf-8-sig", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def write_leverage_guard_skipped_artifacts(run_id: int, ok_rate: float, note: str = "") -> None:
+    """Overwrite leverage-quality latest artifacts with an explicit low-quality skip notice."""
+    if not LEVERAGE_QUALITY_MODE:
+        return
+    ensure_dirs()
+    reason = _guard_skip_rows(run_id, ok_rate, note=note)[0]["note"]
+    for fn in [
+        "leverage_quality_latest.csv",
+        "wallet_leverage_profile_latest.csv",
+        "coin_leverage_summary_latest.csv",
+    ]:
+        _write_guard_skip_csv(fn, run_id, ok_rate, note=note)
+    with open(os.path.join(DETAILS_DIR, "leverage_quality_report.txt"), "w", encoding="utf-8") as f:
+        f.write("【合约杠杆质量报告】\n")
+        f.write(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}\n\n")
+        f.write("⚠️ 本轮未导出杠杆质量。\n")
+        f.write(reason + "\n")
+        f.write("说明：为避免低成功率轮次把缺失仓位误读为杠杆结构变化，本轮不刷新 leverage_quality / wallet_leverage_profile / coin_leverage_summary。\n")
+
+
+def write_long_short_guard_skipped_artifacts(run_id: int, ok_rate: float, note: str = "") -> None:
+    """Overwrite long/short-state latest artifacts with an explicit low-quality skip notice."""
+    ensure_dirs()
+    reason = _guard_skip_rows(run_id, ok_rate, note=note)[0]["note"]
+    _write_guard_skip_csv("long_short_state_latest.csv", run_id, ok_rate, note=note)
+    with open(os.path.join(REPORT_DIR, "long_short_state_report.txt"), "w", encoding="utf-8") as f:
+        f.write("【长期多/空分离状态机】\n")
+        f.write(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}\n\n")
+        f.write("⚠️ 本轮未刷新长期多/空状态机。\n")
+        f.write(reason + "\n")
+        f.write("说明：本轮数据质量异常，未生成新信号，因此 long_short_state_latest.csv 只保留 skip 标记，避免沿用上一轮状态误导判断。\n")
+
+
+def write_rolling_flow_guard_skipped_artifacts(run_id: int, ok_rate: float, source_run_id: Optional[int] = None, note: str = "") -> None:
+    """Overwrite rolling-flow latest artifacts with an explicit low-quality skip notice."""
+    if not ROLLING_FLOW_MODE:
+        return
+    ensure_dirs()
+    reason = _guard_skip_rows(run_id, ok_rate, note=note, source_run_id=source_run_id)[0]["note"]
+    _write_guard_skip_csv("rolling_flow_latest.csv", run_id, ok_rate, note=note, source_run_id=source_run_id)
+    with open(os.path.join(REPORT_DIR, "rolling_flow_report.txt"), "w", encoding="utf-8") as f:
+        f.write("【滚动建仓资金流 + 杠杆质量】\n")
+        f.write(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}\n\n")
+        f.write("⚠️ 本轮未刷新 rolling flow。\n")
+        f.write(reason + "\n")
+        if source_run_id is not None:
+            f.write(f"source_run_id={source_run_id}；current_run_id={run_id}\n")
+        f.write("说明：低成功率轮次不会写入 coin_flow_snapshots，也不会导出上一轮 rolling 结果冒充本轮结果。\n")
+
+
+def write_signal_guard_skipped_artifacts(run_id: int, ok_rate: float, note: str = "") -> None:
+    """Overwrite signal latest artifacts with an explicit low-quality skip notice."""
+    ensure_dirs()
+    reason = _guard_skip_rows(run_id, ok_rate, note=note)[0]["note"]
+    _write_guard_skip_csv("coin_signals_latest.csv", run_id, ok_rate, note=note)
+    _write_guard_skip_csv("signal_explain_latest.csv", run_id, ok_rate, note=note)
+    with open(os.path.join(REPORT_DIR, "signal_explain_report.txt"), "w", encoding="utf-8") as f:
+        f.write("【信号解释】\n")
+        f.write(f"run_id={run_id} | 更新时间{DISPLAY_TZ_NAME}={signal_time_cn(run_id)} | UTC={now_str()}\n\n")
+        f.write("⚠️ 本轮未生成/解释新信号。\n")
+        f.write(reason + "\n")
+        f.write("说明：为避免低成功率轮次把 API 缺失误读为主动变化，本轮 coin_signals_latest.csv / signal_explain_latest.csv 只保留 skip 标记。\n")
+
+
+def write_signal_lifecycle_guard_skipped_artifacts(run_id: int, ok_rate: float, note: str = "") -> None:
+    """Overwrite signal-lifecycle latest artifacts with an explicit low-quality skip notice."""
+    if not SIGNAL_LIFECYCLE_MODE:
+        return
+    ensure_dirs()
+    reason = _guard_skip_rows(run_id, ok_rate, note=note)[0]["note"]
+    _write_guard_skip_csv("signal_lifecycle_latest.csv", run_id, ok_rate, note=note)
+    with open(os.path.join(DETAILS_DIR, "signal_lifecycle_report.txt"), "w", encoding="utf-8") as f:
+        f.write("【信号生命周期追踪】\n")
+        f.write(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}\n\n")
+        f.write("⚠️ 本轮未更新信号生命周期。\n")
+        f.write(reason + "\n")
+        f.write("说明：低成功率轮次不会刷新 signal_lifecycles / signal_lifecycle_events，也不会导出历史生命周期 latest 冒充本轮结果。\n")
+
+def write_coin_risk_guard_skipped_artifacts(run_id: int, ok_rate: float, note: str = "") -> None:
+    """Overwrite coin-risk latest artifacts with an explicit low-quality skip notice."""
+    ensure_dirs()
+    reason = _guard_skip_rows(run_id, ok_rate, note=note)[0]["note"]
+    _write_guard_skip_csv("coin_risk_latest.csv", run_id, ok_rate, note=note)
+    with open(os.path.join(REPORT_DIR, "coin_risk_report.txt"), "w", encoding="utf-8") as f:
+        f.write("【资金费率 / 流动性风险】\n")
+        f.write(f"run_id={run_id} | 更新时间{DISPLAY_TZ_NAME}={signal_time_cn(run_id)} | UTC={now_str()}\n\n")
+        f.write("⚠️ 本轮未刷新币种风险指标。\n")
+        f.write(reason + "\n")
+        f.write("说明：低成功率轮次不会刷新 coin_risk_latest.csv，避免上一轮风险报告被误读成本轮结果。\n")
+
+
+def write_long_term_guard_skipped_artifacts(run_id: int, ok_rate: float, note: str = "") -> None:
+    """Overwrite long-term candidate artifacts with an explicit low-quality skip notice."""
+    ensure_dirs()
+    reason = _guard_skip_rows(run_id, ok_rate, note=note)[0]["note"]
+    _write_guard_skip_csv("long_term_candidates.csv", run_id, ok_rate, note=note)
+    with open(os.path.join(REPORT_DIR, "long_term_plan.txt"), "w", encoding="utf-8") as f:
+        f.write("【低杠杆长期多/空观察计划】\n")
+        f.write(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}\n\n")
+        f.write("⚠️ 本轮未刷新长期候选计划。\n")
+        f.write(reason + "\n")
+        f.write("说明：低成功率轮次不会生成长期多/空候选，long_term_candidates.csv 只保留 skip 标记，避免沿用上一轮候选。\n")
+
+
+def write_backtest_guard_skipped_artifacts(run_id: int, ok_rate: float, note: str = "") -> None:
+    """Overwrite backtest latest artifacts when a low-quality round is blocked."""
+    if not BACKTEST_MODE:
+        return
+    ensure_dirs()
+    reason = _guard_skip_rows(run_id, ok_rate, note=note)[0]["note"]
+    for csv_name in ["signal_backtest_latest.csv", "longterm_backtest_latest.csv"]:
+        _write_guard_skip_csv(csv_name, run_id, ok_rate, note=note)
+        report_name = csv_name.replace(".csv", "_report.txt")
+        with open(os.path.join(DETAILS_DIR, report_name), "w", encoding="utf-8") as f:
+            title = "强信号/观察信号回测" if csv_name.startswith("signal_") else "长期单候选回测"
+            f.write(f"【{title}】\n")
+            f.write(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}\n\n")
+            f.write("⚠️ 本轮未刷新回测 latest 文件。\n")
+            f.write(reason + "\n")
+            f.write("说明：低成功率轮次不结算事件收益，也不刷新 signal_backtest / longterm_backtest latest，避免历史研究文件被误读成本轮更新。\n")
+
+
+def write_research_guard_skipped_artifacts(run_id: int, ok_rate: float, note: str = "") -> None:
+    """Overwrite research dashboard artifacts when a low-quality round is blocked."""
+    ensure_dirs()
+    reason = _guard_skip_rows(run_id, ok_rate, note=note)[0]["note"]
+    for csv_name in ["research_signal_summary_latest.csv", "coin_profile_latest.csv", "wallet_profile_latest.csv"]:
+        _write_guard_skip_csv(csv_name, run_id, ok_rate, note=note)
+    with open(os.path.join(REPORT_DIR, "research_dashboard.txt"), "w", encoding="utf-8") as f:
+        f.write("【研究面板 / 信号验证摘要】\n")
+        f.write(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}\n\n")
+        f.write("⚠️ 本轮未刷新研究面板。\n")
+        f.write(reason + "\n")
+        f.write("说明：低成功率轮次不会刷新 research_signal_summary / coin_profile / wallet_profile，避免把未更新的历史研究结果误读成本轮输出。\n")
+
+
+def write_full_quality_guard_skipped_artifacts(
+    run_id: int,
+    ok_rate: float,
+    prev_id: Optional[int] = None,
+    failure_reason: str = "",
+) -> None:
+    """Write all low-quality guard artifacts in one place. Safe to call more than once."""
+    prefix = f"{failure_reason}；" if failure_reason else ""
+    write_quality_guard_skipped_artifacts(run_id, ok_rate, prefix + "已阻止 position_trades / wallet_quality 写入")
+    write_leverage_guard_skipped_artifacts(run_id, ok_rate, prefix + "已阻止 leverage_quality 写入")
+    write_long_short_guard_skipped_artifacts(run_id, ok_rate, prefix + "已阻止 long_short_state 刷新")
+    write_rolling_flow_guard_skipped_artifacts(run_id, ok_rate, source_run_id=prev_id, note=prefix + "已阻止 rolling_flow 刷新")
+    write_signal_guard_skipped_artifacts(run_id, ok_rate, prefix + "已阻止 coin_signals / signal_explain 刷新")
+    write_signal_lifecycle_guard_skipped_artifacts(run_id, ok_rate, prefix + "已阻止 signal_lifecycle 刷新")
+    write_coin_risk_guard_skipped_artifacts(run_id, ok_rate, prefix + "已阻止 coin_risk 刷新")
+    write_long_term_guard_skipped_artifacts(run_id, ok_rate, prefix + "已阻止 long_term_candidates 刷新")
+    write_backtest_guard_skipped_artifacts(run_id, ok_rate, prefix + "已阻止 backtest latest 刷新")
+    write_research_guard_skipped_artifacts(run_id, ok_rate, prefix + "已阻止 research dashboard 刷新")
 
 
 def _signals_by_coin(signals: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
@@ -4345,7 +4846,7 @@ def _active_lifecycle_signal_rows(signals: List[Dict[str, Any]]) -> List[Dict[st
     rows: List[Dict[str, Any]] = []
     for s in signals:
         try:
-            if abs(safe_float(s.get("alert_score")) or 0.0) >= (safe_float(s.get("threshold_score")) or 0.0) and s.get("signal_category") != "低杠杆长期候选":
+            if abs(safe_float(s.get("alert_score")) or 0.0) >= (safe_float(s.get("threshold_score")) or 0.0) and not is_long_candidate_signal(s):
                 rows.append({
                     "type": "strong",
                     "coin": s.get("coin"),
@@ -4376,13 +4877,19 @@ def _active_lifecycle_longterm_rows(candidates: List[Dict[str, Any]]) -> List[Di
     return [r for r in rows if r.get("coin") and r.get("direction")]
 
 
-def update_signal_lifecycles(run_id: int, signals: List[Dict[str, Any]], longterm_candidates: List[Dict[str, Any]], prices: Dict[str, float], data_quality_ok: bool = True, skip_reason: str = "") -> List[Dict[str, Any]]:
+def update_signal_lifecycles(run_id: int, signals: List[Dict[str, Any]], longterm_candidates: List[Dict[str, Any]], prices: Dict[str, float], data_quality_ok: bool = True, skip_reason: str = "", skip_ok_rate: Optional[float] = None) -> List[Dict[str, Any]]:
     """按提示逻辑追踪信号生命周期。\n\n    固定周期回测回答“信号出现后未来 24h/7d/30d 怎么样”。\n    生命周期追踪回答“你按提示看，从信号出现到消失/反转，真实表现怎么样”。\n    """
     if not SIGNAL_LIFECYCLE_MODE:
         return []
     if DATA_ANOMALY_PROTECT_MODE and not data_quality_ok:
         print(f"数据质量异常，跳过信号生命周期更新：{skip_reason}", flush=True)
-        export_signal_lifecycle_files()
+        ok_rate_for_skip = safe_float(skip_ok_rate)
+        if ok_rate_for_skip is None:
+            try:
+                ok_rate_for_skip = safe_float(run_wallet_stats(run_id).get("ok_rate")) or 0.0
+            except Exception:
+                ok_rate_for_skip = 0.0
+        write_signal_lifecycle_guard_skipped_artifacts(run_id, ok_rate_for_skip, skip_reason or "已阻止 signal_lifecycle 刷新")
         return []
     now = now_str()
     active_rows = _active_lifecycle_signal_rows(signals) + _active_lifecycle_longterm_rows(longterm_candidates)
@@ -5436,7 +5943,7 @@ def long_term_entry_plan(sig: Dict[str, Any], ctx: Dict[str, Any], streak: int) 
     }
 
 
-def build_long_term_candidates(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _build_long_term_candidates_legacy(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
     """把短线/小时级信号过滤成适合低杠杆长期单观察的候选。"""
     if not LONG_TERM_MODE:
         return []
@@ -5504,7 +6011,7 @@ def build_long_term_candidates(run_id: int, signals: List[Dict[str, Any]], ctx_m
     return out
 
 
-def write_long_term_plan(candidates: List[Dict[str, Any]]) -> None:
+def _write_long_term_plan_legacy(candidates: List[Dict[str, Any]]) -> None:
     ensure_dirs()
     path = os.path.join(REPORT_DIR, "long_term_plan.txt")
     with open(path, "w", encoding="utf-8") as f:
@@ -5513,6 +6020,8 @@ def write_long_term_plan(candidates: List[Dict[str, Any]]) -> None:
         f.write(f"风控默认：单币最大亏损控制在账户 {LONG_TERM_RISK_PCT:.1f}% 左右；建议低杠杆，不一次打满。\n\n")
         if not candidates:
             f.write("暂无适合低杠杆长期单的候选。\n")
+            with open(os.path.join(DETAILS_DIR, "long_term_candidates.csv"), "w", newline="", encoding="utf-8-sig") as csv_f:
+                csv_f.write("empty\n")
             return
         for c in candidates[:TOP_N]:
             f.write(f"{c['coin']} {c['direction_cn']} | 长期分={c['long_term_score']:.1f} | long={c.get('long_score',0):+.1f} | alert={c.get('alert_score',0):+.1f} | 连续={c['streak']}轮 | 可信度={c['confidence']}\n")
@@ -5547,8 +6056,20 @@ def write_watchlists(signals: List[Dict[str, Any]]) -> None:
                 f.write(f"原因：{s['reason']}\n\n")
 
 
-def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, Dict[str, Any]], actions: List[Dict[str, Any]], cashflows: List[Dict[str, Any]], ok_rate: float, new_signal_events: int, updated_actions: int, updated_signals: int) -> str:
-    strong = [s for s in signals if abs(s.get("alert_score") or 0.0) >= s["threshold_score"] and s.get("signal_category") != "低杠杆长期候选"]
+def build_report(
+    run_id: int,
+    signals: List[Dict[str, Any]],
+    ctx_map: Dict[str, Dict[str, Any]],
+    actions: List[Dict[str, Any]],
+    cashflows: List[Dict[str, Any]],
+    ok_rate: float,
+    new_signal_events: int,
+    updated_actions: int,
+    updated_signals: int,
+    data_quality_ok: Optional[bool] = None,
+    data_quality_reason: str = "",
+) -> str:
+    strong = [s for s in signals if abs(safe_float(s.get("alert_score")) or 0.0) >= (safe_float(s.get("threshold_score")) or 0.0) and not is_long_candidate_signal(s)]
     longs = [s for s in signals if s["watchlist"] == "long"]
     shorts = [s for s in signals if s["watchlist"] == "short"]
     observes = [s for s in signals if s["watchlist"] == "observe"]
@@ -5568,41 +6089,57 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
         f"成功率：{stats['ok_rate']*100:.2f}%"
     )
     lines.append(f"新信号追踪：{new_signal_events} | 更新动作收益：{updated_actions} | 更新信号收益：{updated_signals}")
-    if DATA_ANOMALY_PROTECT_MODE and ok_rate < MIN_OK_RATE:
-        lines.append(f"⚠️ 数据质量异常：成功率低于 {MIN_OK_RATE*100:.1f}%，本轮不生成新信号/不结算生命周期，避免误判。")
+    data_quality_guarded = (
+        not data_quality_ok if data_quality_ok is not None
+        else not data_quality_allows_signal_writes(ok_rate)
+    )
+    if DATA_ANOMALY_PROTECT_MODE and data_quality_guarded:
+        detail = data_quality_reason or f"钱包成功率低于 {MIN_OK_RATE*100:.1f}%"
+        lines.append(f"⚠️ 数据质量异常：{detail}；本轮不生成新信号/不结算生命周期，避免误判。")
     if WALLET_QUALITY_MODE:
-        qs = wallet_quality_summary(run_id)
-        qc = qs.get("counts", {})
         lines.append("【钱包质量】")
-        lines.append(f"统计窗口：最近{WALLET_QUALITY_WINDOW_DAYS}天 | 总钱包：{qs.get('total', 0)} | S:{qc.get('S',0)} A:{qc.get('A',0)} B:{qc.get('B',0)} C:{qc.get('C',0)} R:{qc.get('R',0)} N:{qc.get('N',0)}")
-        topq = top_wallet_quality(run_id, ["S", "A"], limit=5)
-        if topq:
-            lines.append("优质钱包Top：" + "；".join([f"{short_addr(r['address'])} {r['grade']} 分{(safe_float(r.get('quality_score')) or 0):.0f}" for r in topq]))
-        revq = top_wallet_quality(run_id, ["R"], limit=3)
-        if revq:
-            lines.append("反向钱包提醒：" + "；".join([f"{short_addr(r['address'])} R 反向{(safe_float(r.get('reverse_score')) or 0):.0f}" for r in revq]))
+        if data_quality_guarded:
+            lines.append("⚠️ 本轮数据质量异常，未刷新钱包质量；详情见 reports/details/wallet_quality_report.txt。")
+            if prev_q := get_wallet_quality_map(get_previous_run_id(run_id) or 0):
+                lines.append(f"历史质量权重仍可用于内部参考：可用钱包={len(prev_q)}。")
+        else:
+            qs = wallet_quality_summary(run_id)
+            qc = qs.get("counts", {})
+            lines.append(f"统计窗口：最近{WALLET_QUALITY_WINDOW_DAYS}天 | 总钱包：{qs.get('total', 0)} | S:{qc.get('S',0)} A:{qc.get('A',0)} B:{qc.get('B',0)} C:{qc.get('C',0)} R:{qc.get('R',0)} N:{qc.get('N',0)}")
+            topq = top_wallet_quality(run_id, ["S", "A"], limit=5)
+            if topq:
+                lines.append("优质钱包Top：" + "；".join([f"{short_addr(r['address'])} {r['grade']} 分{(safe_float(r.get('quality_score')) or 0):.0f}" for r in topq]))
+            revq = top_wallet_quality(run_id, ["R"], limit=3)
+            if revq:
+                lines.append("反向钱包提醒：" + "；".join([f"{short_addr(r['address'])} R 反向{(safe_float(r.get('reverse_score')) or 0):.0f}" for r in revq]))
     if POSITION_TRADE_MODE:
-        try:
-            perf = load_rows("wallet_position_performance", run_id)
-            pc: Dict[str, int] = defaultdict(int)
-            for r in perf:
-                pc[r.get("position_grade") or "P-N"] += 1
-            lines.append("【仓位生命周期收益】")
-            lines.append(
-                f"统计窗口：最近{POSITION_PERF_WINDOW_DAYS}天 | "
-                f"P-S:{pc.get('P-S',0)} P-A:{pc.get('P-A',0)} P-B:{pc.get('P-B',0)} "
-                f"P-C:{pc.get('P-C',0)} P-R:{pc.get('P-R',0)} P-G:{pc.get('P-G',0)} P-N:{pc.get('P-N',0)}"
-            )
-            goodp = [r for r in perf if r.get("position_grade") in ("P-S", "P-A")]
-            goodp.sort(key=lambda r: safe_float(r.get("position_score")) or 0.0, reverse=True)
-            if goodp:
-                lines.append("仓位收益优质Top：" + "；".join([f"{short_addr(r['address'])} {r['position_grade']} 收益{fmt_pct(r.get('avg_final_return'))}" for r in goodp[:5]]))
-        except Exception:
-            pass
+        lines.append("【仓位生命周期收益】")
+        if data_quality_guarded:
+            lines.append("⚠️ 本轮数据质量异常，未更新仓位生命周期；详情见 reports/details/wallet_position_report.txt。")
+        else:
+            try:
+                perf = load_rows("wallet_position_performance", run_id)
+                pc: Dict[str, int] = defaultdict(int)
+                for r in perf:
+                    pc[r.get("position_grade") or "P-N"] += 1
+                lines.append(
+                    f"统计窗口：最近{POSITION_PERF_WINDOW_DAYS}天 | "
+                    f"P-S:{pc.get('P-S',0)} P-A:{pc.get('P-A',0)} P-B:{pc.get('P-B',0)} "
+                    f"P-C:{pc.get('P-C',0)} P-R:{pc.get('P-R',0)} P-G:{pc.get('P-G',0)} P-N:{pc.get('P-N',0)}"
+                )
+                goodp = [r for r in perf if r.get("position_grade") in ("P-S", "P-A")]
+                goodp.sort(key=lambda r: safe_float(r.get("position_score")) or 0.0, reverse=True)
+                if goodp:
+                    lines.append("仓位收益优质Top：" + "；".join([f"{short_addr(r['address'])} {r['position_grade']} 收益{fmt_pct(r.get('avg_final_return'))}" for r in goodp[:5]]))
+            except Exception:
+                pass
     lines.append("")
     lines.append("【大盘环境】")
-    lines.append(f"BTC: 1h {fmt_pct(btc.get('pct_1h'))} | 4h {fmt_pct(btc.get('pct_4h'))} | 24h {fmt_pct(btc.get('pct_24h'))} | regime={btc.get('regime')}")
-    lines.append(f"ETH: 1h {fmt_pct(eth.get('pct_1h'))} | 4h {fmt_pct(eth.get('pct_4h'))} | 24h {fmt_pct(eth.get('pct_24h'))} | regime={eth.get('regime')}")
+    if data_quality_guarded:
+        lines.append("⚠️ 本轮数据质量异常，已跳过市场上下文刷新；未请求 BTC/ETH K 线，避免把低质量轮次误读为正常行情环境。")
+    else:
+        lines.append(f"BTC: 1h {fmt_pct(btc.get('pct_1h'))} | 4h {fmt_pct(btc.get('pct_4h'))} | 24h {fmt_pct(btc.get('pct_24h'))} | regime={btc.get('regime')}")
+        lines.append(f"ETH: 1h {fmt_pct(eth.get('pct_1h'))} | 4h {fmt_pct(eth.get('pct_4h'))} | 24h {fmt_pct(eth.get('pct_24h'))} | regime={eth.get('regime')}")
     if RISK_FILTER_MODE:
         risk_rows = load_rows("coin_risk_metrics", run_id)
         if risk_rows:
@@ -5752,7 +6289,7 @@ def build_report(run_id: int, signals: List[Dict[str, Any]], ctx_map: Dict[str, 
 
 def save_report(run_id: int, signals: List[Dict[str, Any]], report: str) -> None:
     ensure_dirs()
-    strong_count = sum(1 for s in signals if abs(s.get("alert_score") or 0.0) >= s["threshold_score"] and s.get("signal_category") != "低杠杆长期候选")
+    strong_count = sum(1 for s in signals if is_pushable_signal(s))
     long_count = sum(1 for s in signals if s["watchlist"] == "long")
     short_count = sum(1 for s in signals if s["watchlist"] == "short")
     with open(os.path.join(REPORT_DIR, "final_latest_report.txt"), "w", encoding="utf-8") as f:
@@ -5955,32 +6492,52 @@ async def run_once(args: argparse.Namespace) -> None:
     run_id = create_run(args.note)
     print(f"开始 run_id={run_id}", flush=True)
 
-    wallet_rows, perp_rows, spot_rows, mid_prices, _token_price, spot_coin_price = await fetch_all(addresses, args.rpm, args.concurrency)
+    wallet_rows, perp_rows, spot_rows, mid_prices, token_prices, spot_coin_price = await fetch_all(addresses, args.rpm, args.concurrency)
+    price_health = global_price_data_health(mid_prices, token_prices, spot_coin_price)
+    price_data_ok = bool(price_health.get("ok"))
     step_log("钱包扫描完成，准备写入快照")
-    save_snapshot(run_id, wallet_rows, perp_rows, spot_rows)
-    step_log("快照写入完成，开始更新仓位生命周期")
-    update_position_trades(run_id, {**spot_coin_price, **mid_prices})
-    step_log("仓位生命周期完成，开始导出杠杆质量")
-    export_leverage_quality_files(run_id)
-    step_log("杠杆质量导出完成")
-    prev_id = get_previous_run_id(run_id)
+    save_snapshot(run_id, wallet_rows, perp_rows, spot_rows, price_data_ok=price_data_ok)
+    step_log("快照写入完成，开始检查数据质量")
 
+    prev_id = get_previous_run_id(run_id)
     total = len(wallet_rows)
     ok = sum(1 for w in wallet_rows if w.get("status") == "ok")
     partial = sum(1 for w in wallet_rows if w.get("status") == "partial")
     ok_rate = (ok + partial * 0.5) / total if total else 0.0
-    data_quality_ok = ok_rate >= MIN_OK_RATE
-    write_data_quality_report(run_id, ok_rate, wallet_rows, args.note)
-    step_log(f"数据质量报告完成 | ok_rate={ok_rate*100:.2f}%")
+    data_quality_ok = data_quality_allows_signal_writes(ok_rate, price_data_ok=price_data_ok)
+    quality_reason = data_quality_block_reason(ok_rate, price_health)
+    write_data_quality_report(run_id, ok_rate, wallet_rows, args.note, price_health=price_health)
+    step_log(
+        f"数据质量报告完成 | ok_rate={ok_rate*100:.2f}% | "
+        f"global_prices={'ok' if price_data_ok else 'failed'}"
+    )
 
-    step_log("开始更新回测事件")
-    updated_actions, updated_signals = evaluate_events({**spot_coin_price, **mid_prices})
-    step_log("回测事件更新完成，开始刷新钱包质量")
-    quality_rows = refresh_wallet_quality(run_id, addresses) if WALLET_QUALITY_MODE else []
-    quality_map = get_wallet_quality_map(run_id) if quality_rows else {}
+    if data_quality_ok:
+        step_log("数据质量通过，开始更新仓位生命周期")
+        update_position_trades(run_id, {**spot_coin_price, **mid_prices})
+        step_log("仓位生命周期完成，开始导出杠杆质量")
+        export_leverage_quality_files(run_id)
+        step_log("杠杆质量导出完成")
+    else:
+        print(f"数据质量未通过（{quality_reason}），跳过本轮仓位生命周期/钱包质量/回测/研究面板更新。")
+        write_full_quality_guard_skipped_artifacts(run_id, ok_rate, prev_id=prev_id, failure_reason=quality_reason)
+        step_log("数据质量异常：已跳过仓位生命周期/杠杆质量/状态机/rolling/信号/风险/长期候选/回测/研究面板刷新")
+
+    if data_quality_ok:
+        step_log("开始更新回测事件")
+        updated_actions, updated_signals = evaluate_events({**spot_coin_price, **mid_prices})
+        step_log("回测事件更新完成，开始刷新钱包质量")
+        quality_rows = refresh_wallet_quality(run_id, addresses) if WALLET_QUALITY_MODE else []
+        quality_map = get_wallet_quality_map(run_id) if quality_rows else {}
+    else:
+        step_log("数据质量异常：已跳过回测事件更新和钱包质量刷新")
+        updated_actions, updated_signals = 0, 0
+        quality_rows = []
+        quality_map = get_wallet_quality_map(prev_id) if prev_id else {}
 
     if prev_id is None:
         stats = run_wallet_stats(run_id)
+        quality_reason_line = f"数据质量原因：{quality_reason}\n" if not data_quality_ok else ""
         report = (
             f"🧠 Hyperliquid 钱包监控 FINAL\n"
             f"{DISPLAY_TZ_NAME}：{display_now_str()} | UTC时间：{now_str()}\n"
@@ -5989,16 +6546,28 @@ async def run_once(args: argparse.Namespace) -> None:
             f"监控钱包：{stats['total']} | 成功：{stats['ok']} | "
             f"partial：{stats['partial']} | failed：{stats['failed']} | "
             f"成功率：{stats['ok_rate']*100:.2f}%\n\n"
-            f"钱包质量分类已导出：reports/details/wallet_quality_latest.csv / wallet_quality_report.txt\n"
-            f"仓位生命周期追踪已导出：reports/details/wallet_position_trades_latest.csv / wallet_position_report.txt\n\n"
+            f"{quality_reason_line}"
+            f"{('钱包质量分类已导出：reports/details/wallet_quality_latest.csv / wallet_quality_report.txt' if data_quality_ok else '⚠️ 数据质量异常：本轮已跳过钱包质量刷新，详情见 reports/details/wallet_quality_report.txt')}\n"
+            f"{('仓位生命周期追踪已导出：reports/details/wallet_position_trades_latest.csv / wallet_position_report.txt' if data_quality_ok else '⚠️ 数据质量异常：本轮已跳过仓位生命周期更新，详情见 reports/details/wallet_position_report.txt')}\n\n"
             f"第一次运行，已建立快照。第二次开始才有趋势对比。"
         )
         with open(os.path.join(REPORT_DIR, "final_latest_report.txt"), "w", encoding="utf-8") as f:
             f.write(report)
-        with open(os.path.join(REPORT_DIR, "long_term_plan.txt"), "w", encoding="utf-8") as f:
-            f.write("第一次运行，已建立快照。第二次开始生成低杠杆长期单观察计划。\n")
+        if data_quality_ok:
+            with open(os.path.join(REPORT_DIR, "long_term_plan.txt"), "w", encoding="utf-8") as f:
+                f.write("第一次运行，已建立快照。第二次开始生成低杠杆长期单观察计划。\n")
+        else:
+            # Low-quality skip artifacts were already written by write_full_quality_guard_skipped_artifacts().
+            pass
         export_latest_csv(run_id)
-        export_signal_lifecycle_files()
+        if data_quality_ok:
+            export_signal_lifecycle_files()
+        else:
+            write_signal_lifecycle_guard_skipped_artifacts(
+                run_id,
+                ok_rate,
+                f"{quality_reason}；第一次运行且数据质量异常，已阻止 signal_lifecycle 刷新",
+            )
         prune_reports()
         save_daily_archive(run_id, report)
         daily_due = should_push_daily()
@@ -6017,16 +6586,27 @@ async def run_once(args: argparse.Namespace) -> None:
     preliminary, actions, cashflows = compute_preliminary(run_id, prev_id, thresholds, quality_map)
     gap_minutes = get_run_gap_minutes(run_id, prev_id)
     step_log(f"主动变化计算完成 | actions={len(actions)} cashflows={len(cashflows)} coins={len(preliminary)} gap_min={gap_minutes if gap_minutes is not None else 'N/A'}")
-    save_coin_flow_snapshots(run_id, prev_id, preliminary)
-    rolling_map = build_rolling_flow_metrics(run_id)
-    export_rolling_flow_files(run_id, rolling_map, thresholds)
-    export_operation_detail_files(actions, cashflows)
-    step_log("主动变化明细/滚动建仓导出完成")
     inserted_actions = 0
     if data_quality_ok:
+        save_coin_flow_snapshots(run_id, prev_id, preliminary)
+        rolling_map = build_rolling_flow_metrics(run_id)
+        export_rolling_flow_files(run_id, rolling_map, thresholds)
+        export_operation_detail_files(actions, cashflows)
         inserted_actions = save_wallet_actions(run_id, actions)
+        step_log("主动变化明细/滚动建仓导出完成")
     else:
-        print(f"成功率 {ok_rate*100:.2f}% 低于阈值 {MIN_OK_RATE*100:.2f}%，不记录本轮钱包动作/信号/生命周期。")
+        # Do not let low-quality/partial API data enter the rolling window or reports.
+        # A failed endpoint can look like a real sell/close in diff-based logic.
+        print(f"数据质量未通过（{quality_reason}），不记录本轮钱包动作/信号/生命周期，也不写入滚动资金流。")
+        rolling_map = {}
+        # write_rolling_flow_guard_skipped_artifacts() was already called right after
+        # the data-quality check.  Keep rolling_map empty here so candidate pools and
+        # reports cannot accidentally reuse stale previous-run rolling values.
+        preliminary = {}
+        actions = []
+        cashflows = []
+        export_operation_detail_files(actions, cashflows)
+        step_log("数据质量异常：已跳过本轮主动变化/滚动建仓写入，rolling_map 已清空")
 
     candidate_pool = set(preliminary.keys()) | set(rolling_map.keys())
     candidate_coins = sorted(
@@ -6035,38 +6615,68 @@ async def run_once(args: argparse.Namespace) -> None:
         reverse=True
     )[:35]
     step_log(f"开始构建市场上下文/风险指标 | candidate_coins={len(candidate_coins)}")
-    ctx_map = await build_market_context(run_id, candidate_coins, {**spot_coin_price, **mid_prices})
-    risk_map = await build_coin_risk_metrics(run_id, candidate_coins)
-    step_log("市场上下文/风险指标完成，开始构建信号")
+    if data_quality_ok:
+        ctx_map = await build_market_context(run_id, candidate_coins, {**spot_coin_price, **mid_prices})
+        risk_map = await build_coin_risk_metrics(run_id, candidate_coins)
+        step_log("市场上下文/风险指标完成，开始构建信号")
+    else:
+        ctx_map = {}
+        risk_map = {}
+        step_log("数据质量异常：已跳过市场上下文和风险指标外部请求，开始生成空信号报告")
     signals = build_signals(run_id, preliminary, ctx_map, thresholds, risk_map, rolling_map=rolling_map, gap_minutes=gap_minutes) if data_quality_ok else []
     attach_dominant_wallets(signals, actions)
-    export_signal_explain_files(run_id, signals)
+    export_signal_explain_files(
+        run_id,
+        signals,
+        skip_reason=(quality_reason if not data_quality_ok else ""),
+        skip_ok_rate=(ok_rate if not data_quality_ok else None),
+    )
     new_signal_events = create_signal_events(run_id, signals, {**spot_coin_price, **mid_prices}, thresholds) if data_quality_ok else 0
 
     write_watchlists(signals)
     lt_candidates: List[Dict[str, Any]] = []
     if LONG_TERM_MODE:
-        lt_candidates = build_long_term_candidates(run_id, signals, ctx_map)
-        write_long_term_plan(lt_candidates)
-        create_longterm_events(run_id, lt_candidates, {**spot_coin_price, **mid_prices})
+        if data_quality_ok:
+            lt_candidates = build_long_term_candidates(run_id, signals, ctx_map)
+            write_long_term_plan(lt_candidates)
+            create_longterm_events(run_id, lt_candidates, {**spot_coin_price, **mid_prices})
+        else:
+            # Low-quality long-term skip artifact was already written by write_full_quality_guard_skipped_artifacts().
+            pass
     closed_lifecycle_events = update_signal_lifecycles(
         run_id, signals, lt_candidates, {**spot_coin_price, **mid_prices},
         data_quality_ok=data_quality_ok,
-        skip_reason=f"ok_rate={ok_rate*100:.2f}% < MIN_OK_RATE={MIN_OK_RATE*100:.2f}%"
+        skip_reason=quality_reason,
+        skip_ok_rate=ok_rate,
     )
-    step_log("开始导出回测文件")
-    export_backtest_files()
-    export_research_intelligence_files(run_id)
-    step_log("回测/研究面板导出完成，开始导出 latest CSV")
+    if data_quality_ok:
+        step_log("开始导出回测文件")
+        export_backtest_files()
+        export_research_intelligence_files(run_id)
+        step_log("回测/研究面板导出完成，开始导出 latest CSV")
+    else:
+        step_log("数据质量异常：已跳过回测文件和研究面板刷新，开始导出 latest CSV")
     export_latest_csv(run_id)
     step_log("latest CSV 导出完成")
 
-    report = build_report(run_id, signals, ctx_map, actions, cashflows, ok_rate, new_signal_events, updated_actions, updated_signals)
+    report = build_report(
+        run_id,
+        signals,
+        ctx_map,
+        actions,
+        cashflows,
+        ok_rate,
+        new_signal_events,
+        updated_actions,
+        updated_signals,
+        data_quality_ok=data_quality_ok,
+        data_quality_reason=quality_reason,
+    )
     save_report(run_id, signals, report)
     prune_reports()
     save_daily_archive(run_id, report)
 
-    strong = [s for s in signals if (abs(s.get("alert_score") or 0.0) >= s["threshold_score"] and s.get("signal_category") != "低杠杆长期候选") or (s.get("signal_category") == "低杠杆长期候选" and abs(s.get("long_score") or 0.0) >= s["threshold_score"])]
+    strong = [s for s in signals if is_pushable_signal(s)]
     daily_due = should_push_daily()
     should_push = PUSH_EVERY_RUN or bool(strong) or bool(closed_lifecycle_events) or daily_due
     pushed = False
@@ -6208,7 +6818,7 @@ def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: 
             except sqlite3.OperationalError:
                 pass
             try:
-                cur.execute("DELETE FROM push_log WHERE created_at < ?", ((utc_now() - dt.timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S"),))
+                cur.execute("DELETE FROM push_log WHERE pushed_at < ?", ((utc_now() - dt.timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S"),))
             except sqlite3.OperationalError:
                 pass
             try:
@@ -6271,10 +6881,6 @@ def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: 
 
 # ===== long-short-state-final overrides =====
 # 多单/空单分离 + 长期状态机。短线 alert 与长期候选彻底分开。
-_build_signals_dualscore_base = build_signals
-_build_long_term_candidates_base = build_long_term_candidates
-
-
 def _ensure_coin_signal_state_columns(conn) -> None:
     cur = conn.cursor()
     cur.execute("PRAGMA table_info(coin_signals)")
@@ -6497,6 +7103,8 @@ def export_long_short_state_files(run_id: int, signals: List[Dict[str, Any]]) ->
         with open(path, "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
             writer.writeheader(); writer.writerows(rows)
+    else:
+        _write_empty_latest_csv(path)
     thresholds = load_thresholds()
     longs = [r for r in rows if r.get("candidate_side") == "long" and r.get("candidate_gate") == "PASS" and safe_float(r.get("long_candidate_score")) >= threshold(thresholds, r.get("coin"), "min_watch_score")]
     shorts = [r for r in rows if r.get("candidate_side") == "short" and r.get("candidate_gate") == "PASS" and safe_float(r.get("short_candidate_score")) >= threshold(thresholds, r.get("coin"), "min_watch_score")]
@@ -6637,10 +7245,14 @@ def write_long_term_plan(candidates: List[Dict[str, Any]]) -> None:
             print(f"价格：{c['price_note']}", file=f)
             print(f"失效：{c['invalid']}", file=f)
             print("", file=f)
+    csv_path = os.path.join(DETAILS_DIR, "long_term_candidates.csv")
     if candidates:
-        with open(os.path.join(DETAILS_DIR, "long_term_candidates.csv"), "w", newline="", encoding="utf-8-sig") as f:
+        with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
             writer = csv.DictWriter(f, fieldnames=list(candidates[0].keys()))
             writer.writeheader(); writer.writerows(candidates)
+    else:
+        with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
+            f.write("empty\n")
 
 # ===== end long-short-state-final overrides =====
 

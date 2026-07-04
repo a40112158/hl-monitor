@@ -68,6 +68,10 @@ ACTION_FIELDS = [
     "spot_operations", "perp_operations",
 ]
 
+LONG_CANDIDATE_CATEGORIES = {"低杠杆长期候选", "长期多单候选", "长期空单候选"}
+LONG_OBSERVE_CATEGORIES = {"多单建仓观察", "空单建仓观察", "滚动建仓观察", "长期资格未通过"}
+STRONG_SIGNAL_CATEGORIES = {"短线突发异动", "高杠杆短线异动"}
+
 
 def sanitize(text: str) -> str:
     return ADDRESS_RE.sub("[wallet-redacted]", text).replace("\x00", "")
@@ -163,7 +167,8 @@ def signal_rank(row: Dict[str, Any]) -> float:
         abs(as_float(row.get("short_candidate_score"))),
         abs(as_float(row.get("final_score"))),
     ]
-    category_bonus = 2.0 if str(row.get("signal_category") or "") in {"短线突发异动", "高杠杆短线异动", "低杠杆长期候选"} else 0.0
+    category = str(row.get("signal_category") or "")
+    category_bonus = 2.0 if category in STRONG_SIGNAL_CATEGORIES | LONG_CANDIDATE_CATEGORIES else 0.0
     gate_bonus = 1.0 if str(row.get("candidate_state") or "").upper() in {"CANDIDATE", "CONFIRMED"} else 0.0
     return max(scores) + category_bonus + gate_bonus
 
@@ -364,7 +369,7 @@ def detect_strong_trigger(reports: Dict[str, str], structured_context: Dict[str,
         alert_score = abs(as_float(item.get("alert_score")))
         long_score = abs(as_float(item.get("long_score")))
         threshold = as_float(item.get("threshold_score"))
-        if category in {"短线突发异动", "高杠杆短线异动", "低杠杆长期候选"}:
+        if category in STRONG_SIGNAL_CATEGORIES | LONG_CANDIDATE_CATEGORIES:
             return True, f"structured_category:{category}"
         if threshold > 0 and max(alert_score, long_score) >= threshold:
             return True, "structured_score_reached_threshold"
@@ -438,9 +443,13 @@ def urgency_rank(value: str) -> int:
 def should_push_tg(result: Dict[str, Any], force_due: bool) -> bool:
     if not TG_ENABLED or result.get("status") != "completed":
         return False
+    markdown_report = str(result.get("markdown_report") or "").strip()
+    urgency_ok = urgency_rank(str(result.get("urgency") or "normal")) >= urgency_rank(TG_MIN_URGENCY)
+    if markdown_report:
+        return bool(force_due or urgency_ok)
     if force_due and result.get("focus_items"):
         return True
-    return urgency_rank(str(result.get("urgency") or "normal")) >= urgency_rank(TG_MIN_URGENCY) and bool(result.get("focus_items") or result.get("risk_warnings"))
+    return urgency_ok and bool(result.get("focus_items") or result.get("risk_warnings"))
 
 
 def format_tg_message(result: Dict[str, Any]) -> str:
@@ -450,7 +459,7 @@ def format_tg_message(result: Dict[str, Any]) -> str:
     ]
     if result.get("force_reason"):
         lines.append(f"触发：{result.get('force_reason')}")
-    summary = str(result.get("executive_summary") or "")[:900]
+    summary = str(result.get("executive_summary") or result.get("markdown_report") or "")[:900]
     if summary:
         lines.extend(["", "【摘要】", summary])
     focus = result.get("focus_items") or []

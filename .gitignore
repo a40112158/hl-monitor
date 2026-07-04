@@ -10,3 +10,5 @@ hl_monitor.db
 
 # 只提交压缩后的主数据库
 !hl_monitor.db.gz
+
+.pytest_cache/
