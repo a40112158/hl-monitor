@@ -1,5 +1,6 @@
 {
-  "consecutive_failures": 0,
-  "last_success_at": "2026-07-03T23:36:42Z",
+  "consecutive_failures": 1,
+  "last_failure_at": "2026-07-04T00:03:30Z",
+  "last_error": "developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'c",
   "model": "gemini-2.5-flash"
 }
