@@ -1,50 +1,24 @@
 【Gemini 本轮扫描分析】
 
-状态：success
+状态：api_error
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-本轮扫描未发现达到币种专属阈值的短线强异动或适合低杠杆长期单的明确信号。所有观察到的币种信号均处于“只观察”状态，且信心度为“低”，主要原因包括历史样本不足、现货主导、钱包集中度过高或高杠杆风险。BTC和ETH市场环境保持中性。整体市场结构未显示显著异常，建议继续保持观察。
+Gemini 分析层调用失败。
+
+错误信息：
+developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 48.000233759s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric' | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, h
 
 【数据质量】
-本轮扫描健康状况良好，监控钱包成功率达100%（2421个钱包全部成功扫描，无部分成功或失败）。然而，多数“只观察”信号的风险提示中明确指出“历史样本/胜率不足”，表明在个体币种信号层面，数据积累仍有待提高，可能影响信号的成熟度和可靠性。
+unknown
 
 【市场与资金结构】
-BTC：1小时跌幅-0.08%，4小时跌幅-0.01%，24小时涨幅+0.09%，市场机制为中性。
-ETH：1小时涨幅+0.12%，4小时涨幅+0.39%，24小时跌幅-0.23%，市场机制为中性。
-资金费率方面，POLYX为负值，其余如ZRO、ASTER、BIO、ENA、JTO、PAXG、SPX、LIT、HYPE、ZEC、GRAM等币种资金费率均接近中性或为正值，风险评估均为低。
-流动性方面，POLYX、ZRO、ENA、JTO、PAXG、SPX、ASTER、BIO、LIT、HYPE、ZEC的24小时成交额均较高或可接受，流动性风险为低。GRAM的24小时成交额为$6.11M，流动性风险为中。
-本轮扫描数据未提供OI、多空人数比、主动买卖比等详细市场结构指标。
-
-【相比上次 AI 分析】
-相比上次报告的“high”紧急度，本轮紧急度降至“normal”，表明市场整体异动信号强度有所减弱。上次报告也指出未发现强异动或长期信号，本轮情况类似，但整体市场情绪和信号活跃度可能有所下降。
-
-【重点观察】
-暂无明确高优先级目标。所有信号均处于“只观察”状态，且信心度为“低”，主要风险包括：
-*   **QONE (偏多)**：现货主导，钱包集中度过高（Top1贡献100%），长窗口未成熟，历史样本不足。
-*   **LIT (偏多)**：历史样本不足。
-*   **ZEC (偏空)**：钱包集中度过高，高杠杆/爆仓边缘仓位占比73%，历史样本不足。
-*   **BASED (偏多)**：现货主导，钱包集中度过高，长窗口未成熟，本轮异动与滚动方向冲突，历史样本不足。
-*   **HYPE (偏空)**：钱包集中度过高，长窗口未成熟，同方向高杠杆仓位偏多45%，历史样本不足。
-*   **GRAM (偏空)**：钱包集中度过高，长窗口未成熟，Top1贡献100%，流动性偏低，历史样本不足。
-*   **UPUMP (偏多)**：现货主导，长窗口未成熟，历史样本不足。
-*   **MAX (偏空)**：现货主导，钱包集中度过高，持续性不足，长窗口未成熟，Top1贡献98%，历史样本不足。
-*   **QUANT (偏多)**：现货主导，钱包集中度过高，持续性不足，长窗口未成熟，Top1贡献100%，历史样本不足。
+unknown
 
 【风险提示】
-1.  **数据不足风险**：多数“只观察”信号存在历史样本/胜率不足的问题，其有效性有待更多数据验证。
-2.  **钱包集中度风险**：QONE、ZEC、BASED、HYPE、GRAM、MAX、QUANT等币种的信号存在钱包集中度过高的问题，可能由单钱包异动引起，不代表普遍市场情绪。
-3.  **现货主导风险**：QONE、BASED、UPUMP、MAX、QUANT等币种的信号现货主导，可能为转账/归集/划转行为，不直接等同于合约方向。
-4.  **高杠杆风险**：ZEC和HYPE的偏空信号中，同方向高杠杆仓位占比较高（ZEC 73%，HYPE 45%），存在爆仓风险。
-5.  **流动性风险**：GRAM的24小时成交额相对较低，存在流动性不足的风险。
-6.  **长窗口未成熟风险**：多个币种的长窗口信号未成熟，无法按成熟信号处理。
-
-【参数观察】
-自动优化分析层显示，多个币种（BASED, ENA, HYPE, MAX, QONE, SOL, UPUMP, ZEC）的`score_push`参数因“insufficient_samples”（样本不足）而保持当前值，未进行调整。这表明当前筛选参数可能对新币种或样本量小的币种较为严格，导致信号难以达到阈值。鉴于“最少样本=24”的护栏设置，需要更多轮数据积累才能对参数的严苛程度做出更准确的判断。
+- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
+- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
 
 【下一轮重点检查】
-1.  持续观察当前“只观察”列表中的币种，重点关注其历史样本量和信号持续性是否有所改善。
-2.  密切留意钱包集中度过高的币种，观察是否有更多独立钱包参与，或集中度是否下降。
-3.  追踪现货主导的信号，看其是否能转化为有合约方向确认的信号。
-4.  继续监控BTC和ETH的市场环境，以评估整体市场风险偏好变化。
+- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
