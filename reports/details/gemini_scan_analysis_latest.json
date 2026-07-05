@@ -1,17 +1,17 @@
 {
-  "status": "api_error",
+  "status": "completed",
   "urgency": "normal",
-  "executive_summary": "developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 53.293821736s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric' | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, h",
-  "data_quality": "unknown",
-  "market_structure": "unknown",
+  "executive_summary": "本轮扫描未发现达到币种专属阈值的短线强异动或适合低杠杆长期单的明确信号。多数观察币种因历史样本不足、钱包集中度过高或现货主导等原因，信号置信度较低。BTC和ETH大盘环境保持中性。部分币种存在流动性风险和高杠杆仓位集中的情况，需保持谨慎观察。",
+  "data_quality": "详见 Markdown 报告【数据质量】部分。",
+  "market_structure": "详见 Markdown 报告【市场与资金结构】部分。",
   "changes_since_previous": [],
   "focus_items": [],
   "risk_warnings": [],
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：api_error\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\nGemini 分析层调用失败。\n\n错误信息：\ndeveloper:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 53.293821736s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric' | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, h\n\n【数据质量】\nunknown\n\n【市场与资金结构】\nunknown\n\n【风险提示】\n- 本轮 AI 分析失败，不代表扫描数据本身一定失败。\n- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。\n\n【下一轮重点检查】\n- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。\n",
-  "generated_at": "2026-07-05T20:33:27Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动或适合低杠杆长期单的明确信号。多数观察币种因历史样本不足、钱包集中度过高或现货主导等原因，信号置信度较低。BTC和ETH大盘环境保持中性。部分币种存在流动性风险和高杠杆仓位集中的情况，需保持谨慎观察。\n\n【数据质量】\n本轮扫描的钱包监控成功率为100%，所有2421个钱包均成功扫描，数据完整性良好。然而，在信号分析层面，多数币种的“历史样本/胜率不足”风险显著，特别是7天和30天胜率数据缺失（显示为None%），且30天样本为0。自动优化分析层也指出多个币种存在“insufficient_samples”（样本不足）问题。这表明虽然扫描执行成功，但用于信号验证和长期判断的历史数据积累仍显不足。\n\n【市场与资金结构】\nBTC和ETH大盘环境均处于中性状态。BTC在1小时下跌0.13%，4小时上涨0.09%，24小时下跌0.84%。ETH在1小时下跌0.25%，4小时上涨0.22%，24小时下跌0.56%。整体市场缺乏明确的方向性指引。\n\n资金费率方面，ZRO、GRAM、AAVE、ASTER、JTO、PAXG、PENGU、POLYX等币种的资金费率均为+0.00%或极低，资金费率风险较低。\n\n流动性方面，虽然部分币种在“资金费率/流动性过滤”中被标记为“流动性=高”，但其24小时成交额相对较低，例如GRAM（$3.95M）、AAVE（$4.63M）、ASTER（$1.09M）、JTO（$1.30M）、PAXG（$449.15K）、PENGU（$2.03M）、POLYX（$1.39M）。其中GRAM的信号解释明确指出“流动性高风险：24h成交额仅$3.95M”，这与通用标签存在矛盾，需以具体风险提示为准。BTC、ETH、HYPE、LIT、SOL的流动性较高。\n\n成交量与价格涨跌幅：\n*   LIT：24小时涨幅+8.85%，24小时成交额$59.91M。\n*   GRAM：24小时跌幅-1.11%，24小时成交额$3.95M。\n*   ZEC：24小时跌幅-1.09%，24小时成交额$49.24M。\n*   TRUMP：24小时跌幅-8.13%，24小时成交额$9.37M。\n*   HYPE：24小时涨幅+0.85%，24小时成交额$216.93M。\n\n净流入/流出（加权资金流）：\n*   LIT：加权资金流为正（+$585K），与偏多信号一致。\n*   GRAM：加权资金流为负（-$1.5K），与偏空信号一致。\n*   ZEC：加权资金流为正（+$19K），但信号偏空，存在资金流与信号方向的潜在矛盾。\n*   BASED：加权资金流为负（-$831K），与偏空信号一致。\n*   TRUMP：加权资金流为负（-$1.9K），与偏空信号一致。\n*   HYPE：加权资金流为正（+$17K），但信号偏空，存在资金流与信号方向的潜在矛盾。\n*   QONE、MAX、QUANT：加权资金流为$0.0，主要为现货主导。\n\n多空人数比、主动买卖比：数据不足。\n\n单钱包主动变化方面，0x3e7a...1589钱包对HYPE进行了$1.60M的合约多单变化，杠杆10x，强平距+33.13%，属于高杠杆短线型。0x3999...3336钱包对BASED主动减持现货-$1.08M。\n\n资金流Lite显示，多个“money_printer”和“smart_money”钱包存在USDC增加/减少与现货减少/变化的情况，疑似卖出/转现金或资金流出/买入。其中，0xffff...ffff钱包USDC",
+  "generated_at": "2026-07-05T20:55:38Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
@@ -24,6 +24,6 @@
   ],
   "force_analysis": true,
   "force_reason": "manual",
-  "tg_sent": false,
+  "tg_sent": true,
   "error_tg_sent": false
 }
