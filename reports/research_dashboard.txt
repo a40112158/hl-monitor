@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-05 23:39:48 | UTC：2026-07-05 15:39:48
+更新时间北京时间：2026-07-06 00:02:30 | UTC：2026-07-05 16:02:30
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -18,7 +18,7 @@ longterm_candidate / all | 样本=8 | 72h胜率=25.0% 门槛=12.5% 平均=-2.281
 0x3e7a...1589 [money_printer] grade=C score=65.7 样本=14 72h胜率=0.46153846153846156 30d胜率=None 主币=BTC,ETH
 0xaeaa...2416 [money_printer] grade=B score=64.7 样本=10 72h胜率=0.625 30d胜率=None 主币=BTC,ETH
 0x350e...fcfb [money_printer] grade=B score=64.1 样本=12 72h胜率=0.5 30d胜率=None 主币=ETH,BTC
-0xa445...329d [money_printer] grade=C score=61.3 样本=30 72h胜率=0.391304347826087 30d胜率=None 主币=BTC,ETH,SOL
+0xa445...329d [money_printer] grade=C score=61.5 样本=31 72h胜率=0.391304347826087 30d胜率=None 主币=BTC,ETH,SOL
 0xcf3f...f95f [smart_money] grade=C score=58.5 样本=15 72h胜率=0.6666666666666666 30d胜率=None 主币=BTC
 
 【Top 币种画像】
