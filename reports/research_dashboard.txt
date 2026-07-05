@@ -1,11 +1,11 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-05 14:17:28 | UTC：2026-07-05 06:17:28
+更新时间北京时间：2026-07-05 14:39:34 | UTC：2026-07-05 06:39:34
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 alert_signal / long | 样本=1 | 72h胜率=100.0% 门槛=100.0% 平均=12.434% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
-alert_signal / short | 样本=11 | 72h胜率=20.0% 门槛=10.0% 平均=-3.6087% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
-alert_signal / all | 样本=12 | 72h胜率=27.27% 门槛=18.18% 平均=-2.1503% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
+alert_signal / short | 样本=11 | 72h胜率=18.18% 门槛=9.09% 平均=-3.5519% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
+alert_signal / all | 样本=12 | 72h胜率=25.0% 门槛=16.67% 平均=-2.2197% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
 longterm_candidate / short | 样本=8 | 72h胜率=25.0% 门槛=12.5% 平均=-2.2817% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
 longterm_candidate / all | 样本=8 | 72h胜率=25.0% 门槛=12.5% 平均=-2.2817% | 7d胜率=None% 门槛=None% 平均=None% | 30d样本=0
 
@@ -17,12 +17,12 @@ longterm_candidate / all | 样本=8 | 72h胜率=25.0% 门槛=12.5% 平均=-2.281
 0x7c93...c8fd [money_printer] grade=B score=69.4 样本=14 72h胜率=0.5454545454545454 30d胜率=None 主币=ETH,BTC,SUI
 0x5323...b23c [smart_money] grade=C score=69.2 样本=70 72h胜率=0.4375 30d胜率=None 主币=HYPE,ZEC,SOL
 0xaeaa...2416 [money_printer] grade=B score=64.7 样本=10 72h胜率=0.7142857142857143 30d胜率=None 主币=BTC,ETH
-0x517b...f64c [smart_money] grade=B score=64.5 样本=13 72h胜率=0.5 30d胜率=None 主币=BTC
+0x517b...f64c [smart_money] grade=B score=64.5 样本=13 72h胜率=0.42857142857142855 30d胜率=None 主币=BTC
 0xa445...329d [money_printer] grade=C score=61.3 样本=30 72h胜率=0.391304347826087 30d胜率=None 主币=BTC,ETH,SOL
 0xcf3f...f95f [smart_money] grade=C score=58.5 样本=15 72h胜率=None 30d胜率=None 主币=BTC
 
 【Top 币种画像】
-SOL alert/short | 事件=4 | 72h胜率=0.0% 平均=-8.3035% | 7d胜率=None% 平均=None%
+SOL alert/short | 事件=4 | 72h胜率=0.0% 平均=-6.9734% | 7d胜率=None% 平均=None%
 QONE alert/short | 事件=2 | 72h胜率=0.0% 平均=-3.7703% | 7d胜率=None% 平均=None%
 SOL longterm/short | 事件=2 | 72h胜率=0.0% 平均=-8.0306% | 7d胜率=None% 平均=None%
 QONE longterm/short | 事件=2 | 72h胜率=0.0% 平均=-3.7703% | 7d胜率=None% 平均=None%
