@@ -1,17 +1,17 @@
 {
-  "status": "completed",
-  "urgency": "high",
-  "executive_summary": "本轮扫描未发现达到币种专属阈值的短线强异动或适合低杠杆长期单的明确信号。多数观察币种因历史样本不足、钱包集中度过高或现货主导等原因，信号置信度较低。BTC和ETH大盘环境保持中性。部分币种存在流动性风险和高杠杆仓位集中的情况，需保持谨慎观察。",
-  "data_quality": "详见 Markdown 报告【数据质量】部分。",
-  "market_structure": "详见 Markdown 报告【市场与资金结构】部分。",
+  "status": "api_error",
+  "urgency": "normal",
+  "executive_summary": "developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 22.840533932s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violatio",
+  "data_quality": "unknown",
+  "market_structure": "unknown",
   "changes_since_previous": [],
   "focus_items": [],
   "risk_warnings": [],
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动或适合低杠杆长期单的明确信号。多数观察币种因历史样本不足、钱包集中度过高或现货主导等原因，信号置信度较低。BTC和ETH大盘环境保持中性。部分币种存在流动性风险和高杠杆仓位集中的情况，需保持谨慎观察。\n\n【数据质量】\n本轮扫描成功率为100%，未出现partial或failed的钱包。然而，在信号分析层面，多个币种的风险提示中明确指出“历史样本/胜率不足”、“滚动窗口未成熟”、“钱包集中度过高”或“现货主导”，这表明虽然扫描本身完整，但部分信号的置信度因数据深度或结构性问题而受限。GRAM的24h成交额仅$3.99M，存在流动性高风险。\n\n【市场与资金结构】\nBTC和ETH的1小时、4小时和24小时价格涨跌幅均处于窄幅波动，大盘环境 regime 均为 neutral（中性）。\n资金费率方面，ZRO, AAVE, ASTER, GRAM, JTO, PENGU, POLYX, SPX 等币种的资金费率均为+0.00%，风险评估为低。\n流动性方面，BTC、ETH、HYPE、LIT的24h成交额较高，流动性为低风险。但AAVE ($4.75M)、ASTER ($1.10M)、GRAM ($3.99M)、JTO ($1.32M)、PENGU ($2.10M)、POLYX ($1.39M)、SPX ($2.00M)等币种的24h成交额较低，存在流动性高风险。\n开放利率（OI）数据在风险指标中可见，例如BTC的OI为$2.26B，HYPE为$1.56B，LIT为$137.32M，GRAM为$22.66M，ZEC为$210.31M。\n净流入方面，部分钱包出现USDC增加（疑似资金回流）或减少（疑似资金流出/买入），以及现货余额变化。例如，0xffff...ffff 钱包USDC增加$1.99K，疑似资金回流；0xe867...c78e 钱包USDC减少-$218.78K，疑似资金流出/买入。\n多空人数比和主动买卖比数据不足。\n\n【相比上次 AI 分析】\n本轮分析与上次报告的结论相似，均未发现达到币种专属阈值的短线强异动或适合低杠杆长期单的明确信号。大盘环境（BTC/ETH中性）也保持一致。整体而言，市场缺乏明确的强信号，多数观察币种仍面临样本不足、钱包集中度过高或现货主导等风险，信号置信度无明显增强或减弱。\n\n【重点观察】\n暂无明确高优先级目标。\n本轮所有信号均被归类为“只观察”，且均存在多项风险，不建议作为明确的交易目标。以下列出一些有资金异动但风险较高的币种：\n*   **BTC (偏空):** 理由：合约主动变化-$16.16M，资金分-3.00。风险：同方向高杠杆/爆仓边缘仓位占比87%，平均杠杆20.8x，极高杠杆短线风险；历史样本/胜率不足；滚动窗口未成熟。\n*   **BASED (偏多):** 理由：现货主动变化$1.40M，钱包质量加权资金流$1.08M。风险：现货主导，可能是转账/归集/划转，不等于合约方向；钱包集中度过高；长窗口未成熟；本轮异动与滚动方向冲突。\n*   **LIT (偏多):** 理由：24h强于BTC，靠近24h高位，可能突破延续；同方向低/中杠杆仓位占比100%。风险：滚动信号钱包集中度过高，可能是单钱包异动；历史样本/胜率不足。\n*   **HYPE (偏空):** 理由：24h滚动窗口资金分-0.9，价格靠近24h高位。风险：滚动信号钱包集中度过高；长窗口未成熟；同方向高杠杆仓位偏多45%。\n*   **GRAM (偏空):** 理由：72h滚动窗口资金分-1.6。风险：流动性高风险（24h成交额仅$3.99M）；长窗口未成熟；历史样本/胜率不足。\n\n【风险提示】\n1.  **数据缺失与样本不足：** 多数“只观察”币种存在“历史样本/胜率不足”和“滚动窗口未成熟”的风险，导致信号置信度低，不宜作为交易依据。\n2.  **钱包集中度过高：** LIT、ZEC、HYPE、QONE、MAX、QUANT等币种的信号存在“滚动信号钱包集中度过高”的风险，可能由单钱包异动引起，不代表普遍市场情绪。\n3.  **现货主导信号：** BASED、UXPL、QONE、MAX、QUANT等币种的信号为“现货主导”，可能为转账/归集/划转行为，不直接反映合约交易方向。\n4.  **高杠杆风险：** BTC和ZEC的偏空信号中，同方向高杠杆/爆仓边缘仓位占比分别高达87%和68%，平均杠杆极高，存在短线爆仓风险。\n5.  **流动性不足：** GRAM等币种的24h成交额较低，存在流动性高风险，可能导致价格剧烈波动或难以平仓。\n6.  **假突破风险：** 价格靠近24h高位（如LIT、HYPE）的信号，可能存在假突破风险，需警惕追高。\n\n【参数观察】\n自动优化分析层显示，BASED、ENA、HYPE、MAX、QONE、SOL、UPUMP、ZEC等币种的`score_push`均因`insufficient_samples`而保持当前值，未进行调整。这表明当前筛选参数对于新币种或样本量不足的币种可能过严，导致它们难以达到阈值，无法形成强信号。需要更多轮数据积累，以评估这些币种的信号有效性。\n\n【下一轮重点检查】\n1.  继续关注“只观察”币种的信号成熟度，特别是“滚动窗口未成熟”和“历史样本/胜率不足”的改善情况。\n2.  密切观察高杠杆仓位占比过高的币种（如BTC、ZEC），警惕潜在的连锁清算风险。\n3.  持续监测流动性低风险币种（如GRAM）的成交额变化，评估其流动性风险是否缓解。\n4.  追踪现货主导信号（如BASED、UXPL、QONE、MAX、QUANT）是否有合约交易的确认，以区分真实的市场方向与链上操作。\n5.  关注钱包集中度过高币种的信号是否能扩散到更多钱包，以提高信号的代表性。",
-  "generated_at": "2026-07-05T21:40:15Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：api_error\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\nGemini 分析层调用失败。\n\n错误信息：\ndeveloper:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 22.840533932s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violatio\n\n【数据质量】\nunknown\n\n【市场与资金结构】\nunknown\n\n【风险提示】\n- 本轮 AI 分析失败，不代表扫描数据本身一定失败。\n- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。\n\n【下一轮重点检查】\n- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。\n",
+  "generated_at": "2026-07-05T22:03:37Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
@@ -24,6 +24,6 @@
   ],
   "force_analysis": true,
   "force_reason": "manual",
-  "tg_sent": true,
+  "tg_sent": false,
   "error_tg_sent": false
 }
