@@ -1,5 +1,6 @@
 {
-  "consecutive_failures": 0,
-  "last_success_at": "2026-07-06T04:32:48Z",
+  "consecutive_failures": 1,
+  "last_failure_at": "2026-07-06T05:03:24Z",
+  "last_error": "developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current ",
   "model": "gemini-2.5-flash"
 }
