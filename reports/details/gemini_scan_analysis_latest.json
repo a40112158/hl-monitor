@@ -10,8 +10,8 @@
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强信号，也无明确的做多或做空观察目标。所有识别出的信号均处于“只观察”状态，且信心度较低，主要受历史样本不足、现货主导、钱包集中度过高或长窗口未成熟等因素影响。大盘BTC和ETH目前均处于“near_low”区间。整体市场缺乏明确的高优先级交易机会，建议继续保持谨慎观察。\n\n【数据质量】\n本轮扫描的钱包监控成功率为100%（2421个钱包全部成功），",
-  "generated_at": "2026-07-06T14:03:07Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强信号，也无明确的做多或做空观察目标。所有识别出的信号均处于“只观察”状态，且信心度较低，主要受历史样本不足、现货主导、钱包集中度过高或长窗口未成熟等因素影响。大盘BTC和ETH目前均处于“near_low”区间。整体市场缺乏明确的高优先级交易机会，建议继续保持谨慎观察。\n\n【数据质量】\n本轮扫描健康度高，监控钱包成功率达到100%。然而，多数币种的",
+  "generated_at": "2026-07-06T14:33:06Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
