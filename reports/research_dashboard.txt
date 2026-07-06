@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-07 06:43:16 | UTC：2026-07-06 22:43:16
+更新时间北京时间：2026-07-07 07:05:29 | UTC：2026-07-06 23:05:29
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -10,15 +10,15 @@ longterm_candidate / short | 样本=8 | 72h胜率=25.0% 门槛=12.5% 平均=-2.2
 longterm_candidate / all | 样本=8 | 72h胜率=25.0% 门槛=12.5% 平均=-2.2817% | 7d胜率=12.5% 门槛=12.5% 平均=-4.0812% | 30d样本=0
 
 【Top 钱包画像】
-0xa445...329d [money_printer] grade=B score=76.1 样本=46 72h胜率=0.391304347826087 30d胜率=None 主币=BTC,ETH,SOL
-0x7c93...c8fd [money_printer] grade=B score=73.1 样本=14 72h胜率=0.5714285714285714 30d胜率=None 主币=ETH,BTC,SUI
-0xaeaa...2416 [money_printer] grade=B score=71.5 样本=10 72h胜率=0.5 30d胜率=None 主币=BTC,ETH
+0xa445...329d [money_printer] grade=B score=76.2 样本=46 72h胜率=0.391304347826087 30d胜率=None 主币=BTC,ETH,SOL
+0x7c93...c8fd [money_printer] grade=B score=73.0 样本=14 72h胜率=0.5714285714285714 30d胜率=None 主币=ETH,BTC,SUI
+0xaeaa...2416 [money_printer] grade=B score=71.4 样本=10 72h胜率=0.5 30d胜率=None 主币=BTC,ETH
 0xc7ab...2bf8 [smart_money] grade=C score=66.3 样本=27 72h胜率=0.4375 30d胜率=None 主币=ETH,HYPE,BTC,SOL
+0xcf3f...f95f [smart_money] grade=C score=65.6 样本=24 72h胜率=0.45454545454545453 30d胜率=None 主币=BTC
 0x350e...fcfb [money_printer] grade=B score=65.2 样本=15 72h胜率=0.5 30d胜率=None 主币=ETH,BTC
 0x3e7a...1589 [money_printer] grade=C score=65.0 样本=20 72h胜率=0.42857142857142855 30d胜率=None 主币=BTC,HYPE,ETH
-0xecb6...2b00 [money_printer] grade=C score=64.7 样本=143 72h胜率=0.12941176470588237 30d胜率=None 主币=UPUMP,UBONK,UXPL,ETH,BTC
-0x5323...b23c [smart_money] grade=C score=63.4 样本=92 72h胜率=0.3709677419354839 30d胜率=None 主币=HYPE,ZEC,SOL
-0xcf3f...f95f [smart_money] grade=C score=60.7 样本=24 72h胜率=0.4 30d胜率=None 主币=BTC
+0xecb6...2b00 [money_printer] grade=C score=64.7 样本=144 72h胜率=0.12790697674418605 30d胜率=None 主币=UPUMP,UBONK,UXPL,ETH,BTC
+0x5323...b23c [smart_money] grade=C score=62.9 样本=92 72h胜率=0.36507936507936506 30d胜率=None 主币=HYPE,ZEC,SOL
 0x4e23...20c3 [money_printer] grade=C score=60.4 样本=16 72h胜率=0.5 30d胜率=None 主币=HYPE,ETH
 
 【Top 币种画像】
