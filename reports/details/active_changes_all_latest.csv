@@ -1,1 +1,2 @@
-﻿empty
+﻿address,groups,coin,market,direction,action_type,active_delta,price_effect,qty_delta,entry_px,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings
+0x023a3d058020fb76cca98f01b3c48c8938a22355,money_printer,UPUMP,spot,bullish,buy_spot,305477.92598,0.0,2789498.0,0.10951,UPUMP $305.48K 数量Δ=2.79M @ 0.10951,-,UPUMP $305.48K 数量Δ=2.79M @ 0.10951,现货买入UPUMP $305.48K 数量Δ=2.79M @ 0.10951,-,ETH空 25x $14.80M cross 强平距=+69.63% 极高杠杆短线型；SOL空 20x $10.95M cross 强平距=+93.75% 极高杠杆短线型；PUMP空 10x $3.76M cross 强平距=+265.57% 高杠杆短线型,HREKT $11.97M 数量=278387.17M；UPUMP $1.71M 数量=15.61M；UBONK $1.30M 数量=186.00M
