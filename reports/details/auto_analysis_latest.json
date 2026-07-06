@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-07-06 17:02:37",
+  "generated_at": "2026-07-06 17:32:42",
   "mode": "guarded",
   "raw_events": 12,
   "events": 10,
   "sample_store": {
     "inserted": 0,
-    "updated": 2,
+    "updated": 1,
     "deleted": 0,
     "total": 10
   },
   "coins": 9,
   "mature_counts": {
-    "7d": 3,
+    "7d": 4,
     "72h": 9,
     "24h": 9
   },
