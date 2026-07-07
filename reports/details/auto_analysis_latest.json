@@ -1,19 +1,19 @@
 {
-  "generated_at": "2026-07-07 13:24:51",
+  "generated_at": "2026-07-07 13:47:35",
   "mode": "guarded",
-  "raw_events": 12,
-  "events": 10,
+  "raw_events": 13,
+  "events": 11,
   "sample_store": {
-    "inserted": 0,
-    "updated": 0,
+    "inserted": 1,
+    "updated": 1,
     "deleted": 0,
-    "total": 10
+    "total": 11
   },
   "coins": 9,
   "mature_counts": {
     "7d": 6,
     "72h": 9,
-    "24h": 9
+    "24h": 10
   },
   "changes_applied": 0,
   "shadows_started": 0,
@@ -130,7 +130,7 @@
       "current": 8.0,
       "recommended": 8.0,
       "horizon": "",
-      "samples": 2,
+      "samples": 3,
       "train_gain": null,
       "validation_gain": null,
       "baseline_validation": {},
