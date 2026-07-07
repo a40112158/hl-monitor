@@ -1,38 +1,24 @@
 【Gemini 本轮扫描分析】
 
-状态：success
+状态：api_error
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-本轮扫描未发现达到币种专属阈值的短线强异动信号，整体市场环境（BTC/ETH）处于中性状态。多数观察币种因历史样本不足、长窗口未成熟、高杠杆占比过高或钱包集中度过高而被列为“只观察”状态。资金流方面，部分“money_printer”钱包出现USDC增加而现货减少的现象，疑似卖出或转现金。
+Gemini 分析层调用失败。
+
+错误信息：
+developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 43.259311325s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric' | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, h
 
 【数据质量】
-本轮扫描健康度良好，监控钱包2421个，成功率100.00%，无partial或failed情况。永续合约和现货数据行数充足。信号解释中普遍存在“历史样本/胜率不足”和“长窗口未成熟”的风险提示，表明部分币种的信号数据积累尚不充分。自动优化分析层也显示多数币种存在`insufficient_samples`。
+unknown
 
 【市场与资金结构】
-大盘环境：
-BTC：1小时 -0.05%，4小时 -0.70%，24小时 +0.56%，regime=neutral
-ETH：1小时 -0.10%，4小时 -0.87%，24小时 +0.40%，regime=neutral
-整体大盘处于中性状态，短期波动不大。
+unknown
 
-资金费率 / 流动性：
-AERO、JTO、ETHFI、POLYX、GRASS、ASTER、PENGU、SPX的资金费率均处于低风险水平（+0.01%至-0.00%）。
-24小时成交额方面，BTC ($2.96B)、ETH ($815.43M)、SOL ($360.69M)、HYPE ($372.28M)、LIT ($116.52M)、ZEC ($82.21M) 流动性风险为低。
-GRAM ($9.12M) 和 ENA ($7.16M) 流动性风险为中。
-AERO ($3.35M)、ETHFI ($3.10M)、GRASS ($3.78M)、ASTER ($1.64M)、JTO ($4.13M)、PENGU ($1.97M)、POLYX ($143.09K)、SPX ($3.86M)、PAXG ($1.79M) 流动性风险为高。
+【风险提示】
+- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
+- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
 
-OI、净流入、多空人数比、主动买卖比：数据不足。
-价格涨跌幅：
-SUI：1小时 0.0%，4小时 -1.41%，24小时 -1.15%
-ZEC：1小时 -0.06%，4小时 -0.20%，24小时 -0.80%
-LIT：1小时 +0.03%，4小时 -0.96%，24小时 -3.07%
-GRAM：1小时 -0.56%，4小时 -2.49%，24小时 -0.68%
-SOL：1小时 -0.09%，4小时 -0.63%，24小时 +0.95%
-HYPE：1小时 -0.33%，4小时 -0.26%，24小时 -1.82%
-
-单钱包主动变化：
-0x1658...f65b [smart_money] 在SUI上新开空单-$1.86M，杠杆10x，强平距+29.85%，属于高杠杆短线型。
-
-资金流Lite：
-多个“money_printer”钱包显示USDC增加而现货减少，疑似卖出或转现金，例如0xe867...c78e、0x7dac...f410、0x856c...91
+【下一轮重点检查】
+- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
