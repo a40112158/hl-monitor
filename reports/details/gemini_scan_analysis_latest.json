@@ -1,17 +1,17 @@
 {
-  "status": "completed",
-  "urgency": "high",
-  "executive_summary": "本轮扫描未发现达到币种专属阈值的短线强信号或适合低杠杆的长期交易候选。多数观察币种的信号可靠性较低，存在历史样本不足、钱包集中度过高或现货主导等风险。大盘环境BTC和ETH均处于中性状态，短期缺乏明确趋势。整体市场缺乏高优先级交易信号。",
-  "data_quality": "详见 Markdown 报告【数据质量】部分。",
-  "market_structure": "详见 Markdown 报告【市场与资金结构】部分。",
+  "status": "api_error",
+  "urgency": "normal",
+  "executive_summary": "developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 45.89491854s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violation",
+  "data_quality": "unknown",
+  "market_structure": "unknown",
   "changes_since_previous": [],
   "focus_items": [],
   "risk_warnings": [],
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强信号或适合低杠杆的长期交易候选。多数观察币种的信号可靠性较低，存在历史样本不足、钱包集中度过高或现货主导等风险。大盘环境BTC和ETH均处于中性状态，短期缺乏明确趋势。整体市场缺乏高优先级交易信号。\n\n【数据质量】\n本轮扫描的钱包监控成功率为100.00%，未出现部分成功或失败的扫描，表明整体数据获取完整。然而，在具体币种信号分析中，多个币种（如ZEC, QONE, SOL, LIT, HYPE, MAX, UBONK, BASED, KNTQ, QUANT）均存在“历史样本/胜率不足”以及“长窗口未成熟”的风险提示，这表明对于这些特定信号的有效性评估，其历史数据积累尚不充分。部分信号还存在“滚动信号钱包集中度过高”或“现货主导”的情况，可能导致信号代表性不足。\n\n【市场与资金结构】\n大盘环境：\nBTC: 1小时 -0.13% | 4小时 -0.39% | 24小时 -0.14% | 市场状态=中性\nETH: 1小时 -0.08% | 4小时 -0.76% | 24小时 -0.25% | 市场状态=中性\nBTC和ETH在过去24小时内均呈现小幅下跌，且市场状态为中性，表明当前市场缺乏明确的方向性趋势。\n\n资金费率 / 流动性：\n多数主要币种（如ASTER, PENGU, POLYX, SPX, ZRO, AAVE, BNB, CHIP）的资金费率均为+0.00%，风险评估为低。\n24小时成交额方面，BTC ($2.24B), ETH ($625.45M), HYPE ($448.59M), SOL ($296.51M), ZEC ($140.44M), LIT ($53.53M) 等币种流动性较高或中等。部分币种如ASTER ($2.60M), PENGU ($1.25M), POLYX ($1.47M), SPX ($3.80M) 24小时成交额相对较低，但流动性仍被评估为高。\nOpen Interest (OI) 数据显示，HYPE ($1.57B), BTC ($2.42B), ETH ($1.43B), SOL ($453.05M), LIT ($140.24M), ZEC ($236.19M) 等币种的合约持仓量较大。\n多空人数比、主动买卖比等数据在本次扫描结果中未提供。\n\n【相比上次 AI 分析】\n相比上次报告（紧急度：high），本轮扫描的紧急度降为normal，表明市场整体信号强度有所减弱。上次报告也未发现强信号或长期交易候选，本轮情况类似。\n具体币种信号变化：\n*   ZEC的alert_score从上次的-1.60875大幅下降至-5.90875，加权资金流也大幅减少，显示其偏空信号有所增强。\n*   HYPE的alert_score从上次的0.175下降至-0.025，加权资金流由负转正，但信号强度仍低。\n*   LIT的alert_score从上次的0.575略微上升至0.7，加权资金流增加，偏多信号略有增强。\n*   QONE的alert_score与上次持平为3.6425，但加权资金流有所减少。\n*   SOL的alert_score与上次持平为-0.9，加权资金流有所增加，但信号强度仍低。\n*   BASED, KNTQ, MAX, QUANT, UBONK的alert_score和加权资金流变化不大，信号强度保持低位。\n\n【重点观察】\n本轮暂无明确高优先级目标。以下币种因其偏向性或特定风险值得继续观察：\n*   **ZEC (偏空)**：alert_score为-5.9，是本轮观察列表中偏空信号最强的币种。主要风险在于历史样本不足，且同方向高杠杆/爆仓边缘仓位占比65%，平均杠杆7.9x，需警惕高杠杆带来的波动风险。\n*   **QONE (偏多)**：alert_score为+3.6，是本轮观察列表中偏多信号最强的币种。风险极高，信号现货主导，钱包集中度过高（Top1贡献100%），可能是单钱包异动或转账/归集/划转，不等于合约方向。历史样本不足。\n*   **SOL (偏空)**：alert_score为-0.9。风险在于钱包集中度过高，同方向高杠杆/爆仓边缘仓位占比82%，平均杠杆16.3x，偏短线，历史样本不足。\n*   **LIT (偏多)**：alert_score为+0.7。风险在于钱包集中度过高，历史样本不足。虽然低/中杠杆仓位占比99%，平均杠杆4.8x相对健康，但信号集中度仍是主要风险。\n\n【风险提示】\n1.  **信号可靠性不足**：本轮所有观察币种均存在“历史样本/胜率不足”、“长窗口未成熟”等风险，信号可靠性较低，不应作为确定性交易依据。\n2.  **钱包集中度风险**：QONE, SOL, LIT, HYPE, MAX, UBONK, BASED, KNTQ, QUANT等币种的信号存在钱包集中度过高的问题，可能由少数大额钱包异动引起，不代表市场普遍情绪。\n3.  **现货主导信号**：QONE, MAX, UBONK, BASED, KNTQ, QUANT等币种的信号现货主导，可能为转账、归集或划转行为，不直接等同于合约方向性交易。\n4.  **高杠杆风险**：ZEC和SOL的偏空信号中，同方向高杠杆/爆仓边缘仓位占比较高（ZEC 65%, SOL 82%），平均杠杆偏高，可能增加市场波动性和潜在的连锁清算风险。\n5.  **大盘中性风险**：BTC和ETH均处于中性状态，市场缺乏明确趋势，可能导致个别币种的异动难以持续或出现假突破。\n6.  **流动性风险**：虽然多数币种流动性评估为低或中，但在极端行情下，部分成交额相对较低的币种仍可能面临流动性不足的风险。\n\n【参数观察】\n当前自动优化分析层显示，所有币种的`score_push`参数均因`insufficient_samples`而保持当前值，未进行自动调整。这表明系统在样本不足的情况下采取了保守策略，没有自动放宽或收紧参数。鉴于多数信号都提示“历史样本/胜率不足”和“长窗口未成熟”，当前筛选参数可能在一定程度上偏严，导致强信号难以达到阈值。然而，在样本量不足以进行有效验证的情况下，无法确定参数是否过严或过松，需要更多轮数据积累以进行更准确的判断。\n\n【下一轮重点检查】\n1.  **“只观察”币种的风险因素变化**：持续关注ZEC, QONE, SOL, LIT等币种的风险提示（如历史样本量、钱包集中度、杠杆结构、现货主导情况）是否有所改善或恶化。\n2.  **大盘环境趋势**：密切关注BTC和ETH的市场状态是否从中性转变为明确的多头或空头趋势。\n3.  **新信号的出现**：留意是否有新的币种达到短线强信号阈值或形成长期交易候选。\n4.  **钱包主动变化**：继续追踪Top主动变化钱包的后续动作，特别是大额现货或合约操作的持续性。",
-  "generated_at": "2026-07-07T20:47:52Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：api_error\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\nGemini 分析层调用失败。\n\n错误信息：\ndeveloper:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 45.89491854s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violation\n\n【数据质量】\nunknown\n\n【市场与资金结构】\nunknown\n\n【风险提示】\n- 本轮 AI 分析失败，不代表扫描数据本身一定失败。\n- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。\n\n【下一轮重点检查】\n- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。\n",
+  "generated_at": "2026-07-07T21:11:14Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
@@ -24,6 +24,6 @@
   ],
   "force_analysis": true,
   "force_reason": "manual",
-  "tg_sent": true,
+  "tg_sent": false,
   "error_tg_sent": false
 }
