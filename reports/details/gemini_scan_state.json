@@ -1,5 +1,5 @@
 {
-  "last_success_at": "2026-07-07T10:33:23Z",
+  "last_success_at": "2026-07-07T10:56:06Z",
   "model": "gemini-2.5-flash",
   "interval_minutes": 30,
   "force_analysis": true,
