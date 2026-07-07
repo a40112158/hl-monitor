@@ -1,17 +1,17 @@
 {
-  "status": "api_error",
-  "urgency": "normal",
-  "executive_summary": "developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 45.89491854s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violation",
-  "data_quality": "unknown",
-  "market_structure": "unknown",
+  "status": "completed",
+  "urgency": "high",
+  "executive_summary": "本轮扫描未发现达到币种专属阈值的短线强信号，也无适合低杠杆的长期交易候选。多数观察币种的信号可靠性较低，主要风险包括历史样本不足、钱包集中度过高、现货主导或高杠杆仓位占比过高。大盘环境BTC和ETH均处于中性状态。整体市场缺乏明确的高优先级交易信号。",
+  "data_quality": "详见 Markdown 报告【数据质量】部分。",
+  "market_structure": "详见 Markdown 报告【市场与资金结构】部分。",
   "changes_since_previous": [],
   "focus_items": [],
   "risk_warnings": [],
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：api_error\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\nGemini 分析层调用失败。\n\n错误信息：\ndeveloper:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 45.89491854s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violation\n\n【数据质量】\nunknown\n\n【市场与资金结构】\nunknown\n\n【风险提示】\n- 本轮 AI 分析失败，不代表扫描数据本身一定失败。\n- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。\n\n【下一轮重点检查】\n- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。\n",
-  "generated_at": "2026-07-07T21:11:14Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强信号，也无适合低杠杆的长期交易候选。多数观察币种的信号可靠性较低，主要风险包括历史样本不足、钱包集中度过高、现货主导或高杠杆仓位占比过高。大盘环境BTC和ETH均处于中性状态。整体市场缺乏明确的高优先级交易信号。\n\n【数据质量】\n本轮扫描健康状况良好，监控钱包2421个，成功率100%，无部分成功或失败的扫描。钱包质量统计显示，S/A级钱包为0，B级7个，C级15个，R级12个，N级2387个，表明大部分钱包为普通或新钱包，少数为反向钱包。数据完整性高，未发现unknown、空数据、极端值或接口失败情况。然而，多个币种的信号分析中明确指出“历史样本/胜率不足”，这表明在某些币种上，用于信号验证的历史数据量可能不够充分。\n\n【市场与资金结构】\n大盘环境：\nBTC：1小时涨幅+0.13%，4小时跌幅-0.64%，24小时跌幅-1.11%，市场状态为中性。\nETH：1小时涨幅+0.18%，4小时跌幅-1.28%，24小时跌幅-1.54%，市场状态为中性。\n\n资金费率与流动性：\n多数币种（如ASTER, SPX, ZRO, PENGU, POLYX, AAVE, BNB, CHIP）的资金费率均接近0或为低风险，显示市场情绪相对平稳，未出现明显的单边过热。\n流动性方面，BTC, ETH, SOL, HYPE, LIT等主要币种流动性为低风险（高流动性），而AAVE, BNB, CHIP等为中风险（中等流动性），ASTER, SPX, ZRO, PENGU, POLYX等为高风险（低流动性）。\n24小时成交额：BTC ($2.15B), ETH ($612.10M), HYPE ($457.99M), SOL ($280.73M), LIT ($54.17M), ZEC ($143.98M) 均有可观的成交量。\n未提供净流入、OI、多空人数比、主动买卖比等详细市场结构数据，数据不足。\n\n单钱包主动变化：\n本轮有数个大额钱包主动变化：\n*   0x4c46...cba5 (smart_money) 新开多BTC $6.68M (10x杠杆, 爆仓边缘型, 强平距+8.83%)。\n*   0xffff...ffff (money_printer) 增持现货QONE $5.17M。\n*   0xa516...37b0 (smart_money) 平多HYPE -$3.63M (10x杠杆, 爆仓边缘型, 强平距+3.89%)。\n*   0xd911...961e (money_printer) 合约空单变化ETH -$2.59M (25x杠杆, 极高杠杆短线型, 强平距+13.46%)。\n*   0x5323...b23c (smart_money) 合约空单变化HYPE $1.41M 和ZEC $588.51K (5x杠杆, 中杠杆趋势型)。\n*   0x023a...2355 (money_printer) 增持现货UBONK $385.12K。\n*   0xecb6...2b00 (money_printer) 减持现货UBONK -$384.41K。\n\n【相比上次 AI 分析】\n与上次报告相比，本轮扫描结果显示市场结构和信号强度无明显变化。上次报告也指出“未发现达到币种专属阈值的短线强信号或适合低杠杆的长期交易候选”，且多数观察币种信号可靠性较低。本轮情况类似，仍以“只观察”信号为主，且普遍存在样本不足、钱包集中度高、现货主导或高杠杆等风险，未出现更强或更弱的明确趋势。\n\n【重点观察】\n暂无明确高优先级目标。\n所有列出的币种均处于“只观察”状态，且存在多重风险，不建议作为高优先级目标。\n\n【风险提示】\n1.  **信号可靠性风险：** 多数“只观察”信号存在历史样本不足、胜率不足的问题，其预测能力有待验证。\n2.  **钱包集中度风险：** QONE, LIT, HYPE, ZEC, MAX, UBONK, BASED, KNTQ, QUANT等币种的滚动信号钱包集中度过高，可能由单钱包异动引起，不代表普遍市场情绪。\n3.  **现货主导风险：** QONE, MAX, UBONK, BASED, KNTQ, QUANT等币种的信号现货主导，可能为转账/归集/划转行为，不直接等同于合约方向。\n4.  **高杠杆风险：** BTC (84%高杠杆, 平均22.9x), SOL (75%高杠杆, 平均15.5x), ZEC (65%高杠杆) 存在高杠杆/爆仓边缘仓位占比过高的问题，短线波动风险大。\n5.  **长窗口未成熟风险：** 多个币种（QONE, BTC, SOL, HYPE, ZEC, BASED, KNTQ, QUANT）的长窗口未成熟，不能按15天/30天成熟信号处理。\n6.  **滚动方向冲突风险：** SOL和HYPE的本轮异动与滚动方向冲突，信号一致性差。\n7.  **流动性风险：** ASTER, SPX, ZRO, PENGU, POLYX等币种流动性标记为“高风险”（实际为低流动性），可能导致价格剧烈波动和成交困难。\n\n【参数观察】\n当前筛选参数可能偏严。本轮扫描未产生任何达到阈值的短线强信号或长期交易候选，且大量信号因“历史样本/胜率不足”、“滚动窗口未成熟”等原因被标记为“只观察”并被硬门槛阻挡。自动优化分析层也显示多数币种因`insufficient_samples`而未进行`score_push`调整。这表明系统在数据不足或信号质量存疑时倾向于保守，但可能导致错过早期潜在机会。需要更多轮数据来判断参数是否过于严格。\n\n【下一轮重点检查】\n1.  持续观察本轮“只观察”币种的信号演变，特别是其“滚动窗口”是否成熟，以及“钱包集中度”和“现货主导”风险是否有所改善。\n2.  密切关注大额主动变化钱包（如0x4c46...cba5对BTC的开多，0xd911...961e对ETH的空单变化）的后续动作及其仓位盈亏情况。\n3.  重点关注那些高杠杆仓位占比过高的币种（如BTC, SOL, ZEC），观察其杠杆结构是否发生变化，以及强平距离是否进一步收窄。\n4.  继续监测大盘BTC和ETH的 regime 变化，以判断市场整体风险偏好。",
+  "generated_at": "2026-07-07T21:33:28Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
@@ -24,6 +24,6 @@
   ],
   "force_analysis": true,
   "force_reason": "manual",
-  "tg_sent": false,
+  "tg_sent": true,
   "error_tg_sent": false
 }
