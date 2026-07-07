@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-07-07 13:47:35",
+  "generated_at": "2026-07-07 14:10:25",
   "mode": "guarded",
   "raw_events": 13,
-  "events": 11,
+  "events": 10,
   "sample_store": {
-    "inserted": 1,
+    "inserted": 0,
     "updated": 1,
     "deleted": 0,
-    "total": 11
+    "total": 10
   },
   "coins": 9,
   "mature_counts": {
@@ -130,7 +130,7 @@
       "current": 8.0,
       "recommended": 8.0,
       "horizon": "",
-      "samples": 3,
+      "samples": 2,
       "train_gain": null,
       "validation_gain": null,
       "baseline_validation": {},

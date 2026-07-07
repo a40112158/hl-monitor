@@ -1,5 +1,5 @@
 ﻿run_id,coin,source,side,events,win_72h,hurdle_72h,avg_72h,win_7d,hurdle_7d,avg_7d,win_30d,hurdle_30d,avg_30d
-405,SOL,alert,short,5,0.0,0.0,-6.9734,0.0,0.0,-9.1791,,,
+405,SOL,alert,short,4,0.0,0.0,-6.9734,0.0,0.0,-9.1791,,,
 405,QONE,alert,short,2,0.0,0.0,-3.7703,0.0,0.0,-7.95,,,
 405,QONE,longterm,short,2,0.0,0.0,-3.7703,0.0,0.0,-7.95,,,
 405,SOL,longterm,short,2,0.0,0.0,-8.0306,0.0,0.0,-9.1791,,,
