@@ -1,8 +1,8 @@
 Hyperliquid Monitor Daily Archive
 date_cn: 2026-07-07
-run_id: 394
-updated_at_cn: 2026-07-07 15:03:22
-updated_at_utc: 2026-07-07 07:24:33
+run_id: 395
+updated_at_cn: 2026-07-07 15:25:39
+updated_at_utc: 2026-07-07 07:46:48
 
 主要看：final_report.txt、long_term_plan.txt、signal_explain_report.txt、coin_risk_report.txt、rolling_flow_report.txt
 关键 CSV：coin_signals.csv、rolling_flow.csv、wallet_quality.csv、wallet_position_performance.csv、signal_backtest.csv、longterm_backtest.csv、signal_lifecycle.csv
