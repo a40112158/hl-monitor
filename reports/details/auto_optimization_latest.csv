@@ -1,7 +1,7 @@
 ﻿coin,parameter,action,current,recommended,horizon,samples,train_gain,validation_gain,quality_gap,status,priority_rank,priority_score,reviewed,ai_status,ai_decision,ai_confidence,ai_risk,ai_reason,ai_model,ai_outcome_decision,ai_outcome_confidence,ai_outcome_diagnosis
 BASED,score_push,insufficient_samples,8.0,8.0,,1,,,,,,,,,,,,,,,,
 ENA,score_push,insufficient_samples,8.0,8.0,,1,,,,,,,,,,,,,,,,
-HYPE,score_push,insufficient_samples,7.0,7.0,,1,,,,,,,,,,,,,,,,
+HYPE,score_push,insufficient_samples,7.0,7.0,,2,,,,,,,,,,,,,,,,
 LIT,score_push,insufficient_samples,8.0,8.0,,1,,,,,,,,,,,,,,,,
 MAX,score_push,insufficient_samples,8.0,8.0,,1,,,,,,,,,,,,,,,,
 QONE,score_push,insufficient_samples,8.0,8.0,,1,,,,,,,,,,,,,,,,
