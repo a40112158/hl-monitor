@@ -1,1 +1,2 @@
-﻿empty
+﻿address,groups,coin,market,direction,action_type,side,active_delta,price_effect,qty_delta,entry_px,leverage,margin_mode,liq_distance_pct,leverage_style,position_value,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings,leverage_weight
+0x16588c497a83e9dfa298d048553a4ef5fd52f65b,smart_money,SUI,perp,bearish,new_short,short,-1861900.0,22425.0,-2500000.0,0.74476,10.0,cross,29.85159470164886,高杠杆短线型,1839475.0,-,-,-,-,新开空SUI 10x -$1.86M 强平距=+29.85%,SUI空 10x $1.84M cross 强平距=+29.85% 高杠杆短线型,-,0.42
