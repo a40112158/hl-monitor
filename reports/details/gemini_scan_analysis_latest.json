@@ -1,17 +1,17 @@
 {
-  "status": "completed",
-  "urgency": "high",
-  "executive_summary": "本轮扫描未发现达到币种专属阈值的短线强异动信号。多数“只观察”币种因历史样本不足、钱包集中度过高、高杠杆占比或现货主导等原因，信号可靠性较低，不构成明确交易机会。整体扫描健康度良好，但市场缺乏明确的强信号指引，需持续观察。",
-  "data_quality": "详见 Markdown 报告【数据质量】部分。",
-  "market_structure": "详见 Markdown 报告【市场与资金结构】部分。",
+  "status": "api_error",
+  "urgency": "normal",
+  "executive_summary": "developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 52.529304556s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric' | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, h",
+  "data_quality": "unknown",
+  "market_structure": "unknown",
   "changes_since_previous": [],
   "focus_items": [],
   "risk_warnings": [],
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动信号。多数“只观察”币种因历史样本不足、钱包集中度过高、高杠杆占比或现货主导等原因，信号可靠性较低，不构成明确交易机会。整体扫描健康度良好，但市场缺乏明确的强信号指引，需持续观察。\n\n【数据质量】\n本轮扫描健康度极佳，监控钱包2421个，成功率100.00%，无部分成功或失败情况。数据获取完整。然而，在具体币种信号分析中，多数“只观察”信号被标记为“历史样本/胜率不足”或“长窗口未成熟”，表明虽然扫描数据完整，但用于信号验证的历史数据积累尚不充分。\n\n【市场与资金结构】\nBTC和ETH目前均处于中性（neutral）市场状态，1小时、4小时和24小时价格波动幅度较小。\n资金费率方面，ASTER、PENGU、POLYX、SPX、ZRO、CHIP、MON、AAVE等币种的资金费率均处于低位（0.00%或0.01%），未显示出明显的市场过热或恐慌情绪。\n流动性方面，ASTER、PENGU、POLYX、SPX、ZRO被评估为高流动性；CHIP、MON、AAVE、BNB、GRAM、JTO、SUI、VVV、WLD、XPL被评估为中等流动性；BTC、ETH、FARTCOIN、HYPE、LIT、SOL、ZEC被评估为低流动性。\n成交量和未平仓合约（OI）数据显示，BTC和ETH仍是市场主要关注点，HYPE、SOL、ZEC、LIT等币种也有较高的成交额和OI。\n净流入、多空人数比、主动买卖比等市场结构数据未在本次报告中直接提供汇总信息。\n价格涨跌幅方面，ZEC在24小时内上涨11.77%，GRAM在24小时内下跌7.31%，显示出个别币种的较大波动。\n\n【相比上次 AI 分析】\n上次AI分析因“RESOURCE_EXHAUSTED”错误未能成功生成完整报告，因此本轮无法与上轮进行有效比较。\n\n【重点观察】\n暂无明确高优先级目标。\n本轮所有信号均处于“只观察”状态，主要原因如下：\n*   **ZEC (偏多):** 24小时价格涨幅显著（+11.77%），有大额合约主动变化和资金流入。但风险提示“历史样本/胜率不足”、“长窗口未成熟”、“本轮异动与滚动方向冲突”、“高杠杆占比过高（49%）”和“高位追多风险”。\n*   **SOL (偏空):** 滚动窗口有大额资金流出（-$16.25M）。风险提示“历史样本/胜率不足”、“钱包集中度过高”、“长窗口未成熟”、“高杠杆占比过高（82%）”和“平均杠杆16.3x偏短线”。\n*   **LIT (偏多):** 低/中杠杆仓位占比高（99%），平均杠杆4.9x。风险提示“历史样本/胜率不足”和“滚动信号钱包集中度过高（Top1贡献100%）”。\n*   **HYPE (偏空):** 滚动窗口有大额资金流出（-$23.07M）。风险提示“历史样本/胜率不足”、“长窗口未成熟”和“同方向高杠杆仓位偏多45%”。\n*   **BNB (偏多):** 风险提示“历史样本/胜率不足”、“滚动信号钱包集中度过高（Top1贡献100%）”、“高杠杆/爆仓边缘仓位占比97%”和“流动性偏低”。\n*   **GRAM (偏空):** 24小时价格跌幅",
-  "generated_at": "2026-07-07T18:25:13Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：api_error\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\nGemini 分析层调用失败。\n\n错误信息：\ndeveloper:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 52.529304556s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric' | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, h\n\n【数据质量】\nunknown\n\n【市场与资金结构】\nunknown\n\n【风险提示】\n- 本轮 AI 分析失败，不代表扫描数据本身一定失败。\n- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。\n\n【下一轮重点检查】\n- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。\n",
+  "generated_at": "2026-07-07T18:48:27Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
@@ -24,6 +24,6 @@
   ],
   "force_analysis": true,
   "force_reason": "manual",
-  "tg_sent": true,
+  "tg_sent": false,
   "error_tg_sent": false
 }
