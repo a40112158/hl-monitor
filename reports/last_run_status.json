@@ -1,6 +1,6 @@
 {
-  "last_run_cn": "2026-07-08 10:46:26",
-  "last_run_utc": "2026-07-08 02:46:26",
+  "last_run_cn": "2026-07-08 11:08:45",
+  "last_run_utc": "2026-07-08 03:08:45",
   "run_id": 425,
   "trigger_note": "github half-hourly",
   "wallet_count": 2421,
@@ -8,7 +8,7 @@
   "partial": 0,
   "failed": 0,
   "success_rate": 1.0,
-  "perp_rows": 10074,
+  "perp_rows": 10069,
   "spot_rows": 11964,
   "tg_sent": false,
   "duration_minutes": null,
