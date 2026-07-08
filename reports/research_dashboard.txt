@@ -1,20 +1,20 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-08 21:21:36 | UTC：2026-07-08 13:21:36
+更新时间北京时间：2026-07-08 22:21:38 | UTC：2026-07-08 14:21:38
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 alert_signal / long | 样本=2 | 72h胜率=100.0% 门槛=100.0% 平均=12.434% | 7d胜率=100.0% 门槛=100.0% 平均=17.9998% | 30d样本=0
-alert_signal / short | 样本=14 | 72h胜率=18.18% 门槛=9.09% 平均=-3.5519% | 7d胜率=12.5% 门槛=12.5% 平均=-4.0812% | 30d样本=0
-alert_signal / all | 样本=16 | 72h胜率=25.0% 门槛=16.67% 平均=-2.2197% | 7d胜率=22.22% 门槛=22.22% 平均=-1.6278% | 30d样本=0
+alert_signal / short | 样本=14 | 72h胜率=18.18% 门槛=9.09% 平均=-3.5519% | 7d胜率=11.11% 门槛=11.11% 平均=-3.9812% | 30d样本=0
+alert_signal / all | 样本=16 | 72h胜率=25.0% 门槛=16.67% 平均=-2.2197% | 7d胜率=20.0% 门槛=20.0% 平均=-1.7831% | 30d样本=0
 longterm_candidate / short | 样本=8 | 72h胜率=25.0% 门槛=12.5% 平均=-2.2817% | 7d胜率=12.5% 门槛=12.5% 平均=-4.0812% | 30d样本=0
 longterm_candidate / all | 样本=8 | 72h胜率=25.0% 门槛=12.5% 平均=-2.2817% | 7d胜率=12.5% 门槛=12.5% 平均=-4.0812% | 30d样本=0
 
 【Top 钱包画像】
-0x5323...b23c [smart_money] grade=B score=100.0 样本=114 72h胜率=0.3380281690140845 30d胜率=None 主币=HYPE,ZEC,SOL,BNB
 0x1658...f65b [smart_money] grade=B score=100.0 样本=15 72h胜率=0.9 30d胜率=None 主币=SUI
 0x3b88...04a7 [money_printer] grade=B score=94.0 样本=14 72h胜率=0.7777777777777778 30d胜率=None 主币=ZEC,HYPE,XRP,BCH,AVAX
 0x3e7a...1589 [money_printer] grade=B score=91.5 样本=20 72h胜率=0.42857142857142855 30d胜率=None 主币=BTC,HYPE,ETH
-0xffff...ffff [money_printer] grade=B score=77.6 样本=231 72h胜率=0.358974358974359 30d胜率=None 主币=QONE,QUANT,WOW
+0x5323...b23c [smart_money] grade=B score=89.7 样本=114 72h胜率=0.3380281690140845 30d胜率=None 主币=HYPE,ZEC,SOL,BNB
+0xffff...ffff [money_printer] grade=B score=75.0 样本=232 72h胜率=0.35443037974683544 30d胜率=None 主币=QONE,QUANT,WOW
 0xaeaa...2416 [money_printer] grade=B score=71.4 样本=10 72h胜率=0.5 30d胜率=None 主币=BTC,ETH
 0xa445...329d [money_printer] grade=C score=70.7 样本=55 72h胜率=0.3 30d胜率=None 主币=BTC,ETH,SOL
 0x7c93...c8fd [money_printer] grade=B score=68.4 样本=14 72h胜率=0.5714285714285714 30d胜率=None 主币=ETH,BTC,SUI
@@ -22,7 +22,7 @@ longterm_candidate / all | 样本=8 | 72h胜率=25.0% 门槛=12.5% 平均=-2.281
 0xc7ab...2bf8 [smart_money] grade=C score=64.2 样本=27 72h胜率=0.391304347826087 30d胜率=None 主币=ETH,HYPE,BTC,SOL
 
 【Top 币种画像】
-SOL alert/short | 事件=5 | 72h胜率=0.0% 平均=-6.9734% | 7d胜率=0.0% 平均=-9.1791%
+SOL alert/short | 事件=5 | 72h胜率=0.0% 平均=-6.9734% | 7d胜率=0.0% 平均=-7.18%
 QONE alert/short | 事件=2 | 72h胜率=0.0% 平均=-3.7703% | 7d胜率=0.0% 平均=-7.95%
 QONE longterm/short | 事件=2 | 72h胜率=0.0% 平均=-3.7703% | 7d胜率=0.0% 平均=-7.95%
 SOL longterm/short | 事件=2 | 72h胜率=0.0% 平均=-8.0306% | 7d胜率=0.0% 平均=-9.1791%
