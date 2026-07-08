@@ -3,10 +3,6 @@ name: Hyperliquid Wallet Monitor FINAL
 on:
   workflow_dispatch:
 
-  schedule:
-    # Public 仓库可免费跑标准 runner；这里按半小时监控。
-    - cron: "*/30 * * * *"
-
 permissions:
   contents: write
 
