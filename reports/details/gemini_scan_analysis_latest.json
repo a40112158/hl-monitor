@@ -1,17 +1,17 @@
 {
-  "status": "api_error",
-  "urgency": "normal",
-  "executive_summary": "developer:ClientError: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.5-flash is no longer available. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}} | developer:ClientError: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.5-flash is no longer available. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}} | developer:ClientError: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.5-flash is no longer available. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}",
-  "data_quality": "unknown",
-  "market_structure": "unknown",
+  "status": "completed",
+  "urgency": "high",
+  "executive_summary": "本轮扫描未发现达到币种专属阈值的短线强信号或明确的做多/做空观察目标。多数币种的信号仍处于“只观察”状态，主要受制于历史样本不足、钱包集中度过高或现货主导等风险因素。BTC和ETH虽有资金异动，但高杠杆仓位占比极高，短期风险偏大。",
+  "data_quality": "详见 Markdown 报告【数据质量】部分。",
+  "market_structure": "详见 Markdown 报告【市场与资金结构】部分。",
   "changes_since_previous": [],
   "focus_items": [],
   "risk_warnings": [],
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：api_error\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\nGemini 分析层调用失败。\n\n错误信息：\ndeveloper:ClientError: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.5-flash is no longer available. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}} | developer:ClientError: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.5-flash is no longer available. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}} | developer:ClientError: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.5-flash is no longer available. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}\n\n【数据质量】\nunknown\n\n【市场与资金结构】\nunknown\n\n【风险提示】\n- 本轮 AI 分析失败，不代表扫描数据本身一定失败。\n- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。\n\n【下一轮重点检查】\n- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。\n",
-  "generated_at": "2026-07-09T19:23:50Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强信号或明确的做多/做空观察目标。多数币种的信号仍处于“只观察”状态，主要受制于历史样本不足、钱包集中度过高或现货主导等风险因素。BTC和ETH虽有资金异动，但高杠杆仓位占比极高，短期风险偏大。\n\n【数据质量】\n本轮扫描整体健康度高，监控钱包成功率达到100%，无部分成功或失败的记录。然而，在具体币种信号层面，存在普遍的数据质量问题。多个币种的信号被标记为“历史样本/胜率不足”、“滚动窗口未成熟”、“钱包集中度过高（可能是单钱包异动）”、“含断跑gap”或“现货主导（不等于合约方向）”，导致信号可靠性较低，无法通过长期资格硬门槛。\n\n【市场与资金结构】\nBTC：1小时涨幅+0.04%，4小时涨幅+0.95%，24小时涨幅+1.90%，市场状态为接近高位。存在偏空信号，本轮合约主动变化流出-$17.27M，主滚动窗口2小时资金流出-$15.32M。同方向高杠杆仓位占比87%，平均杠杆21.8x，极高杠杆短线风险。24小时成交额$1.80B，OI $2.40B。\nETH：1小时涨幅+0.02%，4小时涨幅+0.54%，24小时涨幅+0.69%，市场状态为中性。存在偏多信号，本轮合约主动变化流入$7.76M。同方向高杠杆仓位占比90%，平均杠杆16.6x，偏短线。24小时成交额$610.69M，OI $1.38B。\nQONE：存在偏空信号，本轮现货主动变化流出-$10.31M，钱包质量加权资金流出-$6.81M。信号现货主导，Top1贡献100%。\nZEC：存在偏多信号，本轮合约主动变化流入$2.03M。同方向高杠杆仓位占比65%。24小时成交额$87.23M，OI $243.09M。\nSOL：存在偏空信号，主滚动窗口72小时资金流出-$18.64M。同方向高杠杆仓位占比77%，平均杠杆15.2x，偏短线。24小时成交额$153.59M，OI $417.66M。\nLIT：存在偏多信号，主滚动窗口72小时资金流入$6.73M。同方向低/中杠杆仓位占比99%，平均杠杆4.9x。24小时成交额$41.94M，OI $123.67M。\nUXPL：存在偏空信号，本轮现货主动变化流出-$465.77K。信号现货主导。\nHYPE：存在偏空信号，主滚动窗口72小时资金流出-$31.80M。同方向高杠杆仓位偏多43%。24小时成交额$342.18M，OI $1.44B。\n资金费率方面，ASTER、DOGE、DYDX、ENA、ETHFI、GRAM、GRASS、JTO等币种的资金费率均为+0.00%，风险低。流动性方面，BTC、ETH、HYPE、LIT、SOL、ZEC流动性为低，FARTCOIN、NEAR流动性为中，其余列出的币种流动性为高。\n\n【相比上次 AI 分析】\n上次AI分析报告因模型错误（ClientError: 404 NOT_FOUND）而无法获取，本轮无法进行比较。\n\n【重点观察】\nQONE (偏空)：现货出现大额减持，但信号主要由现货主导且钱包集中度高，历史样本不足，不构成明确的合约方向信号。\nBTC (偏空)：合约主动变化流出较大，但信号钱包集中度高，且高杠杆仓位占比极高（87%），平均杠杆21.8x，短期爆仓风险高。\nETH (偏多)：合约主动变化流入，但高杠杆仓位占比极高（90%），平均杠杆16.6x，偏短线操作。\nZEC (偏多)：合约主动变化流入，但钱包集中度高，高杠杆仓位占比65%。\nSOL (偏空)：滚动窗口资金流出，高杠杆仓位占比77%，平均杠杆15.2x，偏短线操作。\nLIT (偏多)：滚动窗口资金流入，低/中杠杆仓位占比99%，平均杠杆4.9x，杠杆结构相对健康，但钱包集中度高。\nHYPE (偏空)：滚动窗口资金流出，但钱包集中度高，且高杠杆仓位偏多43%。\n暂无明确高优先级目标。\n\n【风险提示】\n数据不足风险：多数“只观察”币种存在历史样本不足、滚动窗口未成熟等问题，信号可靠性低。\n钱包集中度风险：多个币种的信号由少数钱包主导，可能为单钱包异动，不代表市场整体情绪。\n高杠杆风险：BTC、ETH、SOL、ZEC等币种的高杠杆仓位占比过高，平均杠杆极高或偏高，存在短线爆仓风险。\n现货主导风险：部分",
+  "generated_at": "2026-07-09T20:23:19Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
@@ -24,6 +24,6 @@
   ],
   "force_analysis": true,
   "force_reason": "manual",
-  "tg_sent": false,
+  "tg_sent": true,
   "error_tg_sent": false
 }

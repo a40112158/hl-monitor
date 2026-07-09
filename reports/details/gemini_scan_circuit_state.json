@@ -1,6 +1,5 @@
 {
-  "consecutive_failures": 1,
-  "last_failure_at": "2026-07-09T19:23:50Z",
-  "last_error": "developer:ClientError: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.5-flash is no longer available. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}} | developer:ClientError: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.5-flash is no longer available. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}} | deve",
+  "consecutive_failures": 0,
+  "last_success_at": "2026-07-09T20:23:19Z",
   "model": "gemini-2.5-flash"
 }
