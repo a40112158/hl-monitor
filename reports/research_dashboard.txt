@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-11 02:23:04 | UTC：2026-07-10 18:23:04
+更新时间北京时间：2026-07-11 03:23:10 | UTC：2026-07-10 19:23:10
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -16,10 +16,10 @@ longterm_candidate / all | 样本=8 | 72h胜率=25.0% 门槛=12.5% 平均=-2.281
 0x3e7a...1589 [money_printer] grade=B score=82.3 样本=25 72h胜率=0.3 30d胜率=None 主币=BTC,HYPE,ETH
 0xaeaa...2416 [money_printer] grade=B score=77.1 样本=11 72h胜率=0.5 30d胜率=None 主币=BTC,ETH
 0xf17d...dab2 [money_printer] grade=B score=72.4 样本=11 72h胜率=0.5555555555555556 30d胜率=None 主币=HYPE,BTC
-0x5323...b23c [smart_money] grade=C score=67.7 样本=148 72h胜率=0.3564356435643564 30d胜率=None 主币=HYPE,ZEC,SOL,BNB
 0xa445...329d [money_printer] grade=C score=67.1 样本=62 72h胜率=0.34782608695652173 30d胜率=None 主币=BTC,ETH,SOL
-0xffff...ffff [money_printer] grade=C score=65.1 样本=268 72h胜率=0.3287037037037037 30d胜率=None 主币=QONE,QUANT,WOW,EX
-0xd67c...53ff [money_printer] grade=C score=63.6 样本=18 72h胜率=0.625 30d胜率=None 主币=BTC,HYPE,ZEC
+0x5323...b23c [smart_money] grade=C score=66.5 样本=148 72h胜率=0.3564356435643564 30d胜率=None 主币=HYPE,ZEC,SOL,BNB
+0xffff...ffff [money_printer] grade=C score=65.1 样本=269 72h胜率=0.3271889400921659 30d胜率=None 主币=QONE,QUANT,WOW,EX
+0xc7ab...2bf8 [smart_money] grade=C score=62.9 样本=27 72h胜率=0.4074074074074074 30d胜率=None 主币=ETH,HYPE,BTC,SOL
 
 【Top 币种画像】
 SOL alert/short | 事件=5 | 72h胜率=20.0% 平均=-5.0579% | 7d胜率=0.0% 平均=-5.5063%
