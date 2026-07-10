@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-10 20:23:37",
+  "generated_at": "2026-07-10 21:23:40",
   "mode": "guarded",
   "raw_events": 16,
   "events": 13,
@@ -12,7 +12,7 @@
   "coins": 9,
   "mature_counts": {
     "7d": 9,
-    "72h": 12,
+    "72h": 13,
     "24h": 13
   },
   "changes_applied": 0,
