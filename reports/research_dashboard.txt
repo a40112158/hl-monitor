@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-11 13:22:55 | UTC：2026-07-11 05:22:55
+更新时间北京时间：2026-07-11 14:22:55 | UTC：2026-07-11 06:22:55
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -10,7 +10,7 @@ longterm_candidate / short | 样本=8 | 72h胜率=25.0% 门槛=12.5% 平均=-2.2
 longterm_candidate / all | 样本=8 | 72h胜率=25.0% 门槛=12.5% 平均=-2.2817% | 7d胜率=12.5% 门槛=12.5% 平均=-4.0812% | 30d样本=0
 
 【Top 钱包画像】
-0x1658...f65b [smart_money] grade=B score=99.7 样本=26 72h胜率=0.8 30d胜率=None 主币=SUI
+0x1658...f65b [smart_money] grade=B score=99.9 样本=27 72h胜率=0.8 30d胜率=None 主币=SUI
 0x3b88...04a7 [money_printer] grade=B score=95.5 样本=15 72h胜率=0.6428571428571429 30d胜率=None 主币=ZEC,HYPE,XRP,BCH,AVAX
 0x049b...5e7d [money_printer] grade=B score=85.6 样本=17 72h胜率=0.7 30d胜率=None 主币=BTC,ETH
 0xa516...37b0 [smart_money] grade=B score=85.2 样本=11 72h胜率=0.6363636363636364 30d胜率=None 主币=ETH,HYPE,BTC
