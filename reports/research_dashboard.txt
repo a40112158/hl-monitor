@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-11 21:22:53 | UTC：2026-07-11 13:22:53
+更新时间北京时间：2026-07-11 22:22:52 | UTC：2026-07-11 14:22:52
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -19,7 +19,7 @@ longterm_candidate / all | 样本=8 | 72h胜率=25.0% 门槛=12.5% 平均=-2.281
 0xd67c...53ff [money_printer] grade=B score=70.4 样本=18 72h胜率=0.5454545454545454 30d胜率=None 主币=BTC,HYPE,ZEC
 0xf17d...dab2 [money_printer] grade=C score=67.5 样本=11 72h胜率=0.5454545454545454 30d胜率=None 主币=HYPE,BTC
 0xa445...329d [money_printer] grade=C score=67.1 样本=63 72h胜率=0.32727272727272727 30d胜率=None 主币=BTC,ETH,SOL
-0x5323...b23c [smart_money] grade=C score=67.0 样本=152 72h胜率=0.3508771929824561 30d胜率=None 主币=HYPE,ZEC,SOL,BNB
+0x5323...b23c [smart_money] grade=C score=67.0 样本=152 72h胜率=0.34782608695652173 30d胜率=None 主币=HYPE,ZEC,SOL,BNB
 
 【Top 币种画像】
 SOL alert/short | 事件=5 | 72h胜率=20.0% 平均=-5.0579% | 7d胜率=0.0% 平均=-5.5063%
