@@ -1,5 +1,5 @@
 【数据质量 / API异常保护】
-run_id=496 | 北京时间=2026-07-11 07:01:26 | UTC=2026-07-10 23:17:40 | note=github half-hourly
+run_id=497 | 北京时间=2026-07-11 08:00:43 | UTC=2026-07-11 00:16:56 | note=github half-hourly
 监控钱包=2421 | ok=2421 | partial=0 | failed=0 | 成功率=100.00% | 最低要求=85.00%
 全局价格：allMids=932 | spot_token=293 | spot_coin=293 | 状态=ok
 
