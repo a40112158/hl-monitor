@@ -1,2 +1,1 @@
-﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings,execution_evidence,fill_count,ledger_evidence,ledger_count,evidence_status,evidence_class
-0xf47fe5f0f6c3ebfde365e34e6d15fb2ed4c39cdb,smart_money,-2626.0574290000004,4028075.8734600013,0.0,USDC减少 + 现货增加，疑似买入,UANSEM $4.03M 数量Δ=9.42K @ 427.5,-,UANSEM $4.03M 数量Δ=9.42K @ 427.5,现货买入UANSEM $4.03M 数量Δ=9.42K @ 427.5,-,BTC多 40x $188.88K cross 强平距=+15.35% 极高杠杆短线型；ZEC多 10x $11.62K cross 高杠杆短线型,UANSEM $21.99M 数量=51.43K；KNTQ $1.19M 数量=33.12K；HPL $0.00 数量=0.425671,@699 Buy sz=9429.0 px=0.2434322813,1,未发现充值/转账/提现账本更新,0,ok,balance_change_unconfirmed
+﻿empty
