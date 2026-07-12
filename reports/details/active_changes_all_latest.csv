@@ -1,2 +1,1 @@
-﻿address,groups,coin,market,direction,action_type,active_delta,price_effect,qty_delta,entry_px,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings
-0xffffffffffffffffffffffffffffffffffffffff,money_printer,QONE,spot,bullish,buy_spot,6386422.102400844,0.0,20307.880000002682,314.48,QONE $6.39M 数量Δ=20.31K @ 314.48,-,QONE $6.39M 数量Δ=20.31K @ 314.48,现货买入QONE $6.39M 数量Δ=20.31K @ 314.48,-,-,NEKO $1500.91B 数量=23.48M；TRADE $409.45B 数量=99.97M；BRIDGE $20.41B 数量=5.00M
+﻿empty
