@@ -46,6 +46,7 @@ REPORT_FILES = [
     "research_dashboard.txt",
     "auto_analysis_report.txt",
     "signal_explain_report.txt",
+    "wallet_cluster_report.txt",
 ]
 
 SIGNAL_FIELDS = [
@@ -65,7 +66,8 @@ ACTION_FIELDS = [
     "groups", "coin", "market", "direction", "action_type", "side", "active_delta",
     "price_effect", "qty_delta", "entry_px", "leverage", "margin_mode", "liq_distance_pct",
     "leverage_style", "position_value", "spot_increases", "spot_decreases", "spot_net_changes",
-    "spot_operations", "perp_operations",
+    "spot_operations", "perp_operations", "cluster_id", "execution_evidence", "fill_count",
+    "ledger_evidence", "ledger_count", "evidence_status", "evidence_class",
 ]
 
 LONG_CANDIDATE_CATEGORIES = {"低杠杆长期候选", "长期多单候选", "长期空单候选"}
@@ -208,6 +210,11 @@ def data_quality_status(report_dir: Path) -> Tuple[bool, str, Dict[str, Any]]:
         ok_rate /= 100.0
     if REQUIRE_DATA_QUALITY and ok_rate < DATA_QUALITY_MIN_SUCCESS_RATE:
         return False, f"success_rate {ok_rate:.2%} below required {DATA_QUALITY_MIN_SUCCESS_RATE:.2%}", status
+    if REQUIRE_DATA_QUALITY and status.get("spot_semantic_ok") is False:
+        return False, (
+            f"spot semantic quality failed: anomalous={status.get('anomalous_spot_rows')} "
+            f"ratio={status.get('spot_anomaly_ratio')}"
+        ), status
     return True, f"success_rate {ok_rate:.2%}", status
 
 
@@ -323,6 +330,34 @@ def collect_structured_context(details_dir: Path, report_dir: Path) -> Dict[str,
 
     latest_run_id = latest_run_id_from_status(report_dir)
     recent_history = query_recent_signal_history(DB_FILE, candidate_coins, latest_run_id, HISTORY_RUNS)
+    status = load_state(report_dir / "last_run_status.json")
+    semantic_failed = status.get("spot_semantic_ok") is False
+    local_gate = []
+    for item in compact_signals:
+        risks_text = " ".join(str(item.get(k) or "") for k in ("risk", "reason", "candidate_block_reasons"))
+        high_ratio = as_float(item.get("highrisk_leverage_ratio"))
+        gate = str(item.get("candidate_gate") or "").lower()
+        risk_metrics = item.get("risk_metrics") if isinstance(item.get("risk_metrics"), dict) else {}
+        reasons = []
+        verdict = "WATCH"
+        if semantic_failed:
+            verdict = "VETO"; reasons.append("spot_semantic_quality_failed")
+        if gate in {"0", "false", "blocked", "fail"} or str(item.get("candidate_block_reasons") or "").strip():
+            verdict = "VETO"; reasons.append("local_candidate_gate_failed")
+        if high_ratio >= 0.60:
+            verdict = "VETO"; reasons.append("high_leverage_concentration")
+        if str(risk_metrics.get("liquidity_risk") or "") == "高":
+            verdict = "VETO"; reasons.append("high_liquidity_risk")
+        if any(word in risks_text for word in ("钱包集中度过高", "长窗口未成熟", "现货主导", "断跑gap")):
+            if verdict != "VETO": verdict = "WATCH"
+            reasons.append("maturity_or_concentration_warning")
+        if verdict == "WATCH" and str(item.get("confidence") or "") == "高" and gate in {"1", "true", "pass", "passed"} and not reasons:
+            verdict = "PASS"
+        local_gate.append({
+            "coin": item.get("coin"), "direction": item.get("direction"),
+            "verdict": verdict, "reasons": list(dict.fromkeys(reasons)) or ["insufficient_evidence_for_pass"],
+            "rule": "AI may keep or downgrade this verdict, never upgrade it",
+        })
     context = {
         "generated_at": utc_now().isoformat() + "Z",
         "signals_top_n": compact_signals,
@@ -330,6 +365,7 @@ def collect_structured_context(details_dir: Path, report_dir: Path) -> Dict[str,
         "risk_by_coin_top_n": [risk_by_coin[k] for k in list(risk_by_coin)[:MAX_CONTEXT_ROWS]],
         "wallet_actions_top_n": compact_actions,
         "fund_flow_samples": compact_flows,
+        "local_risk_gate": local_gate,
         "limits": {
             "max_context_rows": MAX_CONTEXT_ROWS,
             "recent_history_runs": HISTORY_RUNS,
@@ -348,6 +384,10 @@ def collect_structured_context(details_dir: Path, report_dir: Path) -> Dict[str,
                 "signals_top_n": compact_signals,
                 "limits": context["limits"],
             }, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        (details_dir / "ai_risk_gate_latest.json").write_text(
+            json.dumps({"generated_at": context["generated_at"], "items": local_gate}, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
     except OSError:
@@ -623,6 +663,8 @@ def classify_gemini_error(result: Dict[str, Any]) -> Tuple[str, str]:
         return "quota_or_budget", combined[:1200]
     if status == "api_error" and any(pattern in lowered for pattern in SERVICE_ERROR_PATTERNS):
         return "service_unavailable", combined[:1200]
+    if status == "incomplete_output":
+        return "service_unavailable", combined[:1200] or "Gemini output incomplete"
     return "", ""
 
 
@@ -758,6 +800,8 @@ def main() -> None:
             "no_order_execution": True,
             "wallet_addresses_redacted": True,
             "prefer_structured_context_over_report_prose": True,
+            "local_risk_gate_is_maximum_permission": True,
+            "ai_may_only_keep_or_downgrade_local_verdict": True,
         },
     }
     result = analyze_scan(payload)

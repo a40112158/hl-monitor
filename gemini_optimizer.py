@@ -250,6 +250,18 @@ def _markdown_excerpt(text: str, max_chars: int = 1200) -> str:
     return value[:max_chars]
 
 
+def validate_scan_markdown(markdown: str) -> tuple[bool, list[str]]:
+    required_sections = [
+        "【执行摘要】", "【数据质量】", "【市场与资金结构】", "【相比上次 AI 分析】",
+        "【重点观察】", "【AI 风控结论】", "【风险提示】", "【参数观察】", "【下一轮重点检查】",
+    ]
+    missing = [section for section in required_sections if section not in markdown]
+    tail = markdown.split("【下一轮重点检查】", 1)[-1].strip() if "【下一轮重点检查】" in markdown else ""
+    if len(tail) < 20:
+        missing.append("报告结尾")
+    return not missing, missing
+
+
 def is_enabled() -> bool:
     return ENABLED
 
@@ -704,6 +716,10 @@ def analyze_scan(scan: Dict[str, Any]) -> Dict[str, Any]:
 列出本轮值得继续观察的币种、方向、理由和风险。
 如果没有明显目标，就写“暂无明确高优先级目标”。
 
+【AI 风控结论】
+对每个重点币种只能给 PASS / WATCH / VETO 之一。数据异常、现货估值异常、单钱包高度集中、
+长窗口未成熟或高杠杆占比过高时不得给 PASS。AI 只能降级或否决，不能绕过本地规则提高等级。
+
 【风险提示】
 提示假突破、追高、流动性不足、资金撤退、数据缺失、极端行情等风险。
 
@@ -751,6 +767,17 @@ unknown
         return unavailable
 
     markdown = _strip_markdown_fence(markdown)
+    markdown_complete, missing_sections = validate_scan_markdown(markdown)
+    if not markdown_complete:
+        unavailable["status"] = "incomplete_output"
+        unavailable["executive_summary"] = (
+            "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节："
+            + ("、".join(missing_sections) if missing_sections else "报告结尾")
+        )
+        unavailable["markdown_report"] = markdown + (
+            "\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。"
+        )
+        return unavailable
     urgency = _infer_markdown_urgency(markdown)
     return {
         "status": "completed",

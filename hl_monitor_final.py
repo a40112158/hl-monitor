@@ -108,6 +108,39 @@ POSITION_MIN_QTY_CHANGE_USD = float(os.getenv("POSITION_MIN_QTY_CHANGE_USD", "10
 # 现货增减明细：资金流 Lite 里明确显示本轮增持/减持了哪些现货币
 SPOT_DETAIL_MIN_USD = float(os.getenv("SPOT_DETAIL_MIN_USD", "1000"))
 
+# 现货语义质量保护：保留原始余额，但异常价格/估值不进入资金流、评分和 AI 上下文。
+SPOT_MAX_TRUSTED_VALUE_USD = float(os.getenv("SPOT_MAX_TRUSTED_VALUE_USD", "250000000"))
+SPOT_MIN_DYNAMIC_CAP_USD = float(os.getenv("SPOT_MIN_DYNAMIC_CAP_USD", "5000000"))
+SPOT_VOLUME_CAP_MULTIPLIER = float(os.getenv("SPOT_VOLUME_CAP_MULTIPLIER", "20"))
+SPOT_NONCANONICAL_CAP_MULTIPLIER = float(os.getenv("SPOT_NONCANONICAL_CAP_MULTIPLIER", "8"))
+SPOT_MAX_PRICE_CHANGE_PCT = float(os.getenv("SPOT_MAX_PRICE_CHANGE_PCT", "100"))
+SPOT_MAX_ANOMALY_RATIO = float(os.getenv("SPOT_MAX_ANOMALY_RATIO", "0.10"))
+SPOT_MIN_TRUSTED_ROWS = int(os.getenv("SPOT_MIN_TRUSTED_ROWS", "10"))
+SIGNAL_EVENT_COOLDOWN_HOURS = float(os.getenv("SIGNAL_EVENT_COOLDOWN_HOURS", "12"))
+DAILY_DETAIL_KEEP_DAYS = int(os.getenv("DAILY_DETAIL_KEEP_DAYS", "7"))
+WALLET_QUALITY_DECAY_HALF_LIFE_DAYS = float(os.getenv("WALLET_QUALITY_DECAY_HALF_LIFE_DAYS", "14"))
+EVIDENCE_ENRICH_MODE = os.getenv("EVIDENCE_ENRICH_MODE", "1") == "1"
+EVIDENCE_TOP_WALLETS = int(os.getenv("EVIDENCE_TOP_WALLETS", "12"))
+EVIDENCE_CONCURRENCY = int(os.getenv("EVIDENCE_CONCURRENCY", "4"))
+WALLET_CLUSTER_MODE = os.getenv("WALLET_CLUSTER_MODE", "1") == "1"
+WALLET_CLUSTER_MIN_COOCCURRENCE = int(os.getenv("WALLET_CLUSTER_MIN_COOCCURRENCE", "3"))
+WALLET_CLUSTER_MIN_SIMILARITY = float(os.getenv("WALLET_CLUSTER_MIN_SIMILARITY", "0.70"))
+
+DEFAULT_EXCLUDED_ADDRESSES = {
+    "0x0000000000000000000000000000000000000000",
+    "0x000000000000000000000000000000000000dead",
+    "0xdead000000000000000000000000000000000000",
+    "0xfefefefefefefefefefefefefefefefefefefefe",
+    "0xffffffffffffffffffffffffffffffffffffffff",
+}
+EXCLUDED_ADDRESSES = DEFAULT_EXCLUDED_ADDRESSES | {
+    x.strip().lower() for x in os.getenv("EXCLUDED_WALLET_ADDRESSES", "").split(",") if x.strip()
+}
+
+# 由 spotMetaAndAssetCtxs 每轮刷新；parse_spot_state 用它做成交额自适应估值上限。
+SPOT_TOKEN_DAY_VOLUME: Dict[int, float] = {}
+SPOT_TOKEN_CANONICAL: Dict[int, bool] = {}
+
 # 报告底部复盘窗口：默认看过去30天，而不是过去24h
 REPORT_REVIEW_WINDOW_DAYS = int(os.getenv("REPORT_REVIEW_WINDOW_DAYS", "30"))
 
@@ -123,6 +156,7 @@ BACKTEST_HURDLE_72H = float(os.getenv("BACKTEST_HURDLE_72H", "2"))
 BACKTEST_HURDLE_7D = float(os.getenv("BACKTEST_HURDLE_7D", "4"))
 BACKTEST_HURDLE_15D = float(os.getenv("BACKTEST_HURDLE_15D", "6"))
 BACKTEST_HURDLE_30D = float(os.getenv("BACKTEST_HURDLE_30D", "8"))
+BACKTEST_ROUNDTRIP_COST_PCT = float(os.getenv("BACKTEST_ROUNDTRIP_COST_PCT", "0.12"))
 
 # 信号生命周期：按提示从出现到消失/反转结算，补充固定周期回测。
 # 强信号默认连续 1 轮消失就结算；长期单默认连续 2 轮消失才失效，避免单轮抖动。
@@ -137,6 +171,7 @@ FUNDING_DANGER_ABS_PCT = float(os.getenv("FUNDING_DANGER_ABS_PCT", "0.08"))
 LIQUIDITY_LOW_DAY_VOLUME = float(os.getenv("LIQUIDITY_LOW_DAY_VOLUME", "20000000"))
 LIQUIDITY_MIN_DAY_VOLUME = float(os.getenv("LIQUIDITY_MIN_DAY_VOLUME", "5000000"))
 HEALTH_STALE_HOURS = float(os.getenv("HEALTH_STALE_HOURS", "2"))
+HEALTH_DB_GZ_WARN_MB = float(os.getenv("HEALTH_DB_GZ_WARN_MB", "75"))
 
 # 数据异常保护：API 成功率低时不更新信号生命周期，避免把 API 抽风误判成信号消失/平仓。
 DATA_ANOMALY_PROTECT_MODE = os.getenv("DATA_ANOMALY_PROTECT_MODE", "1") == "1"
@@ -714,7 +749,12 @@ def init_db() -> None:
         free REAL,
         entry_ntl REAL,
         mark_px REAL,
-        current_value REAL
+        current_value REAL,
+        price_trusted INTEGER DEFAULT 1,
+        anomaly_reason TEXT,
+        day_volume_usd REAL,
+        trusted_value_cap REAL,
+        is_canonical INTEGER
     )
     """)
 
@@ -873,6 +913,7 @@ def init_db() -> None:
         reverse_score REAL,
         last_action_at TEXT,
         dominant_coins TEXT,
+        decayed_sample_weight REAL,
         note TEXT,
         UNIQUE(run_id, address)
     )
@@ -1094,6 +1135,7 @@ def init_db() -> None:
         add_col_if_missing("wallet_quality", col, "INTEGER")
     for col in ("win_15d", "avg_15d", "win_30d", "avg_30d", "expectancy_30d"):
         add_col_if_missing("wallet_quality", col, "REAL")
+    add_col_if_missing("wallet_quality", "decayed_sample_weight", "REAL")
 
     add_col_if_missing("wallet_states", "perp_account_leverage", "REAL")
     add_col_if_missing("wallet_states", "perp_ok", "INTEGER")
@@ -1114,6 +1156,11 @@ def init_db() -> None:
         add_col_if_missing("perp_positions", col, "TEXT")
     for col in ("margin_used", "liq_distance_pct", "account_leverage", "leverage_weight", "leverage_risk_score"):
         add_col_if_missing("perp_positions", col, "REAL")
+    add_col_if_missing("spot_balances", "price_trusted", "INTEGER DEFAULT 1")
+    add_col_if_missing("spot_balances", "anomaly_reason", "TEXT")
+    add_col_if_missing("spot_balances", "day_volume_usd", "REAL")
+    add_col_if_missing("spot_balances", "trusted_value_cap", "REAL")
+    add_col_if_missing("spot_balances", "is_canonical", "INTEGER")
     add_col_if_missing("coin_signals", "created_at", "TEXT")
     add_col_if_missing("coin_signals", "created_at_cn", "TEXT")
     for col in ("avg_leverage", "avg_liq_distance", "longterm_leverage_ratio", "highrisk_leverage_ratio"):
@@ -1134,6 +1181,7 @@ def init_db() -> None:
     # wallet_actions 也保留动作级杠杆字段，便于以后复盘。
     for col in ("side", "margin_mode", "leverage_style"):
         add_col_if_missing("wallet_actions", col, "TEXT")
+    add_col_if_missing("wallet_actions", "cluster_id", "TEXT")
     for col in ("position_value", "leverage", "liq_distance_pct", "leverage_weight"):
         add_col_if_missing("wallet_actions", col, "REAL")
 
@@ -1152,6 +1200,35 @@ def init_db() -> None:
     cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_lifecycles_status ON signal_lifecycles(lifecycle_type, status, coin, direction)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_lifecycles_exit_run ON signal_lifecycles(exit_run_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_lifecycle_events_run ON signal_lifecycle_events(run_id)")
+
+    # 兼容旧数据库：隔离已存在的特殊地址/超大异常现货估值，并清除其派生动作与对应轮次信号。
+    # 原始 spot_balances 不删除，便于审计；只设置不可信标记。
+    excluded = sorted(EXCLUDED_ADDRESSES)
+    if excluded:
+        marks = ",".join("?" for _ in excluded)
+        cur.execute(
+            f"UPDATE spot_balances SET price_trusted=0, anomaly_reason='excluded_address' "
+            f"WHERE lower(address) IN ({marks})",
+            excluded,
+        )
+    cur.execute(
+        "UPDATE spot_balances SET price_trusted=0, anomaly_reason='position_value_over_limit' "
+        "WHERE coin <> 'USDC' AND ABS(COALESCE(current_value,0)) > ?",
+        (SPOT_MAX_TRUSTED_VALUE_USD,),
+    )
+    action_where = "market='spot' AND ABS(COALESCE(active_delta,0)) > ?"
+    action_params: List[Any] = [SPOT_MAX_TRUSTED_VALUE_USD]
+    if excluded:
+        action_where += f" OR lower(address) IN ({','.join('?' for _ in excluded)})"
+        action_params.extend(excluded)
+    cur.execute(f"SELECT action_id, run_id, coin FROM wallet_actions WHERE {action_where}", action_params)
+    contaminated = [(int(r[0]), int(r[1]), str(r[2] or "")) for r in cur.fetchall()]
+    if contaminated:
+        cur.executemany("DELETE FROM wallet_actions WHERE action_id=?", [(x[0],) for x in contaminated])
+        pairs = sorted({(x[1], x[2]) for x in contaminated if x[2]})
+        for table in ("coin_flow_snapshots", "coin_signals", "signal_events", "longterm_events"):
+            cur.executemany(f"DELETE FROM {table} WHERE run_id=? AND coin=?", pairs)
+        print(f"历史异常现货派生数据已隔离：actions={len(contaminated)} run_coin={len(pairs)}", flush=True)
 
     conn.commit()
     conn.close()
@@ -1248,6 +1325,8 @@ def load_wallet_addresses() -> Dict[str, List[str]]:
                     continue
                 if not ADDRESS_RE.match(addr):
                     continue
+                if addr in EXCLUDED_ADDRESSES:
+                    continue
                 if group not in address_groups[addr]:
                     address_groups[addr].append(group)
                     count += 1
@@ -1310,7 +1389,81 @@ async def fetch_all_mids(session: aiohttp.ClientSession, limiter: Optional[RateL
     return out
 
 
+async def enrich_recent_execution_evidence(
+    actions: List[Dict[str, Any]],
+    cashflows: List[Dict[str, Any]],
+    prev_run_id: Optional[int],
+    run_id: int,
+) -> None:
+    """只为本轮 Top 异动钱包补查成交和非资金费率账本，不扩大全量扫描请求。"""
+    if not EVIDENCE_ENRICH_MODE or not actions or not prev_run_id:
+        return
+    start_dt = get_run_started_at(prev_run_id)
+    end_dt = get_run_started_at(run_id) or utc_now()
+    if not start_dt:
+        return
+    start_ms = int(start_dt.replace(tzinfo=dt.timezone.utc).timestamp() * 1000)
+    end_ms = int(end_dt.replace(tzinfo=dt.timezone.utc).timestamp() * 1000) + 60_000
+    ranked = sorted(actions, key=lambda x: abs(safe_float(x.get("active_delta")) or 0.0), reverse=True)
+    addresses = list(dict.fromkeys(str(x.get("address") or "").lower() for x in ranked if x.get("address")))[:EVIDENCE_TOP_WALLETS]
+    semaphore = asyncio.Semaphore(max(1, EVIDENCE_CONCURRENCY))
+    limiter = RateLimiter(120)
+    timeout = aiohttp.ClientTimeout(total=45)
+    evidence: Dict[str, Dict[str, Any]] = {}
+
+    async def one(session: aiohttp.ClientSession, address: str) -> None:
+        async with semaphore:
+            fills_ok, fills = await post_info(session, limiter, {
+                "type": "userFillsByTime", "user": address, "startTime": start_ms,
+                "endTime": end_ms, "aggregateByTime": True,
+            })
+            ledger_ok, ledger = await post_info(session, limiter, {
+                "type": "userNonFundingLedgerUpdates", "user": address,
+                "startTime": start_ms, "endTime": end_ms,
+            })
+        fill_rows = fills if fills_ok and isinstance(fills, list) else []
+        ledger_rows = ledger if ledger_ok and isinstance(ledger, list) else []
+        fill_parts = []
+        for row in fill_rows[:12]:
+            if not isinstance(row, dict):
+                continue
+            fill_parts.append(
+                f"{row.get('coin','?')} {row.get('dir') or row.get('side') or '?'} "
+                f"sz={row.get('sz','?')} px={row.get('px','?')}"
+            )
+        ledger_types: Dict[str, int] = defaultdict(int)
+        for row in ledger_rows:
+            if not isinstance(row, dict):
+                continue
+            delta = row.get("delta") if isinstance(row.get("delta"), dict) else row
+            ledger_types[str(delta.get("type") or "unknown")] += 1
+        evidence[address] = {
+            "execution_evidence": "；".join(fill_parts) if fill_parts else "未发现区间内成交",
+            "fill_count": len(fill_rows),
+            "ledger_evidence": "；".join(f"{k}:{v}" for k, v in sorted(ledger_types.items())) if ledger_types else "未发现充值/转账/提现账本更新",
+            "ledger_count": len(ledger_rows),
+            "evidence_status": "ok" if fills_ok and ledger_ok else "partial",
+            "_fill_coins": {str(row.get("coin") or "").upper() for row in fill_rows if isinstance(row, dict)},
+        }
+
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        await asyncio.gather(*(one(session, address) for address in addresses))
+    for row in list(actions) + list(cashflows):
+        found = evidence.get(str(row.get("address") or "").lower(), {})
+        row.update({k: v for k, v in found.items() if not k.startswith("_")})
+        coin = str(row.get("coin") or "").upper()
+        if coin and coin in found.get("_fill_coins", set()):
+            row["evidence_class"] = "trade_confirmed"
+        elif safe_int(found.get("ledger_count"), 0) > 0:
+            row["evidence_class"] = "ledger_change_detected"
+        elif found:
+            row["evidence_class"] = "balance_change_unconfirmed"
+
+
 async def fetch_spot_prices(session: aiohttp.ClientSession, limiter: Optional[RateLimiter]) -> Tuple[Dict[int, float], Dict[str, float]]:
+    global SPOT_TOKEN_DAY_VOLUME, SPOT_TOKEN_CANONICAL
+    SPOT_TOKEN_DAY_VOLUME = {}
+    SPOT_TOKEN_CANONICAL = {}
     ok, data = await post_info(session, limiter, {"type": "spotMetaAndAssetCtxs"})
     token_price: Dict[int, float] = {0: 1.0}
     coin_price: Dict[str, float] = {"USDC": 1.0}
@@ -1322,6 +1475,7 @@ async def fetch_spot_prices(session: aiohttp.ClientSession, limiter: Optional[Ra
         tokens = meta.get("tokens") or []
         universe = meta.get("universe") or []
         token_name = {int(t["index"]): t.get("name") for t in tokens if "index" in t}
+        token_canonical = {int(t["index"]): bool(t.get("isCanonical")) for t in tokens if "index" in t}
         for u, ctx in zip(universe, ctxs):
             pair_tokens = u.get("tokens") or []
             if len(pair_tokens) < 2:
@@ -1331,9 +1485,12 @@ async def fetch_spot_prices(session: aiohttp.ClientSession, limiter: Optional[Ra
             if quote_token != 0:
                 continue
             px = safe_float(ctx.get("markPx")) or safe_float(ctx.get("midPx"))
+            day_volume = safe_float(ctx.get("dayNtlVlm")) or 0.0
             name = token_name.get(base_token)
             if px is not None:
                 token_price[base_token] = px
+                SPOT_TOKEN_DAY_VOLUME[base_token] = max(0.0, day_volume)
+                SPOT_TOKEN_CANONICAL[base_token] = token_canonical.get(base_token, False)
                 if name:
                     coin_price[str(name)] = px
     except Exception as e:
@@ -1341,6 +1498,8 @@ async def fetch_spot_prices(session: aiohttp.ClientSession, limiter: Optional[Ra
         # Parsing is all-or-nothing. Keeping prices accumulated before a later
         # malformed item would let a partial response pass the global health
         # guard and contaminate valuation/signal calculations.
+        SPOT_TOKEN_DAY_VOLUME = {}
+        SPOT_TOKEN_CANONICAL = {}
         return {0: 1.0}, {"USDC": 1.0}
     return token_price, coin_price
 
@@ -1512,9 +1671,28 @@ def parse_spot_state(address: str, groups: str, data: Dict[str, Any], token_pric
         if coin.upper() == "USDC":
             mark = 1.0
         current_value = total * mark if mark is not None else entry_ntl
+        trusted = True
+        anomaly_reason = ""
+        day_volume = SPOT_TOKEN_DAY_VOLUME.get(token, 0.0) if token is not None else 0.0
+        is_canonical = SPOT_TOKEN_CANONICAL.get(token, False) if token is not None else False
+        volume_mult = SPOT_VOLUME_CAP_MULTIPLIER if is_canonical else SPOT_NONCANONICAL_CAP_MULTIPLIER
+        dynamic_cap = min(
+            SPOT_MAX_TRUSTED_VALUE_USD,
+            max(SPOT_MIN_DYNAMIC_CAP_USD, day_volume * volume_mult) if day_volume > 0 else SPOT_MAX_TRUSTED_VALUE_USD,
+        )
+        if coin.upper() != "USDC":
+            if mark is None or mark <= 0:
+                trusted = False
+                anomaly_reason = "missing_or_invalid_price"
+            elif not math.isfinite(current_value):
+                trusted = False
+                anomaly_reason = "non_finite_value"
+            elif abs(current_value) > dynamic_cap:
+                trusted = False
+                anomaly_reason = "position_value_over_dynamic_limit"
         if coin.upper() == "USDC":
             usdc_value += current_value
-        else:
+        elif trusted:
             spot_value += current_value
         rows.append({
             "address": address,
@@ -1527,6 +1705,11 @@ def parse_spot_state(address: str, groups: str, data: Dict[str, Any], token_pric
             "entry_ntl": entry_ntl,
             "mark_px": mark,
             "current_value": current_value,
+            "price_trusted": 1 if trusted else 0,
+            "anomaly_reason": anomaly_reason,
+            "day_volume_usd": day_volume,
+            "trusted_value_cap": dynamic_cap,
+            "is_canonical": 1 if is_canonical else 0,
         })
     wallet_part = {
         "spot_total_value": spot_value,
@@ -1687,14 +1870,15 @@ def save_snapshot(
             step_log(f"perp_positions 写入进度：{inserted}/{len(perp_payload)} 行 | elapsed={time.time()-t0:.1f}s")
 
         spot_payload = [(
-            run_id, srow.get("address"), srow.get("groups"), srow.get("coin"), srow.get("token"), srow.get("total"), srow.get("hold"), srow.get("free"), srow.get("entry_ntl"), srow.get("mark_px"), srow.get("current_value")
+            run_id, srow.get("address"), srow.get("groups"), srow.get("coin"), srow.get("token"), srow.get("total"), srow.get("hold"), srow.get("free"), srow.get("entry_ntl"), srow.get("mark_px"), srow.get("current_value"), srow.get("price_trusted", 1), srow.get("anomaly_reason", ""), srow.get("day_volume_usd"), srow.get("trusted_value_cap"), srow.get("is_canonical")
         ) for srow in spot_rows]
         inserted = 0
         for _, chunk in _chunks(spot_payload, DB_INSERT_CHUNK):
             cur.executemany("""
             INSERT INTO spot_balances (
-                run_id, address, groups, coin, token, total, hold, free, entry_ntl, mark_px, current_value
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                run_id, address, groups, coin, token, total, hold, free, entry_ntl, mark_px, current_value, price_trusted, anomaly_reason,
+                day_volume_usd, trusted_value_cap, is_canonical
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, chunk)
             conn.commit()
             inserted += len(chunk)
@@ -1808,11 +1992,13 @@ def export_operation_detail_files(actions: List[Dict[str, Any]], cashflows: List
         "liq_distance_pct", "leverage_style", "position_value",
         "spot_increases", "spot_decreases", "spot_net_changes",
         "spot_operations", "perp_operations", "current_perp_positions", "current_spot_holdings",
+        "execution_evidence", "fill_count", "ledger_evidence", "ledger_count", "evidence_status", "evidence_class",
     ])
     write_csv("fund_flow_lite_all_latest.csv", cashflows, [
-        "address", "groups", "usdc_delta", "spot_delta", "flow_type",
+        "address", "groups", "usdc_delta", "spot_delta", "spot_price_effect", "flow_type",
         "spot_increases", "spot_decreases", "spot_net_changes",
         "spot_operations", "perp_operations", "current_perp_positions", "current_spot_holdings",
+        "execution_evidence", "fill_count", "ledger_evidence", "ledger_count", "evidence_status", "evidence_class",
     ])
 
 def signed_perp_value(row: Optional[Dict[str, Any]]) -> float:
@@ -1890,13 +2076,36 @@ def global_price_data_health(
     }
 
 
+def spot_semantic_health(spot_rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    non_usdc = [r for r in (spot_rows or []) if str(r.get("coin") or "").upper() != "USDC"]
+    anomalous = [r for r in non_usdc if safe_int(r.get("price_trusted"), 1) != 1]
+    trusted = len(non_usdc) - len(anomalous)
+    ratio = len(anomalous) / len(non_usdc) if non_usdc else 0.0
+    reasons: Dict[str, int] = defaultdict(int)
+    for row in anomalous:
+        reasons[str(row.get("anomaly_reason") or "unknown")] += 1
+    ok = (not non_usdc) or (trusted >= SPOT_MIN_TRUSTED_ROWS and ratio <= SPOT_MAX_ANOMALY_RATIO)
+    return {
+        "semantic_ok": ok,
+        "trusted_spot_rows": trusted,
+        "anomalous_spot_rows": len(anomalous),
+        "spot_anomaly_ratio": ratio,
+        "spot_anomaly_reasons": dict(reasons),
+    }
+
+
 def data_quality_block_reason(ok_rate: float, price_health: Optional[Dict[str, Any]] = None) -> str:
     reasons: List[str] = []
     if (safe_float(ok_rate) or 0.0) < MIN_OK_RATE:
         reasons.append(f"钱包成功率 {ok_rate*100:.2f}% < {MIN_OK_RATE*100:.2f}%")
-    if price_health is not None and not bool(price_health.get("ok")):
+    if price_health is not None and (price_health.get("missing_sources") or []):
         missing = ", ".join(str(x) for x in (price_health.get("missing_sources") or [])) or "unknown"
         reasons.append(f"全局价格数据不可用：{missing}")
+    if price_health is not None and not bool(price_health.get("semantic_ok", True)):
+        reasons.append(
+            f"现货语义质量异常：异常行{int(price_health.get('anomalous_spot_rows') or 0)}，"
+            f"占比{(safe_float(price_health.get('spot_anomaly_ratio')) or 0)*100:.2f}%"
+        )
     return "；".join(reasons)
 
 
@@ -2057,7 +2266,7 @@ def build_wallet_operation_maps(
         coin = str(r.get("coin") or "")
         if not addr or coin.upper() == "USDC":
             continue
-        if (safe_float(r.get("current_value")) or 0.0) <= 0:
+        if safe_int(r.get("price_trusted"), 1) != 1 or (safe_float(r.get("current_value")) or 0.0) <= 0:
             continue
         current_spots[addr].append(r)
 
@@ -2395,14 +2604,14 @@ def build_rolling_flow_metrics(run_id: int) -> Dict[str, Dict[str, Any]]:
         # 3) 钱包广度/集中度：长期建仓不能只靠一个地址一笔大额转移。
         # wallet_actions 只保留达到阈值的动作，所以这里是“主要推动钱包”的广度，不是所有钱包数。
         cur.execute("""
-            SELECT coin, direction, address,
+            SELECT coin, direction, COALESCE(NULLIF(cluster_id,''), address) AS actor,
                    SUM(ABS(active_delta)) AS abs_flow,
                    SUM(CASE WHEN market='perp' THEN ABS(active_delta) ELSE 0 END) AS perp_abs,
                    SUM(CASE WHEN market='spot' THEN ABS(active_delta) ELSE 0 END) AS spot_abs,
                    COUNT(*) AS action_count
             FROM wallet_actions
             WHERE run_id <= ? AND created_at >= ? AND direction IN ('bullish', 'bearish')
-            GROUP BY coin, direction, address
+            GROUP BY coin, direction, COALESCE(NULLIF(cluster_id,''), address)
         """, (run_id, cutoff))
         grouped: Dict[Tuple[str, str], List[Tuple[str, float, float, float, int]]] = defaultdict(list)
         for row in cur.fetchall():
@@ -2838,8 +3047,9 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
 
     curp = map_addr_coin(cur_perp)
     prep = map_addr_coin(pre_perp)
-    curs = map_addr_coin(cur_spot)
-    pres = map_addr_coin(pre_spot)
+    # 原始异常行仍保存在数据库，但不允许进入差分资金流和信号评分。
+    curs = map_addr_coin([r for r in cur_spot if safe_int(r.get("price_trusted"), 1) == 1])
+    pres = map_addr_coin([r for r in pre_spot if safe_int(r.get("price_trusted"), 1) == 1])
     cur_perp_ok = _wallet_endpoint_ok_map(run_id, "perp")
     pre_perp_ok = _wallet_endpoint_ok_map(prev_run_id, "perp")
     cur_spot_ok = _wallet_endpoint_ok_map(run_id, "spot")
@@ -2913,6 +3123,8 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
                 "leverage_weight": ref.get("leverage_weight"),
             })
 
+    wallet_spot_active: Dict[str, float] = defaultdict(float)
+    wallet_spot_price_effect: Dict[str, float] = defaultdict(float)
     for key in set(curs.keys()) | set(pres.keys()):
         cur = curs.get(key)
         pre = pres.get(key)
@@ -2928,6 +3140,11 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
         cur_val = safe_float(cur.get("current_value")) if cur else 0.0
         pre_val = safe_float(pre.get("current_value")) if pre else 0.0
         ref_px = cur_px or pre_px or 0.0
+        if cur_px is not None and pre_px is not None and pre_px > 0:
+            price_change_pct = abs(cur_px - pre_px) / pre_px * 100
+            if price_change_pct > SPOT_MAX_PRICE_CHANGE_PCT:
+                # 极端跳价通常来自无流动性的垃圾现货，保留快照但不产生动作。
+                continue
         qty_delta = cur_qty - pre_qty
         active = qty_delta * ref_px
         value_delta = cur_val - pre_val
@@ -2940,6 +3157,8 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
         ref = cur or pre or {}
         w = wallet_quality_weight(addr, ref.get("groups", ""), quality_map)
         cm["weighted_flow"] += active * w
+        wallet_spot_active[addr] += active
+        wallet_spot_price_effect[addr] += price_effect
         if abs(active) >= threshold(thresholds, coin, "spot") * 0.5 and ref_px > 0:
             wallet_actions.append({
                 "address": addr,
@@ -2954,7 +3173,7 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
                 "entry_px": ref_px,
             })
 
-    # 资金流 Lite：基于 USDC 与非 USDC 现货余额变化
+    # 资金流 Lite：主动金额只按数量变化计算；价格涨跌单独列示，禁止冒充资金流。
     cashflows: List[Dict[str, Any]] = []
     for addr, cw in cur_wallet.items():
         pw = pre_wallet.get(addr)
@@ -2963,7 +3182,8 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
         if not _endpoint_ok(cur_spot_ok, addr) or not _endpoint_ok(pre_spot_ok, addr):
             continue
         usdc_delta = (safe_float(cw.get("spot_usdc_value")) or 0.0) - (safe_float(pw.get("spot_usdc_value")) or 0.0)
-        spot_delta = (safe_float(cw.get("spot_total_value")) or 0.0) - (safe_float(pw.get("spot_total_value")) or 0.0)
+        spot_delta = wallet_spot_active.get(addr, 0.0)
+        spot_price_effect = wallet_spot_price_effect.get(addr, 0.0)
         if abs(usdc_delta) < 500_000 and abs(spot_delta) < 500_000:
             continue
         if usdc_delta < 0 and spot_delta > 0:
@@ -2976,7 +3196,10 @@ def compute_preliminary(run_id: int, prev_run_id: Optional[int], thresholds: Dic
             flow_type = "USDC减少，疑似资金流出/买入"
         else:
             flow_type = "现货变化"
-        cashflows.append({"address": addr, "groups": cw.get("groups", ""), "usdc_delta": usdc_delta, "spot_delta": spot_delta, "flow_type": flow_type})
+        cashflows.append({
+            "address": addr, "groups": cw.get("groups", ""), "usdc_delta": usdc_delta,
+            "spot_delta": spot_delta, "spot_price_effect": spot_price_effect, "flow_type": flow_type,
+        })
 
     enrich_actions_and_cashflows(wallet_actions, cashflows, cur_perp, cur_spot, pre_spot)
     wallet_actions.sort(key=lambda x: abs(x["active_delta"]), reverse=True)
@@ -2996,18 +3219,85 @@ def save_wallet_actions(run_id: int, actions: List[Dict[str, Any]]) -> int:
             INSERT INTO wallet_actions (
                 run_id, created_at, address, groups, coin, market, direction, action_type,
                 active_delta, price_effect, qty_delta, entry_px, side, position_value, leverage,
-                margin_mode, liq_distance_pct, leverage_style, leverage_weight
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                margin_mode, liq_distance_pct, leverage_style, leverage_weight, cluster_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (run_id, now_str(), a["address"], a.get("groups", ""), a["coin"], a["market"], a["direction"], a["action_type"],
                   a["active_delta"], a["price_effect"], a["qty_delta"], a["entry_px"],
                   a.get("side"), a.get("position_value"), a.get("leverage"), a.get("margin_mode"),
-                  a.get("liq_distance_pct"), a.get("leverage_style"), a.get("leverage_weight")))
+                  a.get("liq_distance_pct"), a.get("leverage_style"), a.get("leverage_weight"), a.get("cluster_id")))
             inserted += 1
         except sqlite3.IntegrityError:
             pass
     conn.commit()
     conn.close()
     return inserted
+
+
+def assign_behavioral_wallet_clusters(actions: List[Dict[str, Any]]) -> Dict[str, str]:
+    """按历史同步操作识别可能关联的钱包。只合并多次高度同步者，避免单轮同向就误聚类。"""
+    addresses = {str(a.get("address") or "").lower() for a in actions if a.get("address")}
+    if not WALLET_CLUSTER_MODE or not addresses:
+        return {a: a for a in addresses}
+    since = (utc_now() - dt.timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+    conn = db_conn(); cur = conn.cursor()
+    cur.execute(
+        "SELECT run_id,address,coin,direction,market FROM wallet_actions "
+        "WHERE created_at>=? AND address IS NOT NULL",
+        (since,),
+    )
+    rows = [tuple(r) for r in cur.fetchall()]
+    conn.close()
+    feature_members: Dict[Tuple[Any, ...], set] = defaultdict(set)
+    activity: Dict[str, set] = defaultdict(set)
+    for run, address, coin, direction, market in rows:
+        addr = str(address or "").lower()
+        feature = (run, coin, direction, market)
+        if addr:
+            feature_members[feature].add(addr)
+            activity[addr].add(feature)
+    pair_count: Dict[Tuple[str, str], int] = defaultdict(int)
+    for members in feature_members.values():
+        vals = sorted(members)
+        if len(vals) < 2 or len(vals) > 20:
+            continue
+        for i, left in enumerate(vals):
+            for right in vals[i + 1:]:
+                pair_count[(left, right)] += 1
+    parent: Dict[str, str] = {a: a for a in set(activity) | addresses}
+    def find(x: str) -> str:
+        while parent.get(x, x) != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+    def union(a: str, b: str) -> None:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[max(ra, rb)] = min(ra, rb)
+    for (left, right), count in pair_count.items():
+        den = min(len(activity.get(left, set())), len(activity.get(right, set())))
+        similarity = count / den if den else 0.0
+        if count >= WALLET_CLUSTER_MIN_COOCCURRENCE and similarity >= WALLET_CLUSTER_MIN_SIMILARITY:
+            union(left, right)
+    groups: Dict[str, List[str]] = defaultdict(list)
+    for address in parent:
+        groups[find(address)].append(address)
+    mapping: Dict[str, str] = {}
+    for root, members in groups.items():
+        cluster = f"cluster:{root[2:10]}" if len(members) > 1 else members[0]
+        for address in members:
+            mapping[address] = cluster
+    for action in actions:
+        addr = str(action.get("address") or "").lower()
+        action["cluster_id"] = mapping.get(addr, addr)
+    ensure_dirs()
+    clustered = sorted((cid, sorted([a for a, value in mapping.items() if value == cid])) for cid in set(mapping.values()) if cid.startswith("cluster:"))
+    with open(os.path.join(REPORT_DIR, "wallet_cluster_report.txt"), "w", encoding="utf-8") as f:
+        f.write("【关联钱包行为聚类】\n说明：仅按30天内多次高度同步操作识别，属于风险提示，不是身份确认。\n\n")
+        if not clustered:
+            f.write("本轮未识别到达到严格门槛的关联钱包组。\n")
+        for cid, members in clustered[:30]:
+            f.write(f"{cid} | 钱包={len(members)} | " + "、".join(short_addr(x) for x in members[:10]) + "\n")
+    return mapping
 
 
 def evaluate_events(prices: Dict[str, float]) -> Tuple[int, int]:
@@ -4014,7 +4304,7 @@ async def build_coin_risk_metrics(run_id: int, candidate_coins: List[str]) -> Di
             f.write("【资金费率 / 流动性风险】\n")
             f.write(f"run_id={run_id} | 更新时间{DISPLAY_TZ_NAME}={signal_time_cn(run_id)} | UTC={now_str()}\n\n")
             for r in sorted_rows[:50]:
-                f.write(f"{r['coin']} | funding={fmt_pct(r.get('funding_rate_pct'))} 风险={r.get('funding_risk')} | 24h成交额={fmt_money(r.get('day_volume_usd'))} 流动性={r.get('liquidity_risk')} | OI={fmt_money(r.get('open_interest_usd'))}\n")
+                f.write(f"{r['coin']} | funding={fmt_pct(r.get('funding_rate_pct'))} 风险={r.get('funding_risk')} | 24h成交额={fmt_money(r.get('day_volume_usd'))} 流动性风险={r.get('liquidity_risk')} | OI={fmt_money(r.get('open_interest_usd'))}\n")
     else:
         with open(os.path.join(DETAILS_DIR, "coin_risk_latest.csv"), "w", encoding="utf-8-sig", newline="") as f:
             f.write("empty\n")
@@ -4537,7 +4827,15 @@ def write_data_quality_report(
                 f"allMids={int(price_health.get('perp_price_count') or 0)} | "
                 f"spot_token={int(price_health.get('spot_token_price_count') or 0)} | "
                 f"spot_coin={int(price_health.get('spot_coin_price_count') or 0)} | "
-                f"状态={'ok' if price_health.get('ok') else 'failed'}\n"
+                f"状态={'ok' if price_health.get('source_ok', price_health.get('ok')) else 'failed'}\n"
+            )
+            f.write(
+                "现货语义质量："
+                f"可信行={int(price_health.get('trusted_spot_rows') or 0)} | "
+                f"异常行={int(price_health.get('anomalous_spot_rows') or 0)} | "
+                f"异常占比={(safe_float(price_health.get('spot_anomaly_ratio')) or 0)*100:.2f}% | "
+                f"状态={'ok' if price_health.get('semantic_ok', True) else 'failed'} | "
+                f"原因={json.dumps(price_health.get('spot_anomaly_reasons') or {}, ensure_ascii=False)}\n"
             )
         blocked_reason = data_quality_block_reason(ok_rate, price_health)
         if DATA_ANOMALY_PROTECT_MODE and blocked_reason:
@@ -5194,15 +5492,29 @@ def _safe_pct(v: Any) -> Optional[float]:
     return safe_float(v)
 
 
+def wilson_lower_bound(wins: int, total: int, z: float = 1.96) -> Optional[float]:
+    if total <= 0:
+        return None
+    p = wins / total
+    den = 1 + z * z / total
+    centre = p + z * z / (2 * total)
+    margin = z * math.sqrt((p * (1 - p) + z * z / (4 * total)) / total)
+    return max(0.0, (centre - margin) / den)
+
+
 def _agg_ret(rows: List[Dict[str, Any]], col: str, hurdle: float) -> Dict[str, Any]:
     vals = [_safe_pct(r.get(col)) for r in rows if _safe_pct(r.get(col)) is not None]
     if not vals:
-        return {"n": 0, "win": None, "hurdle_win": None, "avg": None, "median": None}
+        return {"n": 0, "win": None, "hurdle_win": None, "win_lower_95": None, "hurdle_lower_95": None, "avg": None, "median": None}
     vals_sorted = sorted(vals)
+    direction_wins = sum(1 for v in vals if v > 0)
+    hurdle_wins = sum(1 for v in vals if v >= hurdle)
     return {
         "n": len(vals),
-        "win": sum(1 for v in vals if v > 0) / len(vals),
-        "hurdle_win": sum(1 for v in vals if v >= hurdle) / len(vals),
+        "win": direction_wins / len(vals),
+        "hurdle_win": hurdle_wins / len(vals),
+        "win_lower_95": wilson_lower_bound(direction_wins, len(vals)),
+        "hurdle_lower_95": wilson_lower_bound(hurdle_wins, len(vals)),
         "avg": sum(vals) / len(vals),
         "median": vals_sorted[len(vals_sorted)//2],
     }
@@ -5257,6 +5569,8 @@ def export_research_intelligence_files(run_id: int) -> None:
                 base[f"{p_label}_n"] = a["n"]
                 base[f"{p_label}_win"] = None if a["win"] is None else round(a["win"] * 100, 2)
                 base[f"{p_label}_hurdle_win"] = None if a["hurdle_win"] is None else round(a["hurdle_win"] * 100, 2)
+                base[f"{p_label}_win_lower_95"] = None if a["win_lower_95"] is None else round(a["win_lower_95"] * 100, 2)
+                base[f"{p_label}_hurdle_lower_95"] = None if a["hurdle_lower_95"] is None else round(a["hurdle_lower_95"] * 100, 2)
                 base[f"{p_label}_avg_ret"] = None if a["avg"] is None else round(a["avg"], 4)
                 base[f"{p_label}_median_ret"] = None if a["median"] is None else round(a["median"], 4)
             summary_rows.append(base)
@@ -5370,6 +5684,7 @@ def write_last_run_status(run_id: int, wallet_rows: List[Dict[str, Any]], perp_r
     duration_minutes = None
     if start_dt:
         duration_minutes = (utc_now() - start_dt).total_seconds() / 60
+    semantic = spot_semantic_health(spot_rows)
     payload = {
         "last_run_cn": display_now_str(),
         "last_run_utc": now_str(),
@@ -5384,6 +5699,10 @@ def write_last_run_status(run_id: int, wallet_rows: List[Dict[str, Any]], perp_r
         "spot_rows": len(spot_rows),
         "tg_sent": bool(pushed),
         "duration_minutes": duration_minutes,
+        "spot_semantic_ok": semantic.get("semantic_ok"),
+        "trusted_spot_rows": semantic.get("trusted_spot_rows"),
+        "anomalous_spot_rows": semantic.get("anomalous_spot_rows"),
+        "spot_anomaly_ratio": semantic.get("spot_anomaly_ratio"),
         "health_stale_hours_threshold": HEALTH_STALE_HOURS,
     }
     with open(os.path.join(REPORT_DIR, "last_run_status.json"), "w", encoding="utf-8") as f:
@@ -5401,6 +5720,16 @@ def create_signal_events(run_id: int, signals: List[Dict[str, Any]], prices: Dic
             continue
         if abs(s["final_score"]) < threshold(thresholds, coin, "min_watch_score"):
             continue
+        # 同方向连续存在的信号不是独立样本。冷却期内只由 lifecycle 更新，不重复计入固定周期回测。
+        cur.execute(
+            "SELECT created_at FROM signal_events WHERE coin=? AND direction=? ORDER BY event_id DESC LIMIT 1",
+            (coin, s["direction"]),
+        )
+        prev_event = cur.fetchone()
+        if prev_event:
+            prev_dt = parse_time(prev_event[0])
+            if prev_dt and (utc_now() - prev_dt).total_seconds() < SIGNAL_EVENT_COOLDOWN_HOURS * 3600:
+                continue
         try:
             cur.execute("""
             INSERT INTO signal_events(run_id, created_at, coin, direction, score, entry_px, reason)
@@ -5440,6 +5769,25 @@ def _expectancy(values: List[float], hurdle: float) -> Optional[float]:
     avg_win = sum(wins) / len(wins) if wins else 0.0
     avg_loss = sum(losses) / len(losses) if losses else 0.0
     return win_rate * avg_win + (1 - win_rate) * avg_loss
+
+
+def _decayed_metrics(rows: List[Dict[str, Any]], column: str, hurdle: float) -> Tuple[int, Optional[float], Optional[float], float]:
+    now = utc_now()
+    weighted: List[Tuple[float, float]] = []
+    for row in rows:
+        value = safe_float(row.get(column))
+        created = parse_time(row.get("created_at"))
+        if value is None:
+            continue
+        age_days = max(0.0, (now - created).total_seconds() / 86400.0) if created else WALLET_QUALITY_WINDOW_DAYS
+        weight = 0.5 ** (age_days / max(1.0, WALLET_QUALITY_DECAY_HALF_LIFE_DAYS))
+        weighted.append((value, weight))
+    den = sum(w for _, w in weighted)
+    if den <= 0:
+        return 0, None, None, 0.0
+    win = sum(w for value, w in weighted if value >= hurdle) / den
+    avg = sum(value * w for value, w in weighted) / den
+    return len(weighted), win, avg, den
 
 
 def grade_wallet(sample_total: int,
@@ -5564,16 +5912,11 @@ def refresh_wallet_quality(run_id: int, address_groups: Dict[str, List[str]]) ->
                 last_action = ca
         dominant = ",".join([c for c, _ in sorted(coins_count.items(), key=lambda x: x[1], reverse=True)[:5]])
 
-        win24 = _win_rate(ret24, 1.0)
-        win72 = _win_rate(ret72, 2.0)
-        win7 = _win_rate(ret7, 4.0)
-        win15 = _win_rate(ret15, 6.0)
-        win30 = _win_rate(ret30, 8.0)
-        avg24 = _avg(ret24)
-        avg72 = _avg(ret72)
-        avg7 = _avg(ret7)
-        avg15 = _avg(ret15)
-        avg30 = _avg(ret30)
+        _, win24, avg24, eff24 = _decayed_metrics(arr, "ret_24h", 1.0)
+        _, win72, avg72, eff72 = _decayed_metrics(arr, "ret_72h", 2.0)
+        _, win7, avg7, eff7 = _decayed_metrics(arr, "ret_7d", 4.0)
+        _, win15, avg15, eff15 = _decayed_metrics(arr, "ret_15d", 6.0)
+        _, win30, avg30, eff30 = _decayed_metrics(arr, "ret_30d", 8.0)
         exp72 = _expectancy(ret72, 2.0)
         exp30 = _expectancy(ret30, 8.0)
         grade, qscore, qweight, reverse, note = grade_wallet(
@@ -5610,7 +5953,8 @@ def refresh_wallet_quality(run_id: int, address_groups: Dict[str, List[str]]) ->
             "reverse_score": reverse,
             "last_action_at": last_action,
             "dominant_coins": dominant,
-            "note": note,
+            "decayed_sample_weight": max(eff24, eff72, eff7, eff15, eff30),
+            "note": note + f"；时间衰减半衰期={WALLET_QUALITY_DECAY_HALF_LIFE_DAYS:g}天",
         })
 
     cur.execute("DELETE FROM wallet_quality WHERE run_id=?", (run_id,))
@@ -5619,13 +5963,13 @@ def refresh_wallet_quality(run_id: int, address_groups: Dict[str, List[str]]) ->
         run_id, calculated_at, window_days, address, groups, grade, quality_score, quality_weight,
         sample_total, eval_24h, win_24h, avg_24h, eval_72h, win_72h, avg_72h,
         eval_7d, win_7d, avg_7d, eval_15d, win_15d, avg_15d, eval_30d, win_30d, avg_30d,
-        expectancy_72h, expectancy_30d, reverse_score, last_action_at, dominant_coins, note
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        expectancy_72h, expectancy_30d, reverse_score, last_action_at, dominant_coins, decayed_sample_weight, note
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, [(
         r["run_id"], r["calculated_at"], r["window_days"], r["address"], r["groups"], r["grade"], r["quality_score"], r["quality_weight"],
         r["sample_total"], r["eval_24h"], r["win_24h"], r["avg_24h"], r["eval_72h"], r["win_72h"], r["avg_72h"],
         r["eval_7d"], r["win_7d"], r["avg_7d"], r["eval_15d"], r["win_15d"], r["avg_15d"], r["eval_30d"], r["win_30d"], r["avg_30d"],
-        r["expectancy_72h"], r["expectancy_30d"], r["reverse_score"], r["last_action_at"], r["dominant_coins"], r["note"]
+        r["expectancy_72h"], r["expectancy_30d"], r["reverse_score"], r["last_action_at"], r["dominant_coins"], r["decayed_sample_weight"], r["note"]
     ) for r in rows])
     conn.commit()
     conn.close()
@@ -5842,6 +6186,42 @@ def signal_streak(coin: str, direction: str, run_id: int, min_abs_score: float =
         else:
             break
     return streak
+
+
+def signal_momentum_text(coin: str, direction: str, run_id: int) -> str:
+    rows = get_coin_recent_rows(coin, run_id, limit=8)
+    if not rows:
+        return "首次出现"
+    streak = signal_streak(coin, direction, run_id)
+    current = safe_float(rows[0].get("final_score")) or 0.0
+    previous = safe_float(rows[1].get("final_score")) if len(rows) > 1 else None
+    if previous is None or rows[1].get("direction") != direction:
+        return f"首次/反转出现 | 连续{max(1, streak)}轮"
+    delta = abs(current) - abs(previous)
+    state = "增强" if delta >= 0.5 else "衰减" if delta <= -0.5 else "稳定"
+    peak = max(abs(safe_float(r.get("final_score")) or 0.0) for r in rows if r.get("direction") == direction)
+    return f"连续{streak}轮 | {state}{delta:+.1f} | 近8轮峰值{peak:.1f}"
+
+
+def operational_health_alerts(run_id: int) -> List[str]:
+    alerts: List[str] = []
+    previous = get_previous_run_id(run_id)
+    gap = get_run_gap_minutes(run_id, previous)
+    if gap is not None and gap > MAX_SHORT_SIGNAL_GAP_MINUTES:
+        alerts.append(f"扫描间隔异常：{gap:.1f}分钟 > {MAX_SHORT_SIGNAL_GAP_MINUTES:.1f}分钟，检查 Cloudflare/GitHub 排队")
+    try:
+        semantic = spot_semantic_health(load_rows("spot_balances", run_id))
+        ratio = safe_float(semantic.get("spot_anomaly_ratio")) or 0.0
+        if semantic.get("anomalous_spot_rows") and ratio >= SPOT_MAX_ANOMALY_RATIO * 0.5:
+            alerts.append(f"异常现货比例升高：{ratio*100:.2f}%（阻断阈值{SPOT_MAX_ANOMALY_RATIO*100:.2f}%）")
+    except Exception:
+        pass
+    gz_path = DB_FILE + ".gz" if not DB_FILE.endswith(".gz") else DB_FILE
+    if os.path.exists(gz_path):
+        size_mb = os.path.getsize(gz_path) / 1024 / 1024
+        if size_mb >= HEALTH_DB_GZ_WARN_MB:
+            alerts.append(f"数据库压缩包接近上限：{size_mb:.1f}MB >= {HEALTH_DB_GZ_WARN_MB:.1f}MB")
+    return alerts
 
 
 def long_term_leverage_hint(sig: Dict[str, Any], ctx: Dict[str, Any]) -> str:
@@ -6078,8 +6458,8 @@ def build_report(
     lines: List[str] = []
     lines.append("🧠 Hyperliquid 钱包监控 FINAL")
     lines.append("币种阈值 + 钱包主动变化 + 主导钱包 + 信号解释 + 回测 + 生命周期 + API异常保护 + TG 推送")
-    lines.append(f"{DISPLAY_TZ_NAME}：{signal_time_cn(run_id)}")
-    lines.append(f"UTC时间：{now_str()}")
+    lines.append(f"扫描开始{DISPLAY_TZ_NAME}：{signal_time_cn(run_id)}")
+    lines.append(f"报告生成{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}")
     lines.append(f"run_id：{run_id}")
     stats = run_wallet_stats(run_id)
     lines.append("【扫描健康】")
@@ -6089,6 +6469,17 @@ def build_report(
         f"成功率：{stats['ok_rate']*100:.2f}%"
     )
     lines.append(f"新信号追踪：{new_signal_events} | 更新动作收益：{updated_actions} | 更新信号收益：{updated_signals}")
+    semantic = spot_semantic_health(load_rows("spot_balances", run_id))
+    lines.append(
+        f"现货语义质量：可信{semantic['trusted_spot_rows']} | 异常隔离{semantic['anomalous_spot_rows']} | "
+        f"异常率={semantic['spot_anomaly_ratio']*100:.2f}%"
+    )
+    health_alerts = operational_health_alerts(run_id)
+    lines.append("【运行健康告警】")
+    if health_alerts:
+        lines.extend(f"⚠️ {item}" for item in health_alerts)
+    else:
+        lines.append("本轮触发间隔、异常现货比例和数据库体积均在安全范围内。")
     data_quality_guarded = (
         not data_quality_ok if data_quality_ok is not None
         else not data_quality_allows_signal_writes(ok_rate)
@@ -6151,14 +6542,14 @@ def build_report(
             else:
                 risky.sort(key=lambda r: (r.get("liquidity_risk") == "高", r.get("funding_risk") == "高", abs(safe_float(r.get("funding_rate_pct")) or 0.0)), reverse=True)
                 for r in risky[:min(TOP_N, 8)]:
-                    lines.append(f"{r['coin']} | funding={fmt_pct(r.get('funding_rate_pct'))} 风险={r.get('funding_risk')} | 24h成交额={fmt_money(r.get('day_volume_usd'))} 流动性={r.get('liquidity_risk')}")
+                    lines.append(f"{r['coin']} | funding={fmt_pct(r.get('funding_rate_pct'))} 风险={r.get('funding_risk')} | 24h成交额={fmt_money(r.get('day_volume_usd'))} 流动性风险={r.get('liquidity_risk')}")
     lines.append("")
     lines.append("【短线强信号 / 异动雷达】")
     if not strong:
         lines.append("暂无达到币种专属阈值的短线强异动。")
     else:
         for s in strong[:TOP_N]:
-            lines.append(f"🚨 {s['coin']} {dir_cn(s['direction'])} | 时间={signal_time_cn(run_id)} | alert={float(s.get('alert_score') or 0):+.1f}/阈值{s['threshold_score']:.1f} | long={float(s.get('long_score') or 0):+.1f} | {s.get('signal_category','-')} | {s['signal_state']} | 可信度={s['confidence']}")
+            lines.append(f"🚨 {s['coin']} {dir_cn(s['direction'])} | 时间={signal_time_cn(run_id)} | alert={float(s.get('alert_score') or 0):+.1f}/阈值{s['threshold_score']:.1f} | long={float(s.get('long_score') or 0):+.1f} | {s.get('signal_category','-')} | {s['signal_state']} | 可信度={s['confidence']} | {signal_momentum_text(s['coin'], s['direction'], run_id)}")
             lines.append(f"  结论：{s['conclusion']}")
             parts = s.get("score_parts") or {}
             lines.append(f"  分解：本轮资金{parts.get('base_flow',0):+.1f} / 滚动建仓{parts.get('rolling_flow',0):+.1f} / 滚动杠杆{parts.get('rolling_leverage',0):+.1f} / 历史{parts.get('confidence',0):+.1f} / 市场{parts.get('market',0):+.1f} / 位置{parts.get('price_position',0):+.1f} / 当前杠杆{parts.get('leverage',0):+.1f} / 费率流动性{parts.get('funding_liquidity',0):+.1f}")
@@ -6185,7 +6576,7 @@ def build_report(
         lines.append("暂无。")
     else:
         for s in observes[:TOP_N]:
-            lines.append(f"{s['coin']} {dir_cn(s['direction'])} 时间={signal_time_cn(run_id)} | alert={float(s.get('alert_score') or 0):+.1f} long={float(s.get('long_score') or 0):+.1f} | {s.get('signal_category','-')} | {s['signal_state']} | 风险：{s['risk']}")
+            lines.append(f"{s['coin']} {dir_cn(s['direction'])} 时间={signal_time_cn(run_id)} | alert={float(s.get('alert_score') or 0):+.1f} long={float(s.get('long_score') or 0):+.1f} | {s.get('signal_category','-')} | {s['signal_state']} | {signal_momentum_text(s['coin'], s['direction'], run_id)} | 风险：{s['risk']}")
     lines.append("")
     if LONG_TERM_MODE:
         lt_candidates = build_long_term_candidates(run_id, signals, ctx_map)
@@ -6233,15 +6624,16 @@ def build_report(
             else:
                 op_txt = f" | 合约操作={a.get('perp_operations','-')}"
             pos_txt = f" | 当前合约={a.get('current_perp_positions','-')} | 当前现货Top={a.get('current_spot_holdings','-')}"
-            lines.append(f"{a['coin']} {a['market']} {dir_cn(a['direction'])} {short_addr(a['address'])} [{a.get('groups','')}] | 主动={fmt_money(a['active_delta'])} | 价格影响={fmt_money(a['price_effect'])}{lev_txt}{op_txt}{pos_txt}")
+            evidence_txt = f" | 证据分类={a.get('evidence_class','未补查')} | 成交证据={a.get('execution_evidence','未补查')} | 账本={a.get('ledger_evidence','未补查')}"
+            lines.append(f"{a['coin']} {a['market']} {dir_cn(a['direction'])} {short_addr(a['address'])} [{a.get('groups','')}] | 主动={fmt_money(a['active_delta'])} | 价格影响={fmt_money(a['price_effect'])}{lev_txt}{op_txt}{pos_txt}{evidence_txt}")
     lines.append("")
     lines.append("【资金流 Lite】")
-    lines.append("说明：基于钱包 USDC 和现货余额变化推断，不是外部链上充值提现标签。")
+    lines.append("说明：现货主动金额按数量变化×价格计算；价格涨跌影响单列，不是充值提现路径标签。")
     if not cashflows:
         lines.append("暂无明显 USDC/现货资金流变化。")
     else:
         for c in cashflows[:TOP_N]:
-            lines.append(f"{short_addr(c['address'])} [{c['groups']}] | USDC={fmt_money(c['usdc_delta'])} | 现货={fmt_money(c['spot_delta'])} | {c['flow_type']} | 增持现货={c.get('spot_increases','-')} | 减持现货={c.get('spot_decreases','-')} | 当前合约={c.get('current_perp_positions','-')}")
+            lines.append(f"{short_addr(c['address'])} [{c['groups']}] | USDC={fmt_money(c['usdc_delta'])} | 现货主动={fmt_money(c['spot_delta'])} | 价格影响={fmt_money(c.get('spot_price_effect'))} | {c['flow_type']} | 证据分类={c.get('evidence_class','未补查')} | 增持现货={c.get('spot_increases','-')} | 减持现货={c.get('spot_decreases','-')} | 账本={c.get('ledger_evidence','未补查')} | 当前合约={c.get('current_perp_positions','-')}")
     lines.append("")
     if BACKTEST_MODE:
         try:
@@ -6250,7 +6642,7 @@ def build_report(
             for title, table in (("信号", "signal_events"), ("长期单", "longterm_events")):
                 since = (utc_now() - dt.timedelta(days=SIGNAL_BACKTEST_WINDOW_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
                 conn = db_conn(); cur = conn.cursor()
-                cur.execute(f"SELECT ret_24h, ret_72h, ret_7d, ret_15d, ret_30d FROM {table} WHERE created_at >= ?", (since,))
+                cur.execute(f"SELECT direction, ret_24h, ret_72h, ret_7d, ret_15d, ret_30d FROM {table} WHERE created_at >= ?", (since,))
                 brs = [dict(x) for x in cur.fetchall()]; conn.close()
                 parts_sum = []
                 for label, col, hurdle in _backtest_periods():
@@ -6258,8 +6650,18 @@ def build_report(
                     if vals:
                         dir_win = sum(1 for v in vals if v > 0) / len(vals) * 100
                         hurdle_win = sum(1 for v in vals if v >= hurdle) / len(vals) * 100
+                        lower95 = (wilson_lower_bound(sum(1 for v in vals if v > 0), len(vals)) or 0.0) * 100
                         avg = sum(vals) / len(vals)
-                        parts_sum.append(f"{label} {len(vals)}次 普胜{dir_win:.0f}% 门胜{hurdle_win:.0f}% 均{avg:+.1f}%")
+                        mature = [r for r in brs if safe_float(r.get(col)) is not None]
+                        fixed_long = sum(
+                            (safe_float(r.get(col)) or 0.0) if r.get("direction") == "bullish" else -(safe_float(r.get(col)) or 0.0)
+                            for r in mature
+                        ) / len(mature)
+                        net_avg = avg - BACKTEST_ROUNDTRIP_COST_PCT
+                        parts_sum.append(
+                            f"{label} {len(vals)}次 普胜{dir_win:.0f}% 门胜{hurdle_win:.0f}% "
+                            f"均{avg:+.1f}% 净{net_avg:+.1f}% 固定做多{fixed_long:+.1f}% 95%下限{lower95:.0f}%"
+                        )
                 lines.append(f"{title}：" + ("；".join(parts_sum) if parts_sum else "暂无成熟样本"))
             lines.append("")
         except Exception:
@@ -6398,6 +6800,7 @@ def save_daily_archive(run_id: int, report: str) -> None:
         "coin_risk_report.txt",
         "rolling_flow_report.txt",
         "long_short_state_report.txt",
+        "wallet_cluster_report.txt",
         "last_run_status.json",
     ]
     # 3) 关键 CSV：每天保留少量，用于长期复盘
@@ -6439,7 +6842,7 @@ def save_daily_archive(run_id: int, report: str) -> None:
         f"updated_at_utc: {now_str()}\n\n"
         f"主要看：final_report.txt、long_term_plan.txt、signal_explain_report.txt、coin_risk_report.txt、rolling_flow_report.txt\n"
         f"关键 CSV：coin_signals.csv、rolling_flow.csv、wallet_quality.csv、wallet_position_performance.csv、signal_backtest.csv、longterm_backtest.csv、signal_lifecycle.csv\n"
-        f"全量明细请看仓库 reports/details/，长期历史保存在数据库（Turso 或本地 SQLite）。\n"
+        f"全量明细请看仓库 reports/details/，长期历史保存在本地 SQLite 数据库。\n"
     )
     with open(os.path.join(day_dir, "README.txt"), "w", encoding="utf-8") as f:
         f.write(index)
@@ -6458,6 +6861,21 @@ def prune_daily_archives(keep_days: int) -> None:
         if os.path.isdir(path) and re.match(r"^\d{4}-\d{2}-\d{2}$", name):
             dirs.append((name, path))
     dirs.sort(reverse=True)
+    # 最近若干天保留关键 CSV；更早日期只留轻量文本摘要，避免 Git 历史持续膨胀。
+    summary_keep = {
+        "README.txt", "final_report.txt", "long_term_plan.txt", "signal_explain_report.txt",
+        "coin_risk_report.txt", "rolling_flow_report.txt", "long_short_state_report.txt",
+        "wallet_cluster_report.txt",
+        "last_run_status.json", "data_quality_report.txt",
+    }
+    for _, path in dirs[DAILY_DETAIL_KEEP_DAYS:keep_days]:
+        for name in os.listdir(path):
+            full = os.path.join(path, name)
+            if os.path.isfile(full) and name not in summary_keep:
+                try:
+                    os.remove(full)
+                except FileNotFoundError:
+                    pass
     for _, path in dirs[keep_days:]:
         try:
             for root, subdirs, files in os.walk(path, topdown=False):
@@ -6494,6 +6912,9 @@ async def run_once(args: argparse.Namespace) -> None:
 
     wallet_rows, perp_rows, spot_rows, mid_prices, token_prices, spot_coin_price = await fetch_all(addresses, args.rpm, args.concurrency)
     price_health = global_price_data_health(mid_prices, token_prices, spot_coin_price)
+    price_health["source_ok"] = bool(price_health.get("ok"))
+    price_health.update(spot_semantic_health(spot_rows))
+    price_health["ok"] = bool(price_health.get("source_ok")) and bool(price_health.get("semantic_ok"))
     price_data_ok = bool(price_health.get("ok"))
     step_log("钱包扫描完成，准备写入快照")
     save_snapshot(run_id, wallet_rows, perp_rows, spot_rows, price_data_ok=price_data_ok)
@@ -6577,7 +6998,8 @@ async def run_once(args: argparse.Namespace) -> None:
             if pushed and daily_due:
                 mark_pushed("daily")
         finish_run(run_id, wallet_rows, perp_rows, spot_rows, pushed)
-        write_last_run_status(run_id, wallet_rows, perp_rows, spot_rows, pushed, args.note)
+        started = get_run_started_at(run_id)
+        write_last_run_status(run_id, wallet_rows, perp_rows, spot_rows, pushed, args.note, started_at=started.strftime("%Y-%m-%d %H:%M:%S") if started else None)
         prune_database_for_github(run_id)
         print(report, flush=True)
         return
@@ -6588,11 +7010,13 @@ async def run_once(args: argparse.Namespace) -> None:
     step_log(f"主动变化计算完成 | actions={len(actions)} cashflows={len(cashflows)} coins={len(preliminary)} gap_min={gap_minutes if gap_minutes is not None else 'N/A'}")
     inserted_actions = 0
     if data_quality_ok:
+        assign_behavioral_wallet_clusters(actions)
+        await enrich_recent_execution_evidence(actions, cashflows, prev_id, run_id)
+        inserted_actions = save_wallet_actions(run_id, actions)
         save_coin_flow_snapshots(run_id, prev_id, preliminary)
         rolling_map = build_rolling_flow_metrics(run_id)
         export_rolling_flow_files(run_id, rolling_map, thresholds)
         export_operation_detail_files(actions, cashflows)
-        inserted_actions = save_wallet_actions(run_id, actions)
         step_log("主动变化明细/滚动建仓导出完成")
     else:
         # Do not let low-quality/partial API data enter the rolling window or reports.
@@ -6678,7 +7102,8 @@ async def run_once(args: argparse.Namespace) -> None:
 
     strong = [s for s in signals if is_pushable_signal(s)]
     daily_due = should_push_daily()
-    should_push = PUSH_EVERY_RUN or bool(strong) or bool(closed_lifecycle_events) or daily_due
+    health_alerts = operational_health_alerts(run_id)
+    should_push = PUSH_EVERY_RUN or bool(strong) or bool(closed_lifecycle_events) or bool(health_alerts) or daily_due
     pushed = False
     if should_push:
         pushed = await send_tg(report)
@@ -6689,7 +7114,7 @@ async def run_once(args: argparse.Namespace) -> None:
 
     step_log("开始 finish_run / last_run_status / prune")
     finish_run(run_id, wallet_rows, perp_rows, spot_rows, pushed)
-    write_last_run_status(run_id, wallet_rows, perp_rows, spot_rows, pushed, args.note)
+    write_last_run_status(run_id, wallet_rows, perp_rows, spot_rows, pushed, args.note, started_at=get_run_started_at(run_id).strftime("%Y-%m-%d %H:%M:%S") if get_run_started_at(run_id) else None)
     prune_database_for_github(run_id)
     step_log("finish/prune 完成")
     print(f"新增钱包动作：{inserted_actions} | 强信号：{len(strong)}", flush=True)

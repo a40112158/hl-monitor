@@ -144,6 +144,25 @@ jobs:
 
           # 现货增减明细：资金流 Lite 中显示本轮增持/减持了哪些现货币
           SPOT_DETAIL_MIN_USD: "1000"
+          # 异常现货只保留原始记录，不进入资金流/评分/AI。
+          SPOT_MAX_TRUSTED_VALUE_USD: "250000000"
+          SPOT_MIN_DYNAMIC_CAP_USD: "5000000"
+          SPOT_VOLUME_CAP_MULTIPLIER: "20"
+          SPOT_NONCANONICAL_CAP_MULTIPLIER: "8"
+          SPOT_MAX_PRICE_CHANGE_PCT: "100"
+          SPOT_MAX_ANOMALY_RATIO: "0.10"
+          SPOT_MIN_TRUSTED_ROWS: "10"
+          SIGNAL_EVENT_COOLDOWN_HOURS: "12"
+          BACKTEST_ROUNDTRIP_COST_PCT: "0.12"
+          DAILY_DETAIL_KEEP_DAYS: "7"
+          WALLET_QUALITY_DECAY_HALF_LIFE_DAYS: "14"
+          EVIDENCE_ENRICH_MODE: "1"
+          EVIDENCE_TOP_WALLETS: "12"
+          EVIDENCE_CONCURRENCY: "4"
+          WALLET_CLUSTER_MODE: "1"
+          WALLET_CLUSTER_MIN_COOCCURRENCE: "3"
+          WALLET_CLUSTER_MIN_SIMILARITY: "0.70"
+          HEALTH_DB_GZ_WARN_MB: "75"
 
           # 报告底部复盘窗口：过去30天信号复盘 + 过去30天钱包主动资金流
           REPORT_REVIEW_WINDOW_DAYS: "30"
