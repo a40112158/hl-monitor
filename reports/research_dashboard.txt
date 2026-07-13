@@ -1,38 +1,22 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-13 18:23:26 | UTC：2026-07-13 10:23:26
+更新时间北京时间：2026-07-13 19:07:34 | UTC：2026-07-13 11:07:34
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
-alert_signal / long | 样本=2 | 72h胜率=100.0% 门槛=100.0% 平均=9.0908% | 7d胜率=100.0% 门槛=100.0% 平均=17.9998% | 30d样本=0
-alert_signal / short | 样本=11 | 72h胜率=36.36% 门槛=27.27% 平均=-2.4492% | 7d胜率=12.5% 门槛=12.5% 平均=-2.6739% | 30d样本=0
-alert_signal / all | 样本=13 | 72h胜率=46.15% 门槛=38.46% 平均=-0.6738% | 7d胜率=22.22% 门槛=22.22% 平均=-0.3768% | 30d样本=0
-longterm_candidate / short | 样本=5 | 72h胜率=40.0% 门槛=20.0% 平均=-1.9557% | 7d胜率=20.0% 门槛=20.0% 平均=-2.6893% | 30d样本=0
-longterm_candidate / all | 样本=5 | 72h胜率=40.0% 门槛=20.0% 平均=-1.9557% | 7d胜率=20.0% 门槛=20.0% 平均=-2.6893% | 30d样本=0
+暂无成熟回测样本。
 
 【Top 钱包画像】
-0x3b88...04a7 [money_printer] grade=B score=100.0 样本=17 72h胜率=0.6488119912286113 30d胜率=None 主币=ZEC,HYPE,XRP,BCH,AVAX
+0x3b88...04a7 [money_printer] grade=B score=100.0 样本=17 72h胜率=0.6488119912286116 30d胜率=None 主币=ZEC,HYPE,XRP,BCH,AVAX
 0xa516...37b0 [smart_money] grade=B score=84.0 样本=14 72h胜率=0.6226466872569455 30d胜率=None 主币=ETH,HYPE,BTC,ZEC
-0x5649...80c5 [money_printer] grade=B score=83.9 样本=11 72h胜率=0.7113354429114376 30d胜率=None 主币=ZEC,LIT,BTC
+0x5649...80c5 [money_printer] grade=B score=83.9 样本=11 72h胜率=0.7113354429114375 30d胜率=None 主币=ZEC,LIT,BTC
 0xaeaa...2416 [money_printer] grade=C score=76.0 样本=11 72h胜率=0.4227941234594235 30d胜率=None 主币=BTC,ETH
-0x1658...f65b [smart_money] grade=C score=66.5 样本=28 72h胜率=0.7109218032916318 30d胜率=None 主币=SUI
-0xf17d...dab2 [money_printer] grade=C score=65.1 样本=12 72h胜率=0.5183001122776854 30d胜率=None 主币=HYPE,BTC
-0x5323...b23c [smart_money] grade=C score=64.1 样本=182 72h胜率=0.3071911326424609 30d胜率=None 主币=HYPE,ZEC,SOL,BNB
-0xbf73...5d58 [money_printer] grade=C score=60.5 样本=15 72h胜率=0.4209806713435126 30d胜率=None 主币=SOL,ZEC,PENGU,FARTCOIN,LIT
-0x7c93...c8fd [money_printer] grade=C score=60.1 样本=15 72h胜率=0.6158974663833293 30d胜率=None 主币=ETH,BTC,SUI
-0xd67c...53ff [money_printer] grade=C score=59.9 样本=18 72h胜率=0.42090119803704396 30d胜率=None 主币=BTC,HYPE,ZEC
+0x1658...f65b [smart_money] grade=A score=69.5 样本=28 72h胜率=0.6646299906867604 30d胜率=None 主币=SUI
+0xf17d...dab2 [money_printer] grade=C score=65.1 样本=12 72h胜率=0.5183001122776852 30d胜率=None 主币=HYPE,BTC
+0x5323...b23c [smart_money] grade=C score=64.1 样本=182 72h胜率=0.30719113264246106 30d胜率=None 主币=HYPE,ZEC,SOL,BNB
+0xbf73...5d58 [money_printer] grade=C score=60.5 样本=15 72h胜率=0.42098067134351247 30d胜率=None 主币=SOL,ZEC,PENGU,FARTCOIN,LIT
+0x7c93...c8fd [money_printer] grade=C score=60.1 样本=15 72h胜率=0.6158974663833292 30d胜率=None 主币=ETH,BTC,SUI
+0xd67c...53ff [money_printer] grade=C score=59.9 样本=18 72h胜率=0.420901198037044 30d胜率=None 主币=BTC,HYPE,ZEC
 
 【Top 币种画像】
-SOL alert/short | 事件=5 | 72h胜率=20.0% 平均=-5.0579% | 7d胜率=0.0% 平均=-5.5063%
-HYPE alert/short | 事件=2 | 72h胜率=50.0% 平均=-2.5445% | 7d胜率=0.0% 平均=-4.2778%
-SOL longterm/short | 事件=2 | 72h胜率=0.0% 平均=-8.0306% | 7d胜率=0.0% 平均=-9.1791%
-ZEC alert/long | 事件=1 | 72h胜率=100.0% 平均=12.434% | 7d胜率=100.0% 平均=17.9998%
-ENA alert/short | 事件=1 | 72h胜率=100.0% 平均=5.8756% | 7d胜率=100.0% 平均=5.7768%
-ENA longterm/short | 事件=1 | 72h胜率=100.0% 平均=5.8756% | 7d胜率=100.0% 平均=5.7768%
-BASED alert/short | 事件=1 | 72h胜率=100.0% 平均=0.4074% | 7d胜率=0.0% 平均=-0.8648%
-BASED longterm/short | 事件=1 | 72h胜率=100.0% 平均=0.4074% | 7d胜率=0.0% 平均=-0.8648%
-ZEC alert/short | 事件=1 | 72h胜率=0.0% 平均=-2.8459% | 7d胜率=None% 平均=None%
-LIT alert/long | 事件=1 | 72h胜率=100.0% 平均=5.7477% | 7d胜率=None% 平均=None%
-UPUMP alert/short | 事件=1 | 72h胜率=0.0% 平均=0.0% | 7d胜率=0.0% 平均=0.0%
-UPUMP longterm/short | 事件=1 | 72h胜率=0.0% 平均=0.0% | 7d胜率=0.0% 平均=0.0%
 
 输出文件：reports/details/research_signal_summary_latest.csv、coin_profile_latest.csv、wallet_profile_latest.csv

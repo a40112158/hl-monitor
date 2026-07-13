@@ -1,19 +1,19 @@
 {
-  "generated_at": "2026-07-13 10:23:37",
+  "generated_at": "2026-07-13 11:07:40",
   "mode": "guarded",
-  "raw_events": 13,
-  "events": 13,
+  "raw_events": 0,
+  "events": 0,
   "sample_store": {
     "inserted": 0,
     "updated": 0,
     "deleted": 0,
-    "total": 13
+    "total": 0
   },
-  "coins": 9,
+  "coins": 0,
   "mature_counts": {
-    "7d": 9,
-    "72h": 13,
-    "24h": 13
+    "7d": 0,
+    "72h": 0,
+    "24h": 0
   },
   "changes_applied": 0,
   "shadows_started": 0,
@@ -44,123 +44,5 @@
     "sample_retention_days": 180,
     "history_max_lines": 2000
   },
-  "results": [
-    {
-      "coin": "BASED",
-      "parameter": "score_push",
-      "action": "insufficient_samples",
-      "current": 8.0,
-      "recommended": 8.0,
-      "horizon": "",
-      "samples": 1,
-      "train_gain": null,
-      "validation_gain": null,
-      "baseline_validation": {},
-      "candidate_validation": {}
-    },
-    {
-      "coin": "ENA",
-      "parameter": "score_push",
-      "action": "insufficient_samples",
-      "current": 8.0,
-      "recommended": 8.0,
-      "horizon": "",
-      "samples": 1,
-      "train_gain": null,
-      "validation_gain": null,
-      "baseline_validation": {},
-      "candidate_validation": {}
-    },
-    {
-      "coin": "HYPE",
-      "parameter": "score_push",
-      "action": "insufficient_samples",
-      "current": 7.0,
-      "recommended": 7.0,
-      "horizon": "",
-      "samples": 2,
-      "train_gain": null,
-      "validation_gain": null,
-      "baseline_validation": {},
-      "candidate_validation": {}
-    },
-    {
-      "coin": "LIT",
-      "parameter": "score_push",
-      "action": "insufficient_samples",
-      "current": 8.0,
-      "recommended": 8.0,
-      "horizon": "",
-      "samples": 1,
-      "train_gain": null,
-      "validation_gain": null,
-      "baseline_validation": {},
-      "candidate_validation": {}
-    },
-    {
-      "coin": "MAX",
-      "parameter": "score_push",
-      "action": "insufficient_samples",
-      "current": 8.0,
-      "recommended": 8.0,
-      "horizon": "",
-      "samples": 1,
-      "train_gain": null,
-      "validation_gain": null,
-      "baseline_validation": {},
-      "candidate_validation": {}
-    },
-    {
-      "coin": "QONE",
-      "parameter": "score_push",
-      "action": "insufficient_samples",
-      "current": 8.0,
-      "recommended": 8.0,
-      "horizon": "",
-      "samples": 1,
-      "train_gain": null,
-      "validation_gain": null,
-      "baseline_validation": {},
-      "candidate_validation": {}
-    },
-    {
-      "coin": "SOL",
-      "parameter": "score_push",
-      "action": "insufficient_samples",
-      "current": 8.0,
-      "recommended": 8.0,
-      "horizon": "",
-      "samples": 3,
-      "train_gain": null,
-      "validation_gain": null,
-      "baseline_validation": {},
-      "candidate_validation": {}
-    },
-    {
-      "coin": "UPUMP",
-      "parameter": "score_push",
-      "action": "insufficient_samples",
-      "current": 8.0,
-      "recommended": 8.0,
-      "horizon": "",
-      "samples": 1,
-      "train_gain": null,
-      "validation_gain": null,
-      "baseline_validation": {},
-      "candidate_validation": {}
-    },
-    {
-      "coin": "ZEC",
-      "parameter": "score_push",
-      "action": "insufficient_samples",
-      "current": 8.0,
-      "recommended": 8.0,
-      "horizon": "",
-      "samples": 2,
-      "train_gain": null,
-      "validation_gain": null,
-      "baseline_validation": {},
-      "candidate_validation": {}
-    }
-  ]
+  "results": []
 }
