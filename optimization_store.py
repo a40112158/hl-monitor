@@ -7,9 +7,15 @@ months of learning data without keeping half-hour raw wallet snapshots.
 
 import bisect
 import datetime as dt
+import math
+import os
 import sqlite3
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+
+SIGNAL_MODEL_VERSION = max(2, int(os.getenv("SIGNAL_MODEL_VERSION", "2")))
+BACKTEST_ROUNDTRIP_COST_PCT = float(os.getenv("BACKTEST_ROUNDTRIP_COST_PCT", "0.12"))
 
 
 def utc_now() -> dt.datetime:
@@ -44,6 +50,7 @@ def init_store(conn: sqlite3.Connection) -> None:
         CREATE TABLE IF NOT EXISTS optimization_samples (
             sample_id INTEGER PRIMARY KEY AUTOINCREMENT,
             source_event_id INTEGER NOT NULL UNIQUE,
+            model_version INTEGER NOT NULL DEFAULT 1,
             created_at TEXT NOT NULL,
             coin TEXT NOT NULL,
             direction TEXT NOT NULL,
@@ -56,6 +63,8 @@ def init_store(conn: sqlite3.Connection) -> None:
         )
         """
     )
+    if not column_exists(conn, "optimization_samples", "model_version"):
+        conn.execute("ALTER TABLE optimization_samples ADD COLUMN model_version INTEGER NOT NULL DEFAULT 1")
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_opt_samples_coin_dir_time "
         "ON optimization_samples(coin, direction, created_at)"
@@ -70,20 +79,30 @@ def _source_rows(conn: sqlite3.Connection) -> List[sqlite3.Row]:
     if not table_exists(conn, "signal_events"):
         return []
     has_run_id = column_exists(conn, "signal_events", "run_id")
+    has_model_version = column_exists(conn, "signal_events", "model_version")
+    model_where = f"WHERE COALESCE(s.model_version, 1)={SIGNAL_MODEL_VERSION}" if has_model_version else "WHERE 1=0"
     if table_exists(conn, "market_context") and has_run_id:
-        sql = """
+        sql = f"""
             SELECT s.event_id, s.run_id, s.created_at, s.coin, s.direction, s.score,
-                   s.ret_24h, s.ret_72h, s.ret_7d,
+                   s.ret_24h - {BACKTEST_ROUNDTRIP_COST_PCT} AS ret_24h,
+                   s.ret_72h - {BACKTEST_ROUNDTRIP_COST_PCT} AS ret_72h,
+                   s.ret_7d - {BACKTEST_ROUNDTRIP_COST_PCT} AS ret_7d,
                    COALESCE(m.regime, 'unknown') AS market_regime
             FROM signal_events s
             LEFT JOIN market_context m ON m.run_id=s.run_id AND m.coin=s.coin
+            {model_where}
             ORDER BY s.created_at, s.event_id
         """
     else:
-        sql = """
+        source_where = f"WHERE COALESCE(model_version, 1)={SIGNAL_MODEL_VERSION}" if has_model_version else "WHERE 1=0"
+        sql = f"""
             SELECT event_id, 0 AS run_id, created_at, coin, direction, score,
-                   ret_24h, ret_72h, ret_7d, 'unknown' AS market_regime
+                   ret_24h - {BACKTEST_ROUNDTRIP_COST_PCT} AS ret_24h,
+                   ret_72h - {BACKTEST_ROUNDTRIP_COST_PCT} AS ret_72h,
+                   ret_7d - {BACKTEST_ROUNDTRIP_COST_PCT} AS ret_7d,
+                   'unknown' AS market_regime
             FROM signal_events
+            {source_where}
             ORDER BY created_at, event_id
         """
     return conn.execute(sql).fetchall()
@@ -108,7 +127,8 @@ def archive_samples(
             int(row["source_event_id"]): dict(row)
             for row in conn.execute(
                 "SELECT source_event_id, coin, direction, created_at, market_regime, "
-                "ret_24h, ret_72h, ret_7d FROM optimization_samples"
+                "ret_24h, ret_72h, ret_7d FROM optimization_samples WHERE model_version=?",
+                (SIGNAL_MODEL_VERSION,),
             ).fetchall()
         }
         times: Dict[Tuple[str, str], List[dt.datetime]] = {}
@@ -128,7 +148,7 @@ def archive_samples(
                 score = abs(float(row["score"]))
             except (TypeError, ValueError):
                 continue
-            if created is None or not coin:
+            if created is None or not coin or not math.isfinite(score):
                 continue
             if event_id in existing:
                 old = existing[event_id]
@@ -161,17 +181,20 @@ def archive_samples(
             selected_times = times.setdefault(key, [])
             index = bisect.bisect_right(selected_times, created)
             previous = selected_times[index - 1] if index else None
+            following = selected_times[index] if index < len(selected_times) else None
             if previous is not None and (created - previous).total_seconds() < gap_hours * 3600:
+                continue
+            if following is not None and (following - created).total_seconds() < gap_hours * 3600:
                 continue
             conn.execute(
                 """
                 INSERT INTO optimization_samples (
-                    source_event_id, created_at, coin, direction, abs_score,
+                    source_event_id, model_version, created_at, coin, direction, abs_score,
                     market_regime, ret_24h, ret_72h, ret_7d, archived_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    event_id, str(row["created_at"]), coin, direction, score,
+                    event_id, SIGNAL_MODEL_VERSION, str(row["created_at"]), coin, direction, score,
                     str(row["market_regime"] or "unknown"), row["ret_24h"],
                     row["ret_72h"], row["ret_7d"], utc_now().isoformat(),
                 ),
@@ -187,7 +210,7 @@ def archive_samples(
         cursor = conn.execute("DELETE FROM optimization_samples WHERE created_at < ?", (cutoff,))
         deleted = max(0, int(cursor.rowcount or 0))
         conn.commit()
-        total = int(conn.execute("SELECT COUNT(*) FROM optimization_samples").fetchone()[0] or 0)
+        total = int(conn.execute("SELECT COUNT(*) FROM optimization_samples WHERE model_version=?", (SIGNAL_MODEL_VERSION,)).fetchone()[0] or 0)
         return {"inserted": inserted, "updated": updated, "deleted": deleted, "total": total}
     finally:
         conn.close()
@@ -206,8 +229,10 @@ def load_samples(db_path: Path) -> List[Dict[str, Any]]:
             SELECT source_event_id AS event_id, created_at, coin, direction,
                    abs_score, market_regime, ret_24h, ret_72h, ret_7d
             FROM optimization_samples
+            WHERE model_version=?
             ORDER BY created_at, source_event_id
-            """
+            """,
+            (SIGNAL_MODEL_VERSION,),
         ).fetchall()
         return [dict(row) for row in rows]
     finally:

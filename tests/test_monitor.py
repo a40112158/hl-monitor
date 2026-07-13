@@ -84,12 +84,26 @@ class AutoThresholdOverlayTests(unittest.TestCase):
             manual = root / "manual.json"
             auto = root / "auto.json"
             manual.write_text(json.dumps({"DEFAULT": {"score_push": 8, "perp": 100}, "BTC": {"score_push": 10}}), encoding="utf-8")
-            auto.write_text(json.dumps({"overrides": {"BTC": {"score_push": 9.75, "perp": 1}}}), encoding="utf-8")
+            auto.write_text(
+                json.dumps({"signal_model_version": 2, "overrides": {"BTC": {"score_push": 9.75, "perp": 1}}}),
+                encoding="utf-8",
+            )
             with mock.patch.multiple(monitor, THRESHOLD_FILE=str(manual), AUTO_THRESHOLD_FILE=str(auto)):
                 thresholds = monitor.load_thresholds()
         self.assertEqual(thresholds["BTC"]["score_push"], 9.75)
         self.assertNotIn("perp", thresholds["BTC"])
         self.assertEqual(thresholds["DEFAULT"]["perp"], 100)
+
+    def test_v1_auto_overlay_is_ignored_by_v2_model(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manual = root / "manual.json"
+            auto = root / "auto.json"
+            manual.write_text(json.dumps({"DEFAULT": {"score_push": 8}, "BTC": {"score_push": 10}}), encoding="utf-8")
+            auto.write_text(json.dumps({"signal_model_version": 1, "overrides": {"BTC": {"score_push": 9.75}}}), encoding="utf-8")
+            with mock.patch.multiple(monitor, THRESHOLD_FILE=str(manual), AUTO_THRESHOLD_FILE=str(auto)):
+                thresholds = monitor.load_thresholds()
+        self.assertEqual(thresholds["BTC"]["score_push"], 10)
 
     def test_auto_overlay_can_be_disabled_immediately(self):
         with tempfile.TemporaryDirectory() as tmp:

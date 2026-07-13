@@ -22,11 +22,13 @@ Hyperliquid Wallet Monitor FINAL
 """
 
 import os
+import sys
 import re
 import csv
 import json
 import time
 import math
+import statistics
 import sqlite3
 import asyncio
 import argparse
@@ -117,6 +119,8 @@ SPOT_MAX_PRICE_CHANGE_PCT = float(os.getenv("SPOT_MAX_PRICE_CHANGE_PCT", "100"))
 SPOT_MAX_ANOMALY_RATIO = float(os.getenv("SPOT_MAX_ANOMALY_RATIO", "0.10"))
 SPOT_MIN_TRUSTED_ROWS = int(os.getenv("SPOT_MIN_TRUSTED_ROWS", "10"))
 SIGNAL_EVENT_COOLDOWN_HOURS = float(os.getenv("SIGNAL_EVENT_COOLDOWN_HOURS", "12"))
+LONGTERM_EVENT_COOLDOWN_HOURS = float(os.getenv("LONGTERM_EVENT_COOLDOWN_HOURS", "24"))
+SIGNAL_MODEL_VERSION = max(2, int(os.getenv("SIGNAL_MODEL_VERSION", "2")))
 DAILY_DETAIL_KEEP_DAYS = int(os.getenv("DAILY_DETAIL_KEEP_DAYS", "7"))
 WALLET_QUALITY_DECAY_HALF_LIFE_DAYS = float(os.getenv("WALLET_QUALITY_DECAY_HALF_LIFE_DAYS", "14"))
 EVIDENCE_ENRICH_MODE = os.getenv("EVIDENCE_ENRICH_MODE", "1") == "1"
@@ -149,8 +153,12 @@ SIGNAL_EXPLAIN_MODE = os.getenv("SIGNAL_EXPLAIN_MODE", "1") == "1"
 BACKTEST_MODE = os.getenv("BACKTEST_MODE", "1") == "1"
 RISK_FILTER_MODE = os.getenv("RISK_FILTER_MODE", "1") == "1"
 SIGNAL_BACKTEST_WINDOW_DAYS = int(os.getenv("SIGNAL_BACKTEST_WINDOW_DAYS", "30"))
+PERFORMANCE_DASHBOARD_VERSION = 3
+LEGACY_BASELINE_MODE = os.getenv("LEGACY_BASELINE_MODE", "1") == "1"
 # 信号/长期单回测的门槛胜率。单位是方向收益百分比。
 # 普通胜率 = 方向收益 > 0；门槛胜率 = 方向收益达到下面门槛，长期单更应该看门槛胜率。
+BACKTEST_HURDLE_1H = float(os.getenv("BACKTEST_HURDLE_1H", "0.25"))
+BACKTEST_HURDLE_4H = float(os.getenv("BACKTEST_HURDLE_4H", "0.5"))
 BACKTEST_HURDLE_24H = float(os.getenv("BACKTEST_HURDLE_24H", "1"))
 BACKTEST_HURDLE_72H = float(os.getenv("BACKTEST_HURDLE_72H", "2"))
 BACKTEST_HURDLE_7D = float(os.getenv("BACKTEST_HURDLE_7D", "4"))
@@ -163,6 +171,8 @@ BACKTEST_ROUNDTRIP_COST_PCT = float(os.getenv("BACKTEST_ROUNDTRIP_COST_PCT", "0.
 SIGNAL_LIFECYCLE_MODE = os.getenv("SIGNAL_LIFECYCLE_MODE", "1") == "1"
 STRONG_SIGNAL_MISSING_ROUNDS = int(os.getenv("STRONG_SIGNAL_MISSING_ROUNDS", "1"))
 LONGTERM_SIGNAL_MISSING_ROUNDS = int(os.getenv("LONGTERM_SIGNAL_MISSING_ROUNDS", "2"))
+STRONG_SIGNAL_MAX_HOLD_HOURS = float(os.getenv("STRONG_SIGNAL_MAX_HOLD_HOURS", "24"))
+LONGTERM_SIGNAL_MAX_HOLD_HOURS = float(os.getenv("LONGTERM_SIGNAL_MAX_HOLD_HOURS", "720"))
 
 # funding 用百分比表达。例如 0.03 表示 0.03%，超过后长期单会降权。
 FUNDING_WARN_ABS_PCT = float(os.getenv("FUNDING_WARN_ABS_PCT", "0.03"))
@@ -244,6 +254,7 @@ LONG_SHORT_REQUIRE_CANDIDATE_STATE = os.getenv("LONG_SHORT_REQUIRE_CANDIDATE_STA
 DB_PRUNE_MODE = os.getenv("DB_PRUNE_MODE", "1") == "1"
 DB_RAW_KEEP_RUNS = int(os.getenv("DB_RAW_KEEP_RUNS", "24"))
 DB_HISTORY_KEEP_DAYS = int(os.getenv("DB_HISTORY_KEEP_DAYS", "35"))
+SIGNAL_EVENT_KEEP_DAYS = int(os.getenv("SIGNAL_EVENT_KEEP_DAYS", "90"))
 DB_MAX_MB = float(os.getenv("DB_MAX_MB", "85"))
 # auto: only rebuild the SQLite file when enough free pages accumulated;
 # always/off are useful for one-off maintenance and CI workflows.
@@ -255,6 +266,13 @@ DB_VACUUM_MIN_FREE_MB = float(os.getenv("DB_VACUUM_MIN_FREE_MB", "16"))
 DEFAULT_THRESHOLDS = {
     "score_push": 8.0,
     "min_watch_score": 5.0,
+    # V2 separates the alert radar from the long-horizon candidate gate.  The
+    # legacy keys remain fallbacks so existing coin_thresholds.json files keep
+    # their current behaviour until an operator explicitly splits them.
+    "alert_score_push": 8.0,
+    "alert_min_watch_score": 5.0,
+    "long_score_push": 8.0,
+    "long_min_watch_score": 5.0,
     "perp": 1_000_000.0,
     "spot": 500_000.0,
 }
@@ -640,7 +658,10 @@ def load_thresholds() -> Dict[str, Dict[str, float]]:
         if AUTO_THRESHOLD_ENABLED and os.path.exists(AUTO_THRESHOLD_FILE):
             with open(AUTO_THRESHOLD_FILE, "r", encoding="utf-8") as f:
                 auto_data = json.load(f)
-            overrides = auto_data.get("overrides", {}) if isinstance(auto_data, dict) else {}
+            auto_model = safe_int(auto_data.get("signal_model_version"), 1) if isinstance(auto_data, dict) else 1
+            overrides = auto_data.get("overrides", {}) if isinstance(auto_data, dict) and auto_model == SIGNAL_MODEL_VERSION else {}
+            if isinstance(auto_data, dict) and auto_model != SIGNAL_MODEL_VERSION and auto_data.get("overrides"):
+                print(f"自动阈值属于V{auto_model}，当前为V{SIGNAL_MODEL_VERSION}；旧覆盖已忽略。")
             for coin, values in overrides.items():
                 if not isinstance(values, dict):
                     continue
@@ -649,11 +670,16 @@ def load_thresholds() -> Dict[str, Dict[str, float]]:
                 score_push = safe_float(values.get("score_push"))
                 if score_push is not None:
                     manual_coin["score_push"] = score_push
+                    # Optimizer samples now come from V2 short alert events, so
+                    # automatic changes tune the alert threshold only.  Long
+                    # candidate thresholds remain an explicit risk decision.
+                    manual_coin["alert_score_push"] = score_push
                 min_watch = safe_float(values.get("min_watch_score"))
                 if min_watch is not None:
-                    base_watch = threshold(data, coin_key, "min_watch_score")
+                    base_watch = model_threshold(data, coin_key, "alert_watch")
                     # 自动观察阈值只收紧，不自动放宽。放宽需要手工改 coin_thresholds.json。
                     manual_coin["min_watch_score"] = max(base_watch, min_watch)
+                    manual_coin["alert_min_watch_score"] = max(base_watch, min_watch)
     except Exception as e:
         print("读取自动优化阈值失败，继续使用手工阈值：", e)
     return data
@@ -662,6 +688,29 @@ def load_thresholds() -> Dict[str, Dict[str, float]]:
 def threshold(ths: Dict[str, Dict[str, float]], coin: str, key: str) -> float:
     base = ths.get("DEFAULT", DEFAULT_THRESHOLDS).get(key, DEFAULT_THRESHOLDS.get(key, 0.0))
     return float(ths.get(coin, {}).get(key, base))
+
+
+def model_threshold(ths: Dict[str, Dict[str, float]], coin: str, key: str) -> float:
+    """Return a V2 alert/long threshold with legacy-key compatibility.
+
+    Coin-specific legacy values take precedence over generic V2 defaults.  A
+    deployment can therefore migrate gradually by adding the new keys only to
+    the coins whose short- and long-horizon thresholds should diverge.
+    """
+    aliases = {
+        "alert_push": ("alert_score_push", "score_push"),
+        "alert_watch": ("alert_min_watch_score", "min_watch_score"),
+        "long_push": ("long_score_push", "score_push"),
+        "long_watch": ("long_min_watch_score", "min_watch_score"),
+    }
+    keys = aliases.get(key, (key,))
+    coin_key = str(coin or "").upper()
+    for mapping in (ths.get(coin_key, {}), ths.get("DEFAULT", {}), DEFAULT_THRESHOLDS):
+        for candidate in keys:
+            value = safe_float(mapping.get(candidate)) if isinstance(mapping, dict) else None
+            if value is not None:
+                return float(value)
+    return 0.0
 
 
 def init_db() -> None:
@@ -788,6 +837,7 @@ def init_db() -> None:
     cur.execute("""
     CREATE TABLE IF NOT EXISTS signal_events (
         event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        model_version INTEGER DEFAULT 1,
         run_id INTEGER,
         created_at TEXT,
         coin TEXT,
@@ -802,6 +852,20 @@ def init_db() -> None:
         ret_7d REAL,
         ret_15d REAL,
         ret_30d REAL,
+        eval_1h_at TEXT,
+        eval_4h_at TEXT,
+        eval_24h_at TEXT,
+        eval_72h_at TEXT,
+        eval_7d_at TEXT,
+        eval_15d_at TEXT,
+        eval_30d_at TEXT,
+        mark_return_pct REAL,
+        mfe_pct REAL,
+        mae_pct REAL,
+        mfe_at TEXT,
+        mae_at TEXT,
+        last_mark_px REAL,
+        last_mark_at TEXT,
         evaluated_at TEXT,
         UNIQUE(run_id, coin, direction)
     )
@@ -829,6 +893,9 @@ def init_db() -> None:
         pct_24h REAL,
         final_score REAL,
         threshold_score REAL,
+        alert_threshold_score REAL,
+        long_threshold_score REAL,
+        model_version INTEGER DEFAULT 1,
         avg_leverage REAL,
         avg_liq_distance REAL,
         longterm_leverage_ratio REAL,
@@ -1031,6 +1098,7 @@ def init_db() -> None:
     cur.execute("""
     CREATE TABLE IF NOT EXISTS longterm_events (
         event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        model_version INTEGER DEFAULT 1,
         run_id INTEGER,
         created_at TEXT,
         coin TEXT,
@@ -1045,6 +1113,20 @@ def init_db() -> None:
         ret_7d REAL,
         ret_15d REAL,
         ret_30d REAL,
+        eval_1h_at TEXT,
+        eval_4h_at TEXT,
+        eval_24h_at TEXT,
+        eval_72h_at TEXT,
+        eval_7d_at TEXT,
+        eval_15d_at TEXT,
+        eval_30d_at TEXT,
+        mark_return_pct REAL,
+        mfe_pct REAL,
+        mae_pct REAL,
+        mfe_at TEXT,
+        mae_at TEXT,
+        last_mark_px REAL,
+        last_mark_at TEXT,
         evaluated_at TEXT,
         UNIQUE(run_id, coin, direction)
     )
@@ -1053,10 +1135,13 @@ def init_db() -> None:
     cur.execute("""
     CREATE TABLE IF NOT EXISTS signal_lifecycles (
         lifecycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        model_version INTEGER DEFAULT 1,
+        source_event_id INTEGER,
         lifecycle_type TEXT,
         coin TEXT,
         direction TEXT,
         status TEXT,
+        lifecycle_state TEXT,
         entry_run_id INTEGER,
         entry_time TEXT,
         entry_px REAL,
@@ -1065,12 +1150,22 @@ def init_db() -> None:
         last_seen_run_id INTEGER,
         last_seen_at TEXT,
         last_score REAL,
+        mark_return_pct REAL,
+        mfe_pct REAL,
+        mae_pct REAL,
+        mfe_at TEXT,
+        mae_at TEXT,
+        last_mark_px REAL,
+        last_mark_at TEXT,
+        expires_at TEXT,
         missing_count INTEGER DEFAULT 0,
         exit_run_id INTEGER,
         exit_time TEXT,
         exit_px REAL,
         exit_reason TEXT,
+        exit_type TEXT,
         lifecycle_return_pct REAL,
+        net_lifecycle_return_pct REAL,
         holding_hours REAL,
         note TEXT
     )
@@ -1131,6 +1226,23 @@ def init_db() -> None:
         add_col_if_missing(t, "ret_15d", "REAL")
         add_col_if_missing(t, "ret_30d", "REAL")
 
+    for t in ("signal_events", "longterm_events"):
+        add_col_if_missing(t, "model_version", "INTEGER DEFAULT 1")
+        for col in ("eval_1h_at", "eval_4h_at", "eval_24h_at", "eval_72h_at", "eval_7d_at", "eval_15d_at", "eval_30d_at"):
+            add_col_if_missing(t, col, "TEXT")
+        for col in ("mark_return_pct", "mfe_pct", "mae_pct", "last_mark_px"):
+            add_col_if_missing(t, col, "REAL")
+        for col in ("mfe_at", "mae_at", "last_mark_at"):
+            add_col_if_missing(t, col, "TEXT")
+
+    add_col_if_missing("signal_lifecycles", "model_version", "INTEGER DEFAULT 1")
+    add_col_if_missing("signal_lifecycles", "source_event_id", "INTEGER")
+    for col in ("mark_return_pct", "mfe_pct", "mae_pct", "last_mark_px", "net_lifecycle_return_pct"):
+        add_col_if_missing("signal_lifecycles", col, "REAL")
+    for col in ("lifecycle_state", "mfe_at", "mae_at", "last_mark_at", "expires_at", "exit_type"):
+        add_col_if_missing("signal_lifecycles", col, "TEXT")
+    cur.execute("UPDATE signal_lifecycles SET lifecycle_state=CASE WHEN status='open' THEN 'active' ELSE 'closed' END WHERE lifecycle_state IS NULL")
+
     for col in ("eval_15d", "eval_30d"):
         add_col_if_missing("wallet_quality", col, "INTEGER")
     for col in ("win_15d", "avg_15d", "win_30d", "avg_30d", "expectancy_30d"):
@@ -1170,6 +1282,9 @@ def init_db() -> None:
         add_col_if_missing("coin_signals", col, "REAL")
     for col in ("signal_category", "candidate_state", "candidate_gate", "candidate_block_reasons", "candidate_side"):
         add_col_if_missing("coin_signals", col, "TEXT")
+    for col in ("alert_threshold_score", "long_threshold_score"):
+        add_col_if_missing("coin_signals", col, "REAL")
+    add_col_if_missing("coin_signals", "model_version", "INTEGER DEFAULT 1")
 
 
     # 滚动资金流快照补充杠杆质量字段，兼容旧 db。
@@ -1192,12 +1307,15 @@ def init_db() -> None:
     cur.execute("CREATE INDEX IF NOT EXISTS idx_quality_run ON wallet_quality(run_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_quality_addr ON wallet_quality(address)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_coin ON signal_events(coin)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_model_created ON signal_events(model_version, created_at)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_coin_signal_run ON coin_signals(run_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_coin_flow_run ON coin_flow_snapshots(run_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_coin_flow_created_coin ON coin_flow_snapshots(created_at, coin)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_risk_run_coin ON coin_risk_metrics(run_id, coin)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_longterm_coin ON longterm_events(coin)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_longterm_model_created ON longterm_events(model_version, created_at)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_lifecycles_status ON signal_lifecycles(lifecycle_type, status, coin, direction)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_lifecycles_model_status ON signal_lifecycles(model_version, lifecycle_type, status, coin, direction)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_lifecycles_exit_run ON signal_lifecycles(exit_run_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_signal_lifecycle_events_run ON signal_lifecycle_events(run_id)")
 
@@ -2136,10 +2254,11 @@ def is_long_candidate_signal(row: Dict[str, Any]) -> bool:
 
 
 def is_pushable_signal(row: Dict[str, Any]) -> bool:
-    threshold_score = safe_float((row or {}).get("threshold_score")) or 0.0
+    threshold_score = safe_float((row or {}).get("alert_threshold_score")) or safe_float((row or {}).get("threshold_score")) or 0.0
     if threshold_score <= 0:
         return False
     if is_long_candidate_signal(row):
+        threshold_score = safe_float((row or {}).get("long_threshold_score")) or threshold_score
         long_side_score = max(
             abs(safe_float(row.get("long_candidate_score")) or 0.0),
             abs(safe_float(row.get("short_candidate_score")) or 0.0),
@@ -2736,12 +2855,19 @@ def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[
         quality_mult = 1.0
         notes: List[str] = []
         risk_notes: List[str] = []
+        window_risk_flags = {
+            "spot_only": False,
+            "concentration": False,
+            "persistence": False,
+            "gap": False,
+            "immature": False,
+        }
 
         # 窗口成熟度：数据库刚开始积累时，不能把 5 天历史当作 30d 信号。
         min_coverage = float(spec.get("min_coverage", 0.5))
         if ROLLING_REQUIRE_WINDOW_MATURITY and coverage < min_coverage:
             # 长窗口不成熟直接跳过；短/中窗口不成熟则严重降权。
-            risk_flags["immature"] = True
+            window_risk_flags["immature"] = True
             risk_notes.append(f"窗口未成熟：覆盖{coverage*100:.0f}%/{min_coverage*100:.0f}% span={span_hours:.1f}h")
             if group == "long":
                 continue
@@ -2755,40 +2881,40 @@ def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[
                 quality_mult *= 0.65
             else:
                 quality_mult *= ROLLING_PERSISTENCE_MULT
-                risk_flags["persistence"] = True
+                window_risk_flags["persistence"] = True
             risk_notes.append(f"持续性不足：{same_runs}/{min_runs}轮 {same_days}/{min_days}天")
 
         # 如果窗口里有 gap，窗口累计信号降权，避免断跑后把多小时累计当成普通连续建仓。
         if gaps > 0:
             quality_mult *= 0.75
-            risk_flags["gap"] = True
+            window_risk_flags["gap"] = True
             risk_notes.append(f"含断跑gap={gaps}")
 
         # 钱包广度/集中度：一个钱包贡献绝大部分，不算“集体持续建仓”。
         min_wallets = int(spec["min_wallets"])
         if wallet_count > 0 and wallet_count < min_wallets and group != "short":
             quality_mult *= 0.60
-            risk_flags["concentration"] = True
+            window_risk_flags["concentration"] = True
             risk_notes.append(f"参与钱包少：{wallet_count}/{min_wallets}个")
         if top1_share >= ROLLING_TOP1_MAX_SHARE and wallet_count > 0:
             quality_mult *= ROLLING_CONCENTRATION_MULT
-            risk_flags["concentration"] = True
+            window_risk_flags["concentration"] = True
             risk_notes.append(f"Top1占比{top1_share*100:.0f}%")
         elif top3_share >= ROLLING_TOP3_MAX_SHARE and wallet_count >= 3:
             quality_mult *= 0.75
-            risk_flags["concentration"] = True
+            window_risk_flags["concentration"] = True
             risk_notes.append(f"Top3占比{top3_share*100:.0f}%")
 
         # 现货-only：现货减少/增加不一定是卖出/买入，可能是转账/归集/划转。
         if spot_share >= ROLLING_SPOT_ONLY_SHARE and perp_abs < pth * 0.35 and (lev_health is None or lev_health <= 0.15):
             quality_mult *= ROLLING_SPOT_ONLY_MULT
-            risk_flags["spot_only"] = True
+            window_risk_flags["spot_only"] = True
             risk_notes.append(f"现货主导{spot_share*100:.0f}%且无合约低杠杆确认")
 
         # 异常大额 + 单钱包：多数是转账/归集/数据异常，不直接给满分。
         if abs(signed) >= pth * 20 and (wallet_count <= 1 or top1_share >= 0.85):
             quality_mult *= 0.30
-            risk_flags["concentration"] = True
+            window_risk_flags["concentration"] = True
             risk_notes.append("单钱包异常大额，按观察处理")
 
         quality_mult = max(0.05, min(1.0, quality_mult))
@@ -2830,6 +2956,7 @@ def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[
             "longterm_leverage_ratio": long_ratio,
             "highrisk_leverage_ratio": high_ratio,
             "leverage_health": lev_health,
+            "risk_flags": window_risk_flags,
             "notes": notes,
         }
         prev = candidates.get(group)
@@ -2884,6 +3011,11 @@ def rolling_score_for_coin(coin: str, rolling: Dict[str, Any], thresholds: Dict[
     rolling_leverage_adj = max(-0.8, min(0.8, rolling_leverage_adj))
     score = rolling_flow_core_score + rolling_leverage_adj
 
+    # Risk belongs to the selected scoring horizon.  An unselected immature
+    # 30d window must not invalidate a mature 15d signal.
+    if selected:
+        risk_source = max(selected, key=lambda c: abs(float(c.get("flow_score") or 0.0)) + abs(float(c.get("lev_score") or 0.0)))
+        risk_flags = dict(risk_source.get("risk_flags") or risk_flags)
     suspect = risk_flags["spot_only"] or risk_flags["concentration"] or risk_flags["persistence"] or risk_flags["immature"]
     if suspect and abs(score) > ROLLING_SUSPECT_CAP_SCORE:
         score = (1 if score > 0 else -1) * ROLLING_SUSPECT_CAP_SCORE
@@ -3322,23 +3454,51 @@ def evaluate_events(prices: Dict[str, float]) -> Tuple[int, int]:
             raw_ret = (current_px - entry_px) / entry_px * 100
             dir_ret = raw_ret if r.get("direction") == "bullish" else -raw_ret
             updates: Dict[str, Any] = {}
+            evaluated_now = now_str()
+            excursion_target_col = "ret_24h" if table == "signal_events" else "ret_30d"
+            track_excursion = table in {"signal_events", "longterm_events"} and (
+                r.get(excursion_target_col) is None
+            )
+            if track_excursion and safe_int(r.get("model_version"), 1) == SIGNAL_MODEL_VERSION:
+                previous_mfe = safe_float(r.get("mfe_pct"))
+                previous_mae = safe_float(r.get("mae_pct"))
+                next_mfe = max(0.0, previous_mfe if previous_mfe is not None else 0.0, dir_ret)
+                next_mae = min(0.0, previous_mae if previous_mae is not None else 0.0, dir_ret)
+                updates.update({
+                    "mark_return_pct": dir_ret,
+                    "mfe_pct": next_mfe,
+                    "mae_pct": next_mae,
+                    "last_mark_px": current_px,
+                    "last_mark_at": evaluated_now,
+                })
+                if previous_mfe is None or next_mfe > previous_mfe:
+                    updates["mfe_at"] = evaluated_now
+                if previous_mae is None or next_mae < previous_mae:
+                    updates["mae_at"] = evaluated_now
             if elapsed >= 1 and r.get("ret_1h") is None:
                 updates["ret_1h"] = dir_ret
+                if table in {"signal_events", "longterm_events"}: updates["eval_1h_at"] = evaluated_now
             if elapsed >= 4 and r.get("ret_4h") is None:
                 updates["ret_4h"] = dir_ret
+                if table in {"signal_events", "longterm_events"}: updates["eval_4h_at"] = evaluated_now
             if elapsed >= 24 and r.get("ret_24h") is None:
                 updates["ret_24h"] = dir_ret
+                if table in {"signal_events", "longterm_events"}: updates["eval_24h_at"] = evaluated_now
             if elapsed >= 72 and r.get("ret_72h") is None:
                 updates["ret_72h"] = dir_ret
+                if table in {"signal_events", "longterm_events"}: updates["eval_72h_at"] = evaluated_now
             if elapsed >= 168 and r.get("ret_7d") is None:
                 updates["ret_7d"] = dir_ret
+                if table in {"signal_events", "longterm_events"}: updates["eval_7d_at"] = evaluated_now
             if elapsed >= 360 and r.get("ret_15d") is None:
                 updates["ret_15d"] = dir_ret
+                if table in {"signal_events", "longterm_events"}: updates["eval_15d_at"] = evaluated_now
             if elapsed >= 720 and r.get("ret_30d") is None:
                 updates["ret_30d"] = dir_ret
+                if table in {"signal_events", "longterm_events"}: updates["eval_30d_at"] = evaluated_now
             if not updates:
                 continue
-            updates["evaluated_at"] = now_str()
+            updates["evaluated_at"] = evaluated_now
             set_sql = ", ".join([f"{k}=?" for k in updates])
             values = list(updates.values()) + [r[id_col]]
             cur.execute(f"UPDATE {table} SET {set_sql} WHERE {id_col}=?", values)
@@ -3356,30 +3516,33 @@ def evaluate_events(prices: Dict[str, float]) -> Tuple[int, int]:
     return updated_actions, updated_signals
 
 
+def net_direction_return(ret_pct: Optional[float]) -> Optional[float]:
+    """Convert a stored gross direction return into per-event net return."""
+    value = safe_float(ret_pct)
+    return None if value is None else value - BACKTEST_ROUNDTRIP_COST_PCT
+
+
 def get_signal_perf(coin: str, direction: str) -> Dict[str, Any]:
     conn = db_conn()
     cur = conn.cursor()
     cur.execute("""
-    SELECT COUNT(*) AS n,
-           AVG(ret_1h) AS avg_1h,
-           AVG(CASE WHEN ret_1h > 0 THEN 1.0 WHEN ret_1h <= 0 THEN 0.0 ELSE NULL END) AS win_1h,
-           AVG(ret_4h) AS avg_4h,
-           AVG(CASE WHEN ret_4h > 0 THEN 1.0 WHEN ret_4h <= 0 THEN 0.0 ELSE NULL END) AS win_4h,
-           AVG(ret_24h) AS avg_24h,
-           AVG(CASE WHEN ret_24h > 0 THEN 1.0 WHEN ret_24h <= 0 THEN 0.0 ELSE NULL END) AS win_24h,
-           AVG(ret_72h) AS avg_72h,
-           AVG(CASE WHEN ret_72h > 0 THEN 1.0 WHEN ret_72h <= 0 THEN 0.0 ELSE NULL END) AS win_72h,
-           AVG(ret_7d) AS avg_7d,
-           AVG(CASE WHEN ret_7d > 0 THEN 1.0 WHEN ret_7d <= 0 THEN 0.0 ELSE NULL END) AS win_7d,
-           AVG(ret_15d) AS avg_15d,
-           AVG(CASE WHEN ret_15d > 0 THEN 1.0 WHEN ret_15d <= 0 THEN 0.0 ELSE NULL END) AS win_15d,
-           AVG(ret_30d) AS avg_30d,
-           AVG(CASE WHEN ret_30d > 0 THEN 1.0 WHEN ret_30d <= 0 THEN 0.0 ELSE NULL END) AS win_30d
-    FROM signal_events WHERE coin=? AND direction=?
-    """, (coin, direction))
-    row = cur.fetchone()
+    SELECT ret_1h, ret_4h, ret_24h, ret_72h, ret_7d, ret_15d, ret_30d
+    FROM signal_events
+    WHERE coin=? AND direction=? AND COALESCE(model_version, 1)=?
+    """, (coin, direction, SIGNAL_MODEL_VERSION))
+    rows = [dict(r) for r in cur.fetchall()]
     conn.close()
-    return dict(row) if row else {}
+    result: Dict[str, Any] = {}
+    for label in ("1h", "4h", "24h", "72h", "7d", "15d", "30d"):
+        vals = [net_direction_return(r.get(f"ret_{label}")) for r in rows]
+        vals = [v for v in vals if v is not None]
+        result[f"avg_{label}"] = (sum(vals) / len(vals)) if vals else None
+        result[f"win_{label}"] = (sum(1 for v in vals if v > 0) / len(vals)) if vals else None
+        if label == "4h":
+            # Confidence must be based on mature 4h samples, not all events.
+            result["n"] = len(vals)
+    result.setdefault("n", 0)
+    return result
 
 
 def confidence_for(coin: str, direction: str) -> Tuple[str, str, float]:
@@ -3798,9 +3961,7 @@ def update_position_trades(run_id: int, prices: Dict[str, float]) -> None:
             event_type = "add"
             note = "加仓，更新平均入场价/当前浮盈"
             _insert_position_event(cur, run_id, int(trade.get("trade_id")), event_type, row, delta, cur_px, ret, note)
-        elif change_trigger and delta < 0:
-            reduce_count += 1
-            event_type = "reduce"
+        elif delta < 0 and abs(delta) > max(prev_qty * 1e-8, 1e-12):
             reduce_qty = abs(delta)
             part_ret = direction_return_pct(row.get("side"), safe_float(trade.get("entry_px")) or entry, cur_px)
             base_entry = safe_float(trade.get("entry_px")) or entry
@@ -3810,13 +3971,26 @@ def update_position_trades(run_id: int, prices: Dict[str, float]) -> None:
                 if part_ret is not None:
                     realized_pnl += reduce_qty * base_entry * part_ret / 100.0
             realized_return = realized_pnl / closed_notional * 100.0 if closed_notional else realized_return
-            note = "部分平仓，记录已实现收益，剩余仓位继续跟踪"
-            _insert_position_event(cur, run_id, int(trade.get("trade_id")), event_type, row, delta, cur_px, part_ret, note)
+            if change_trigger:
+                reduce_count += 1
+                event_type = "reduce"
+                note = "部分平仓，记录已实现收益，剩余仓位继续跟踪"
+                _insert_position_event(cur, run_id, int(trade.get("trade_id")), event_type, row, delta, cur_px, part_ret, note)
+            else:
+                # Small reductions are still real closed quantity.  Keep them
+                # out of the noisy event feed but never drop their PnL.
+                note = "小额减仓已计入累计已实现收益（未单独写事件）"
         else:
             # 不写入 hold 事件，避免数据库无限膨胀；只更新 trade 状态。
             pass
         hold = _hours_between(trade.get("open_time"))
-        final_ret = realized_return if qty <= 0 else ret
+        if qty <= 0:
+            final_ret = realized_return
+        else:
+            open_notional = qty * (entry or cur_px or 0.0)
+            open_pnl = open_notional * (ret or 0.0) / 100.0
+            total_notional = closed_notional + open_notional
+            final_ret = (realized_pnl + open_pnl) / total_notional * 100.0 if total_notional else ret
         cur.execute("""
         UPDATE position_trades
         SET last_seen=?, entry_px=?, current_px=?, current_qty=?, max_qty=?, closed_qty=?, closed_notional_usd=?,
@@ -4370,6 +4544,19 @@ def _signed_cap(v: float, cap: float) -> float:
     return max(-cap, min(cap, v))
 
 
+def apply_directional_adjustment(base_signed: float, direction: str, adjustment: float) -> float:
+    """Apply a direction-relative quality adjustment without bearish inversion.
+
+    Adjustment helpers return positive values when evidence supports the chosen
+    direction and negative values when it weakens that direction.  Converting
+    to magnitude before applying the adjustment makes bullish and bearish
+    scoring symmetric and prevents a risk penalty from strengthening a short.
+    """
+    sign = 1.0 if direction == "bullish" else -1.0
+    magnitude = max(0.0, abs(float(base_signed or 0.0)) + float(adjustment or 0.0))
+    return sign * magnitude
+
+
 def _build_signals_dualscore_base(run_id: int, preliminary: Dict[str, Dict[str, Any]], ctx_map: Dict[str, Dict[str, Any]], thresholds: Dict[str, Dict[str, float]], risk_map: Optional[Dict[str, Dict[str, Any]]] = None, rolling_map: Optional[Dict[str, Dict[str, Any]]] = None, gap_minutes: Optional[float] = None) -> List[Dict[str, Any]]:
     """构建币种信号。双分数版：
 
@@ -4392,8 +4579,10 @@ def _build_signals_dualscore_base(run_id: int, preliminary: Dict[str, Dict[str, 
         weighted_flow = float(d.get("weighted_flow") or 0.0)
         pth = threshold(thresholds, coin, "perp")
         sth = threshold(thresholds, coin, "spot")
-        th_score = threshold(thresholds, coin, "score_push")
-        min_watch = threshold(thresholds, coin, "min_watch_score")
+        alert_th_score = model_threshold(thresholds, coin, "alert_push")
+        alert_min_watch = model_threshold(thresholds, coin, "alert_watch")
+        long_th_score = model_threshold(thresholds, coin, "long_push")
+        long_min_watch = model_threshold(thresholds, coin, "long_watch")
 
         # 1) 本轮/短线异动分，只用于 alert_score。
         base_score = 0.0
@@ -4444,13 +4633,15 @@ def _build_signals_dualscore_base(run_id: int, preliminary: Dict[str, Dict[str, 
         alert_score = base_score
         if _same_sign(base_score, rolling_score):
             alert_score += _signed_cap(rolling_score * 0.25, ALERT_SCORE_ROLLING_CONFIRM_CAP)
-        alert_score += conf_adj * 0.25 + m_adj * 0.25 + p_adj * 0.25 + lev_adj * 0.50 + risk_adj * 0.50
+        alert_adjustment = conf_adj * 0.25 + m_adj * 0.25 + p_adj * 0.25 + lev_adj * 0.50 + risk_adj * 0.50
+        alert_score = apply_directional_adjustment(alert_score, direction, alert_adjustment)
 
         # 4) long_score：长期资格。必须主要来自滚动建仓和杠杆健康，不靠单轮异动。
         long_score = rolling_score
         if _same_sign(rolling_score, base_score):
             long_score += _signed_cap(base_score * 0.15, 0.8)
-        long_score += conf_adj * 0.60 + m_adj * 0.35 + p_adj * 0.50 + lev_adj * 0.90 + risk_adj * 0.70
+        long_adjustment = conf_adj * 0.60 + m_adj * 0.35 + p_adj * 0.50 + lev_adj * 0.90 + risk_adj * 0.70
+        long_score = apply_directional_adjustment(long_score, direction, long_adjustment)
 
         # 5) 长期资格门槛/风控：现货-only、单钱包集中、持续性不足、窗口不成熟都不能直接进长期单。
         spot_only_risk = bool(rolling_parts.get("rolling_spot_only_risk"))
@@ -4465,6 +4656,7 @@ def _build_signals_dualscore_base(run_id: int, preliminary: Dict[str, Dict[str, 
         best_lev_health = safe_float(rolling_parts.get("best_leverage_health"))
         best_wallet_count = int(rolling_parts.get("best_wallet_count") or 0)
         best_spot_share = safe_float(rolling_parts.get("best_spot_share")) or 0.0
+        best_coverage = safe_float(rolling_parts.get("best_coverage")) or 0.0
         best_window = str(rolling_parts.get("best_window") or "")
         selected_groups = str(rolling_parts.get("rolling_selected_groups") or "")
 
@@ -4500,8 +4692,8 @@ def _build_signals_dualscore_base(run_id: int, preliminary: Dict[str, Dict[str, 
             long_score = _signed_cap(long_score, LONG_SCORE_CONCENTRATION_CAP)
         if persistence_risk:
             long_score = _signed_cap(long_score, LONG_SCORE_PERSISTENCE_CAP)
-        if immature_risk or gap_risk:
-            long_score = _signed_cap(long_score, max(min_watch - 0.3, 3.5))
+        if immature_risk or (gap_risk and best_coverage < 0.80):
+            long_score = _signed_cap(long_score, max(long_min_watch - 0.3, 3.5))
         if conflict:
             alert_score *= 0.65
             long_score *= 0.65
@@ -4515,23 +4707,23 @@ def _build_signals_dualscore_base(run_id: int, preliminary: Dict[str, Dict[str, 
             not (spot_only_risk and not leverage_confirm) and
             (not LONG_SCORE_REQUIRE_PERP_CONFIRM or has_perp_confirm) and
             best_high_ratio < 0.60 and
-            abs(long_score) >= min_watch
+            abs(long_score) >= long_min_watch
         )
 
         # 6) 输出分类：不再只看一个 final_score。
         category = "只观察"
-        if abs(alert_score) >= th_score:
+        if abs(alert_score) >= alert_th_score:
             if spot_only_risk and abs(perp_active) < pth * 0.35:
                 category = "现货异常变化"
             elif best_high_ratio >= 0.60 or (safe_float(lev_fields.get("highrisk_leverage_ratio")) or 0.0) >= 0.60:
                 category = "高杠杆短线异动"
             else:
                 category = "短线突发异动"
-        if long_qualified and abs(long_score) >= th_score:
+        if long_qualified and abs(long_score) >= long_th_score:
             category = "低杠杆长期候选"
-        elif long_qualified and abs(long_score) >= min_watch and category == "只观察":
+        elif long_qualified and abs(long_score) >= long_min_watch and category == "只观察":
             category = "滚动建仓观察"
-        elif abs(alert_score) >= min_watch and category == "只观察":
+        elif abs(alert_score) >= alert_min_watch and category == "只观察":
             category = "短线异动观察"
 
         # final_score 只保留兼容字段：代表当前最应该展示的主分数。
@@ -4541,7 +4733,7 @@ def _build_signals_dualscore_base(run_id: int, preliminary: Dict[str, Dict[str, 
             final_score = alert_score if abs(alert_score) >= abs(long_score) or not long_qualified else long_score
 
         watchlist = "observe"
-        if category == "低杠杆长期候选" and abs(long_score) >= th_score:
+        if category == "低杠杆长期候选" and abs(long_score) >= long_th_score:
             watchlist = "long" if long_score > 0 else "short"
         else:
             watchlist = "observe"
@@ -4599,6 +4791,8 @@ def _build_signals_dualscore_base(run_id: int, preliminary: Dict[str, Dict[str, 
             "alert_score": round(alert_score, 4),
             "long_score": round(long_score, 4),
             "final_score": round(final_score, 4),
+            "alert_threshold_score": alert_th_score,
+            "long_threshold_score": long_th_score,
             "long_qualified": 1 if long_qualified else 0,
             "signal_category": category,
             "leverage_confirm": 1 if leverage_confirm else 0,
@@ -4627,7 +4821,10 @@ def _build_signals_dualscore_base(run_id: int, preliminary: Dict[str, Dict[str, 
             "pct_4h": ctx.get("pct_4h"),
             "pct_24h": ctx.get("pct_24h"),
             "final_score": final_score,
-            "threshold_score": th_score,
+            "threshold_score": alert_th_score,
+            "alert_threshold_score": alert_th_score,
+            "long_threshold_score": long_th_score,
+            "model_version": SIGNAL_MODEL_VERSION,
             "avg_leverage": lev_fields.get("avg_leverage"),
             "avg_liq_distance": lev_fields.get("avg_liq_distance"),
             "longterm_leverage_ratio": lev_fields.get("longterm_leverage_ratio"),
@@ -5042,6 +5239,12 @@ def write_backtest_guard_skipped_artifacts(run_id: int, ok_rate: float, note: st
             f.write("⚠️ 本轮未刷新回测 latest 文件。\n")
             f.write(reason + "\n")
             f.write("说明：低成功率轮次不结算事件收益，也不刷新 signal_backtest / longterm_backtest latest，避免历史研究文件被误读成本轮更新。\n")
+    _write_guard_skip_csv("signal_performance_dashboard_v3_latest.csv", run_id, ok_rate, note=note)
+    with open(os.path.join(REPORT_DIR, "signal_performance_dashboard_v3.txt"), "w", encoding="utf-8") as f:
+        f.write(f"【收益面板 V{PERFORMANCE_DASHBOARD_VERSION}】\n")
+        f.write(f"更新时间{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}\n\n")
+        f.write("⚠️ 本轮未刷新收益面板。\n")
+        f.write(reason + "\n")
 
 
 def write_research_guard_skipped_artifacts(run_id: int, ok_rate: float, note: str = "") -> None:
@@ -5199,6 +5402,7 @@ def update_signal_lifecycles(run_id: int, signals: List[Dict[str, Any]], longter
     conn = db_conn()
     cur = conn.cursor()
     closed: List[Dict[str, Any]] = []
+    closed_keys: set = set()
 
     def _get_px(coin: str) -> Optional[float]:
         return safe_float(prices.get(coin))
@@ -5209,31 +5413,59 @@ def update_signal_lifecycles(run_id: int, signals: List[Dict[str, Any]], longter
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (lifecycle_id, run_id, now, typ, event_type, coin, direction, px, score, missing_count, ret, reason))
 
-    def _close(row: Dict[str, Any], exit_px: Optional[float], reason: str) -> Optional[Dict[str, Any]]:
+    def _mark_values(row: Dict[str, Any], px: Optional[float]) -> Tuple[Optional[float], float, float, Optional[str], Optional[str]]:
+        mark_ret = _signal_dir_return_pct(row.get("direction"), row.get("entry_px"), px)
+        old_mfe = safe_float(row.get("mfe_pct"))
+        old_mae = safe_float(row.get("mae_pct"))
+        base_mfe = old_mfe if old_mfe is not None else 0.0
+        base_mae = old_mae if old_mae is not None else 0.0
+        next_mfe = max(0.0, base_mfe, mark_ret if mark_ret is not None else 0.0)
+        next_mae = min(0.0, base_mae, mark_ret if mark_ret is not None else 0.0)
+        mfe_at = now if old_mfe is None or next_mfe > old_mfe else row.get("mfe_at")
+        mae_at = now if old_mae is None or next_mae < old_mae else row.get("mae_at")
+        return mark_ret, next_mfe, next_mae, mfe_at, mae_at
+
+    def _close(
+        row: Dict[str, Any],
+        exit_px: Optional[float],
+        reason: str,
+        exit_type: str = "invalidated",
+        event_type: str = "close",
+    ) -> Optional[Dict[str, Any]]:
         if exit_px is None or exit_px <= 0:
             return None
-        ret = _signal_dir_return_pct(row.get("direction"), row.get("entry_px"), exit_px)
+        ret, mfe, mae, mfe_at, mae_at = _mark_values(row, exit_px)
+        net_ret = net_direction_return(ret)
         holding = _hours_between(row.get("entry_time"), now)
         cur.execute("""
         UPDATE signal_lifecycles
-        SET status='closed', exit_run_id=?, exit_time=?, exit_px=?, exit_reason=?, lifecycle_return_pct=?, holding_hours=?
+        SET status='closed', lifecycle_state='closed', exit_run_id=?, exit_time=?, exit_px=?,
+            exit_reason=?, exit_type=?, lifecycle_return_pct=?, net_lifecycle_return_pct=?, holding_hours=?,
+            mark_return_pct=?, mfe_pct=?, mae_pct=?, mfe_at=?, mae_at=?, last_mark_px=?, last_mark_at=?
         WHERE lifecycle_id=? AND status='open'
-        """, (run_id, now, exit_px, reason, ret, holding, row["lifecycle_id"]))
-        _log(row["lifecycle_id"], row.get("lifecycle_type"), "close", row.get("coin"), row.get("direction"), exit_px, row.get("last_score"), safe_int(row.get("missing_count"), 0), ret, reason)
+        """, (run_id, now, exit_px, reason, exit_type, ret, net_ret, holding, ret, mfe, mae,
+              mfe_at, mae_at, exit_px, now, row["lifecycle_id"]))
+        _log(row["lifecycle_id"], row.get("lifecycle_type"), event_type, row.get("coin"), row.get("direction"), exit_px, row.get("last_score"), safe_int(row.get("missing_count"), 0), ret, reason)
         item = dict(row)
         item.update({
             "exit_run_id": run_id,
             "exit_time": now,
             "exit_px": exit_px,
             "exit_reason": reason,
+            "exit_type": exit_type,
             "lifecycle_return_pct": ret,
+            "net_lifecycle_return_pct": net_ret,
+            "mark_return_pct": ret,
+            "mfe_pct": mfe,
+            "mae_pct": mae,
             "holding_hours": holding,
         })
         closed.append(item)
+        closed_keys.add((row.get("lifecycle_type"), row.get("coin"), row.get("direction")))
         return item
 
     # 1) 先处理已有 open 生命周期：刷新、缺失计数、消失/反向结算。
-    cur.execute("SELECT * FROM signal_lifecycles WHERE status='open'")
+    cur.execute("SELECT * FROM signal_lifecycles WHERE status='open' AND COALESCE(model_version, 1)=?", (SIGNAL_MODEL_VERSION,))
     open_rows = [dict(x) for x in cur.fetchall()]
     for row in open_rows:
         typ = row.get("lifecycle_type")
@@ -5243,50 +5475,108 @@ def update_signal_lifecycles(run_id: int, signals: List[Dict[str, Any]], longter
         px = _get_px(coin)
         if not typ or not coin or not direction:
             continue
+        cur.execute("SELECT 1 FROM signal_lifecycle_events WHERE lifecycle_id=? AND run_id=? LIMIT 1", (row["lifecycle_id"], run_id))
+        if cur.fetchone():
+            continue
+        expires_at = parse_time(row.get("expires_at"))
+        observed_dt = parse_time(now)
+        if expires_at and observed_dt and observed_dt >= expires_at:
+            if _close(row, px, "达到最大跟踪时长", exit_type="expired", event_type="expire"):
+                continue
         if key in active_map:
             sig = active_map[key]
             score = safe_float(sig.get("score")) or 0.0
+            mark_ret, mfe, mae, mfe_at, mae_at = _mark_values(row, px)
             cur.execute("""
             UPDATE signal_lifecycles
-            SET last_seen_run_id=?, last_seen_at=?, last_score=?, max_score=?, missing_count=0
+            SET last_seen_run_id=?, last_seen_at=?, last_score=?, max_score=?, missing_count=0,
+                lifecycle_state='active', mark_return_pct=?, mfe_pct=?, mae_pct=?, mfe_at=?, mae_at=?,
+                last_mark_px=?, last_mark_at=?
             WHERE lifecycle_id=?
-            """, (run_id, now, score, max(abs(safe_float(row.get("max_score")) or 0.0), abs(score)), row["lifecycle_id"]))
-            _log(row["lifecycle_id"], typ, "refresh", coin, direction, px, score, 0, _signal_dir_return_pct(direction, row.get("entry_px"), px), sig.get("reason") or "信号持续")
+            """, (run_id, now, score, max(abs(safe_float(row.get("max_score")) or 0.0), abs(score)),
+                  mark_ret, mfe, mae, mfe_at, mae_at, px, now, row["lifecycle_id"]))
+            _log(row["lifecycle_id"], typ, "refresh", coin, direction, px, score, 0, mark_ret, sig.get("reason") or "信号持续")
             continue
 
         # 同币同类型出现反向信号，直接结算。
         dirs_now = active_coin_type_dirs.get((typ, coin), set())
         opposite = "bearish" if direction == "bullish" else "bullish"
         if opposite in dirs_now:
-            _close(row, px, "出现反向信号")
+            _close(row, px, "出现反向信号", exit_type="reversed")
             continue
 
         miss = safe_int(row.get("missing_count"), 0) + 1
-        cur.execute("UPDATE signal_lifecycles SET missing_count=? WHERE lifecycle_id=?", (miss, row["lifecycle_id"]))
+        mark_ret, mfe, mae, mfe_at, mae_at = _mark_values(row, px)
+        cur.execute("""
+        UPDATE signal_lifecycles
+        SET missing_count=?, lifecycle_state='grace', mark_return_pct=?, mfe_pct=?, mae_pct=?,
+            mfe_at=?, mae_at=?, last_mark_px=?, last_mark_at=?
+        WHERE lifecycle_id=?
+        """, (miss, mark_ret, mfe, mae, mfe_at, mae_at, px, now, row["lifecycle_id"]))
         miss_reason = _lifecycle_missing_reason(row, signals, longterm_candidates)
-        _log(row["lifecycle_id"], typ, "missing", coin, direction, px, row.get("last_score"), miss, _signal_dir_return_pct(direction, row.get("entry_px"), px), miss_reason)
+        _log(row["lifecycle_id"], typ, "missing", coin, direction, px, row.get("last_score"), miss, mark_ret, miss_reason)
         max_miss = STRONG_SIGNAL_MISSING_ROUNDS if typ == "strong" else LONGTERM_SIGNAL_MISSING_ROUNDS
         if miss >= max_miss:
-            _close(row, px, f"连续{miss}轮信号消失｜{miss_reason}")
+            marked_row = dict(row)
+            marked_row.update({"missing_count": miss, "mark_return_pct": mark_ret, "mfe_pct": mfe, "mae_pct": mae, "mfe_at": mfe_at, "mae_at": mae_at})
+            _close(marked_row, px, f"连续{miss}轮信号消失｜{miss_reason}", exit_type="invalidated")
 
     # 2) 再开新生命周期。若同币同类型反方向 open 还存在，会先关闭反方向。
     for key, sig in active_map.items():
         typ, coin, direction = key
+        if key in closed_keys:
+            continue
+        cur.execute("""
+        SELECT 1 FROM signal_lifecycle_events
+        WHERE run_id=? AND lifecycle_type=? AND coin=? AND direction=?
+          AND event_type IN ('close', 'expire')
+        LIMIT 1
+        """, (run_id, typ, coin, direction))
+        if cur.fetchone():
+            continue
         px = _get_px(coin)
         if px is None or px <= 0:
             continue
         score = safe_float(sig.get("score")) or 0.0
-        cur.execute("SELECT * FROM signal_lifecycles WHERE lifecycle_type=? AND coin=? AND direction=? AND status='open' LIMIT 1", (typ, coin, direction))
+        cur.execute("""
+        SELECT * FROM signal_lifecycles
+        WHERE lifecycle_type=? AND coin=? AND direction=? AND status='open'
+          AND COALESCE(model_version, 1)=?
+        LIMIT 1
+        """, (typ, coin, direction, SIGNAL_MODEL_VERSION))
         if cur.fetchone():
             continue
         opposite = "bearish" if direction == "bullish" else "bullish"
-        cur.execute("SELECT * FROM signal_lifecycles WHERE lifecycle_type=? AND coin=? AND direction=? AND status='open'", (typ, coin, opposite))
-        for old in [dict(x) for x in cur.fetchall()]:
-            _close(old, px, "新反向信号出现")
         cur.execute("""
-        INSERT INTO signal_lifecycles(lifecycle_type, coin, direction, status, entry_run_id, entry_time, entry_px, entry_score, max_score, last_seen_run_id, last_seen_at, last_score, missing_count, note)
-        VALUES (?, ?, ?, 'open', ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
-        """, (typ, coin, direction, run_id, now, px, score, abs(score), run_id, now, score, sig.get("reason") or "新信号出现"))
+        SELECT * FROM signal_lifecycles
+        WHERE lifecycle_type=? AND coin=? AND direction=? AND status='open'
+          AND COALESCE(model_version, 1)=?
+        """, (typ, coin, opposite, SIGNAL_MODEL_VERSION))
+        for old in [dict(x) for x in cur.fetchall()]:
+            _close(old, px, "新反向信号出现", exit_type="reversed")
+        source_table = "signal_events" if typ == "strong" else "longterm_events"
+        cur.execute(
+            f"SELECT event_id FROM {source_table} WHERE run_id=? AND coin=? AND direction=? "
+            "AND COALESCE(model_version, 1)=? ORDER BY event_id DESC LIMIT 1",
+            (run_id, coin, direction, SIGNAL_MODEL_VERSION),
+        )
+        source_row = cur.fetchone()
+        source_event_id = int(source_row[0]) if source_row else None
+        max_hold_hours = STRONG_SIGNAL_MAX_HOLD_HOURS if typ == "strong" else LONGTERM_SIGNAL_MAX_HOLD_HOURS
+        opened_dt = parse_time(now)
+        expires_at = (
+            (opened_dt + dt.timedelta(hours=max_hold_hours)).strftime("%Y-%m-%d %H:%M:%S")
+            if opened_dt and max_hold_hours > 0 else None
+        )
+        cur.execute("""
+        INSERT INTO signal_lifecycles(
+            model_version, source_event_id, lifecycle_type, coin, direction, status, lifecycle_state,
+            entry_run_id, entry_time, entry_px, entry_score, max_score,
+            last_seen_run_id, last_seen_at, last_score, mark_return_pct, mfe_pct, mae_pct,
+            mfe_at, mae_at, last_mark_px, last_mark_at, expires_at, missing_count, note
+        ) VALUES (?, ?, ?, ?, ?, 'open', 'active', ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?, ?, ?, ?, ?, 0, ?)
+        """, (SIGNAL_MODEL_VERSION, source_event_id, typ, coin, direction, run_id, now, px, score, abs(score),
+              run_id, now, score, now, now, px, now, expires_at, sig.get("reason") or "新信号出现"))
         lid = cur.lastrowid
         _log(lid, typ, "open", coin, direction, px, score, 0, 0.0, sig.get("reason") or "新信号出现")
 
@@ -5304,17 +5594,28 @@ def export_signal_lifecycle_files(days: int = SIGNAL_BACKTEST_WINDOW_DAYS) -> No
     conn = db_conn()
     cur = conn.cursor()
     cur.execute("""
-    SELECT lifecycle_id, lifecycle_type, coin, direction, status, entry_time, entry_px, entry_score, max_score,
-           last_seen_at, last_score, missing_count, exit_time, exit_px, exit_reason, lifecycle_return_pct, holding_hours, note
+    SELECT lifecycle_id, model_version, source_event_id, lifecycle_type, coin, direction, status, lifecycle_state,
+           entry_time, entry_px, entry_score, max_score, last_seen_at, last_score, missing_count,
+           mark_return_pct, mfe_pct, mae_pct, mfe_at, mae_at, last_mark_px, last_mark_at, expires_at,
+           exit_time, exit_px, exit_reason, exit_type, lifecycle_return_pct, net_lifecycle_return_pct,
+           holding_hours, note
     FROM signal_lifecycles
-    WHERE entry_time >= ? OR status='open'
+    WHERE COALESCE(model_version, 1)=? AND (entry_time >= ? OR status='open')
     ORDER BY status DESC, COALESCE(exit_time, last_seen_at, entry_time) DESC
-    """, (since,))
+    """, (SIGNAL_MODEL_VERSION, since))
     rows = [dict(x) for x in cur.fetchall()]
+    cur.execute("SELECT COUNT(*) FROM signal_lifecycles WHERE COALESCE(model_version, 1)=1")
+    legacy_count = safe_int(cur.fetchone()[0], 0)
     conn.close()
 
     csv_path = os.path.join(DETAILS_DIR, "signal_lifecycle_latest.csv")
-    fields = ["lifecycle_id", "lifecycle_type", "coin", "direction", "status", "entry_time", "entry_px", "entry_score", "max_score", "last_seen_at", "last_score", "missing_count", "exit_time", "exit_px", "exit_reason", "lifecycle_return_pct", "holding_hours", "note"]
+    fields = [
+        "lifecycle_id", "model_version", "source_event_id", "lifecycle_type", "coin", "direction",
+        "status", "lifecycle_state", "entry_time", "entry_px", "entry_score", "max_score",
+        "last_seen_at", "last_score", "missing_count", "mark_return_pct", "mfe_pct", "mae_pct",
+        "mfe_at", "mae_at", "last_mark_px", "last_mark_at", "expires_at", "exit_time", "exit_px",
+        "exit_reason", "exit_type", "lifecycle_return_pct", "net_lifecycle_return_pct", "holding_hours", "note",
+    ]
     with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         writer.writeheader(); writer.writerows(rows)
@@ -5323,7 +5624,8 @@ def export_signal_lifecycle_files(days: int = SIGNAL_BACKTEST_WINDOW_DAYS) -> No
     with open(report_path, "w", encoding="utf-8") as f:
         f.write("【信号生命周期追踪】\n")
         f.write(f"窗口：过去{days}天 + 当前未结束信号\n")
-        f.write("说明：固定周期回测看未来 24h/7d/30d；生命周期回测看信号从出现到消失/反转的真实表现。\n")
+        f.write(f"模型：V{SIGNAL_MODEL_VERSION} | V1历史生命周期={legacy_count}（仅参考，不混入）\n")
+        f.write("说明：生命周期按 active→grace→closed 追踪；MFE/MAE 是扫描采样到的方向最大浮盈/最大浮亏。\n")
         f.write(f"强信号消失结算：连续{STRONG_SIGNAL_MISSING_ROUNDS}轮消失；长期单失效结算：连续{LONGTERM_SIGNAL_MISSING_ROUNDS}轮消失。\n\n")
         for typ in ("strong", "longterm"):
             subset = [r for r in rows if r.get("lifecycle_type") == typ]
@@ -5331,20 +5633,27 @@ def export_signal_lifecycle_files(days: int = SIGNAL_BACKTEST_WINDOW_DAYS) -> No
             open_rows = [r for r in subset if r.get("status") == "open"]
             f.write(f"【{'强信号' if typ=='strong' else '长期单'}】未结束={len(open_rows)} | 已结束样本={len(closed)}\n")
             if closed:
-                vals = [safe_float(r.get("lifecycle_return_pct")) for r in closed if safe_float(r.get("lifecycle_return_pct")) is not None]
+                vals = [safe_float(r.get("net_lifecycle_return_pct")) for r in closed if safe_float(r.get("net_lifecycle_return_pct")) is not None]
                 win = sum(1 for v in vals if v and v > 0) / len(vals) * 100 if vals else 0.0
                 avg = sum(vals) / len(vals) if vals else 0.0
-                med = sorted(vals)[len(vals)//2] if vals else 0.0
-                f.write(f"生命周期普通胜率={win:.1f}% | 平均收益={avg:+.2f}% | 中位={med:+.2f}%\n")
+                med = statistics.median(vals) if vals else 0.0
+                f.write(f"生命周期净胜率={win:.1f}% | 平均净收益={avg:+.2f}% | 中位净收益={med:+.2f}%\n")
             if open_rows:
                 f.write("未结束：\n")
                 for r in open_rows[:10]:
-                    cur_ret = _signal_dir_return_pct(r.get("direction"), r.get("entry_px"), r.get("exit_px") or r.get("entry_px"))
-                    f.write(f"  {r.get('coin')} {dir_cn(r.get('direction'))} | entry={fmt_num(r.get('entry_px'))} | last_score={fmt_num(r.get('last_score'))} | miss={r.get('missing_count')}\n")
+                    f.write(
+                        f"  {r.get('coin')} {dir_cn(r.get('direction'))} | 状态={r.get('lifecycle_state')} | "
+                        f"当前={fmt_pct(r.get('mark_return_pct'))} | MFE={fmt_pct(r.get('mfe_pct'))} | "
+                        f"MAE={fmt_pct(r.get('mae_pct'))} | miss={r.get('missing_count')} | 到期={r.get('expires_at')}\n"
+                    )
             if closed:
                 f.write("最近结束：\n")
                 for r in closed[:10]:
-                    f.write(f"  {r.get('exit_time')} {r.get('coin')} {dir_cn(r.get('direction'))} | 收益={fmt_pct(r.get('lifecycle_return_pct'))} | 持续={fmt_num(r.get('holding_hours'))}h | 原因={r.get('exit_reason')}\n")
+                    f.write(
+                        f"  {r.get('exit_time')} {r.get('coin')} {dir_cn(r.get('direction'))} | "
+                        f"净收益={fmt_pct(r.get('net_lifecycle_return_pct'))} | MFE={fmt_pct(r.get('mfe_pct'))} | "
+                        f"MAE={fmt_pct(r.get('mae_pct'))} | 退出={r.get('exit_type')} | 持续={fmt_num(r.get('holding_hours'))}h\n"
+                    )
             f.write("\n")
 
 
@@ -5352,11 +5661,12 @@ def get_closed_lifecycle_events(run_id: int) -> List[Dict[str, Any]]:
     conn = db_conn()
     cur = conn.cursor()
     cur.execute("""
-    SELECT lifecycle_id, lifecycle_type, coin, direction, entry_time, entry_px, exit_time, exit_px, exit_reason, lifecycle_return_pct, holding_hours
+    SELECT lifecycle_id, lifecycle_type, coin, direction, entry_time, entry_px, exit_time, exit_px,
+           exit_reason, exit_type, lifecycle_return_pct, net_lifecycle_return_pct, mfe_pct, mae_pct, holding_hours
     FROM signal_lifecycles
-    WHERE exit_run_id=?
+    WHERE exit_run_id=? AND COALESCE(model_version, 1)=?
     ORDER BY exit_time DESC
-    """, (run_id,))
+    """, (run_id, SIGNAL_MODEL_VERSION))
     rows = [dict(x) for x in cur.fetchall()]
     conn.close()
     return rows
@@ -5369,17 +5679,43 @@ def create_longterm_events(run_id: int, candidates: List[Dict[str, Any]], prices
     cur = conn.cursor()
     created = 0
     for c in candidates:
+        if c.get("candidate_gate") != "PASS" or c.get("candidate_state") != "CANDIDATE":
+            continue
+        if "可进入低杠杆长期观察" not in str(c.get("action") or ""):
+            continue
         coin = c.get("coin")
         px = prices.get(coin)
         if px is None or px <= 0:
             continue
-        direction = "bullish" if "多" in str(c.get("direction_cn")) else "bearish"
+        direction = c.get("direction") or ("bullish" if "多" in str(c.get("direction_cn")) else "bearish")
+        cur.execute("""
+        SELECT 1 FROM signal_lifecycles
+        WHERE lifecycle_type='longterm' AND coin=? AND direction=? AND status='open'
+          AND COALESCE(model_version, 1)=?
+        LIMIT 1
+        """, (coin, direction, SIGNAL_MODEL_VERSION))
+        if cur.fetchone():
+            continue
+        cur.execute("""
+        SELECT created_at FROM longterm_events
+        WHERE coin=? AND direction=? AND COALESCE(model_version, 1)=?
+        ORDER BY event_id DESC LIMIT 1
+        """, (coin, direction, SIGNAL_MODEL_VERSION))
+        prev_event = cur.fetchone()
+        if prev_event:
+            prev_dt = parse_time(prev_event[0])
+            if prev_dt and (utc_now() - prev_dt).total_seconds() < LONGTERM_EVENT_COOLDOWN_HOURS * 3600:
+                continue
         reason = f"长期分={c.get('long_term_score')} long={c.get('long_score')} alert={c.get('alert_score')} 连续={c.get('streak')} 动作={c.get('action')}"
         try:
+            observed_at = now_str()
             cur.execute("""
-            INSERT INTO longterm_events(run_id, created_at, coin, direction, score, entry_px, reason)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (run_id, now_str(), coin, direction, c.get("long_term_score"), px, reason))
+            INSERT INTO longterm_events(
+                model_version, run_id, created_at, coin, direction, score, entry_px, reason,
+                mark_return_pct, mfe_pct, mae_pct, mfe_at, mae_at, last_mark_px, last_mark_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?, ?, ?, ?)
+            """, (SIGNAL_MODEL_VERSION, run_id, observed_at, coin, direction, c.get("long_term_score"), px, reason,
+                  observed_at, observed_at, px, observed_at))
             created += 1
         except sqlite3.IntegrityError:
             pass
@@ -5387,8 +5723,21 @@ def create_longterm_events(run_id: int, candidates: List[Dict[str, Any]], prices
     return created
 
 
-def _backtest_periods() -> List[Tuple[str, str, float]]:
-    """回测周期和对应门槛。ret 字段单位是百分比，例如 +3.2 表示 +3.2%。"""
+def _backtest_periods(table: Optional[str] = None) -> List[Tuple[str, str, float]]:
+    """Return horizons that match the signal's intended holding period."""
+    if table == "signal_events":
+        return [
+            ("1h", "ret_1h", BACKTEST_HURDLE_1H),
+            ("4h", "ret_4h", BACKTEST_HURDLE_4H),
+            ("24h", "ret_24h", BACKTEST_HURDLE_24H),
+        ]
+    if table == "longterm_events":
+        return [
+            ("72h", "ret_72h", BACKTEST_HURDLE_72H),
+            ("7d", "ret_7d", BACKTEST_HURDLE_7D),
+            ("15d", "ret_15d", BACKTEST_HURDLE_15D),
+            ("30d", "ret_30d", BACKTEST_HURDLE_30D),
+        ]
     return [
         ("24h", "ret_24h", BACKTEST_HURDLE_24H),
         ("72h", "ret_72h", BACKTEST_HURDLE_72H),
@@ -5405,26 +5754,48 @@ def _export_event_backtest_table(table: str, filename: str, report_title: str, d
     - 普通胜率：方向收益 > 0，只说明方向有没有走对。
     - 门槛胜率：方向收益达到 24h/72h/7d/15d/30d 门槛，更适合评估低杠杆长期单质量。
     """
-    since = (utc_now() - dt.timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+    # A 30d outcome cannot mature inside a query that only keeps events born in
+    # the last 30d.  Keep a wider cohort while still reporting maturity per
+    # horizon.
+    history_days = max(days, 60)
+    since = (utc_now() - dt.timedelta(days=history_days)).strftime("%Y-%m-%d %H:%M:%S")
     conn = db_conn()
     cur = conn.cursor()
     cur.execute(f"""
-    SELECT event_id, run_id, created_at, coin, direction, score, entry_px,
-           ret_1h, ret_4h, ret_24h, ret_72h, ret_7d, ret_15d, ret_30d, reason
+    SELECT event_id, model_version, run_id, created_at, coin, direction, score, entry_px,
+           ret_1h, ret_4h, ret_24h, ret_72h, ret_7d, ret_15d, ret_30d,
+           eval_1h_at, eval_4h_at, eval_24h_at, eval_72h_at, eval_7d_at, eval_15d_at, eval_30d_at,
+           mark_return_pct, mfe_pct, mae_pct, mfe_at, mae_at, last_mark_px, last_mark_at,
+           reason
     FROM {table}
-    WHERE created_at >= ?
+    WHERE created_at >= ? AND COALESCE(model_version, 1)=?
     ORDER BY created_at DESC
-    """, (since,))
+    """, (since, SIGNAL_MODEL_VERSION))
     rows = [dict(x) for x in cur.fetchall()]
+    cur.execute(
+        f"SELECT COUNT(*) FROM {table} WHERE created_at >= ? AND COALESCE(model_version, 1)=1",
+        (since,),
+    )
+    legacy_count = safe_int(cur.fetchone()[0], 0) if LEGACY_BASELINE_MODE else 0
     conn.close()
     ensure_dirs()
 
-    periods = _backtest_periods()
+    periods = _backtest_periods(table)
     out_rows: List[Dict[str, Any]] = []
     for r in rows:
         rr = dict(r)
+        target_hours = {"1h": 1, "4h": 4, "24h": 24, "72h": 72, "7d": 168, "15d": 360, "30d": 720}
+        created_dt = parse_time(r.get("created_at"))
+        for key, _, _ in periods:
+            expected_hours = target_hours[key]
+            rr[f"net_ret_{key}"] = net_direction_return(r.get(f"ret_{key}"))
+            eval_dt = parse_time(r.get(f"eval_{key}_at"))
+            rr[f"eval_delay_{key}_min"] = (
+                max(0.0, (eval_dt - created_dt).total_seconds() / 60.0 - expected_hours * 60.0)
+                if created_dt and eval_dt else None
+            )
         for label, col, hurdle in periods:
-            v = safe_float(r.get(col))
+            v = net_direction_return(r.get(col))
             key = label.replace("h", "h").replace("d", "d")
             rr[f"direction_win_{key}"] = "" if v is None else int(v > 0)
             rr[f"hurdle_win_{key}"] = "" if v is None else int(v >= hurdle)
@@ -5433,7 +5804,14 @@ def _export_event_backtest_table(table: str, filename: str, report_title: str, d
 
     if out_rows:
         # 固定主要列顺序，避免每次字段顺序乱。
-        base_fields = ["event_id", "run_id", "created_at", "coin", "direction", "score", "entry_px", "ret_1h", "ret_4h", "ret_24h", "ret_72h", "ret_7d", "ret_15d", "ret_30d", "reason"]
+        horizon_keys = [label for label, _, _ in periods]
+        base_fields = ["event_id", "model_version", "run_id", "created_at", "coin", "direction", "score", "entry_px"]
+        base_fields += [f"ret_{key}" for key in horizon_keys]
+        base_fields += [f"net_ret_{key}" for key in horizon_keys]
+        base_fields += ["mark_return_pct", "mfe_pct", "mae_pct", "mfe_at", "mae_at", "last_mark_px", "last_mark_at"]
+        base_fields += [f"eval_{key}_at" for key in horizon_keys]
+        base_fields += [f"eval_delay_{key}_min" for key in horizon_keys]
+        base_fields += ["reason"]
         extra_fields: List[str] = []
         for label, _, _ in periods:
             key = label.replace("h", "h").replace("d", "d")
@@ -5449,30 +5827,50 @@ def _export_event_backtest_table(table: str, filename: str, report_title: str, d
     txt_name = filename.replace(".csv", "_report.txt")
     with open(os.path.join(DETAILS_DIR, txt_name), "w", encoding="utf-8") as f:
         f.write(f"【{report_title}】\n")
-        f.write(f"窗口：过去{days}天 | 事件样本：{len(rows)}\n")
-        f.write("说明：普通胜率=方向收益>0；门槛胜率=达到最低收益门槛，更适合长期单。\n")
-        f.write("门槛：24h≥{:.1f}% | 72h≥{:.1f}% | 7d≥{:.1f}% | 15d≥{:.1f}% | 30d≥{:.1f}%\n\n".format(
-            BACKTEST_HURDLE_24H, BACKTEST_HURDLE_72H, BACKTEST_HURDLE_7D, BACKTEST_HURDLE_15D, BACKTEST_HURDLE_30D
-        ))
-        for label, col, hurdle in periods:
-            vals = [safe_float(r.get(col)) for r in rows if safe_float(r.get(col)) is not None]
-            if not vals:
-                f.write(f"{label}: 暂无成熟样本\n")
-                continue
-            direction_win = sum(1 for v in vals if v > 0) / len(vals)
-            hurdle_win = sum(1 for v in vals if v >= hurdle) / len(vals)
-            avg = sum(vals) / len(vals)
-            median = sorted(vals)[len(vals)//2]
-            f.write(
-                f"{label}: 样本={len(vals)} | 普通胜率={direction_win*100:.1f}% | "
-                f"门槛胜率={hurdle_win*100:.1f}% | 门槛≥{hurdle:.1f}% | "
-                f"平均方向收益={avg:+.2f}% | 中位={median:+.2f}%\n"
-            )
+        f.write(
+            f"收益面板：V{PERFORMANCE_DASHBOARD_VERSION} | 信号模型：V{SIGNAL_MODEL_VERSION} | "
+            f"窗口：过去{history_days}天 | V2事件={len(rows)}\n"
+        )
+        f.write(f"说明：按多空和成熟度分开；收益逐事件扣除往返成本{BACKTEST_ROUNDTRIP_COST_PCT:.2f}%；MFE/MAE为未扣固定成本的扫描采样路径指标。\n")
+        f.write("达标线：" + " | ".join(f"{label}≥{hurdle:.2f}%" for label, _, hurdle in periods) + "\n\n")
+        horizon_hours = {"1h": 1, "4h": 4, "24h": 24, "72h": 72, "7d": 168, "15d": 360, "30d": 720}
+        for side_title, side_value in (("多头", "bullish"), ("空头", "bearish")):
+            subset = [r for r in rows if r.get("direction") == side_value]
+            f.write(f"{side_title} | V2事件={len(subset)}\n")
+            for label, col, hurdle in periods:
+                vals = [net_direction_return(r.get(col)) for r in subset if net_direction_return(r.get(col)) is not None]
+                waiting_rows = [r for r in subset if safe_float(r.get(col)) is None]
+                overdue = 0
+                for pending_row in waiting_rows:
+                    born = parse_time(pending_row.get("created_at"))
+                    if born and (utc_now() - born).total_seconds() >= horizon_hours[label] * 3600:
+                        overdue += 1
+                prefix = f"  {label} | 成熟={len(vals)} | 待评估={len(waiting_rows)} | 超时缺值={overdue}"
+                if not vals:
+                    f.write(prefix + " | 暂无可统计收益\n")
+                    continue
+                direction_win = sum(1 for v in vals if v > 0) / len(vals)
+                hurdle_win = sum(1 for v in vals if v >= hurdle) / len(vals)
+                avg = sum(vals) / len(vals)
+                median = statistics.median(vals)
+                f.write(
+                    prefix
+                    + f" | 普胜={direction_win*100:.1f}% | 达标={hurdle_win*100:.1f}%"
+                    + f" | 净均={avg:+.2f}% | 净中位={median:+.2f}%\n"
+                )
+            excursions = [r for r in subset if safe_float(r.get("mfe_pct")) is not None and safe_float(r.get("mae_pct")) is not None]
+            if excursions:
+                avg_mfe = sum(safe_float(r.get("mfe_pct")) or 0.0 for r in excursions) / len(excursions)
+                avg_mae = sum(safe_float(r.get("mae_pct")) or 0.0 for r in excursions) / len(excursions)
+                f.write(f"  路径样本={len(excursions)} | 平均MFE={avg_mfe:+.2f}% | 平均MAE={avg_mae:+.2f}%\n")
+            f.write("\n")
+        if LEGACY_BASELINE_MODE:
+            f.write(f"V1历史参考：事件={legacy_count}，保留原口径供对照，不计入V2指标。\n")
         f.write("\n最近样本：\n")
         for r in rows[:20]:
             parts = []
             for label, col, hurdle in periods:
-                v = safe_float(r.get(col))
+                v = net_direction_return(r.get(col))
                 if v is None:
                     continue
                 mark = "✅" if v >= hurdle else ("↗" if v > 0 else "❌")
@@ -5482,6 +5880,161 @@ def _export_event_backtest_table(table: str, filename: str, report_title: str, d
                 f"score={safe_float(r.get('score')):+.2f} | " + " | ".join(parts[:5]) + "\n"
             )
     return rows
+
+
+def _dashboard_event_rows(table: str, model_version: int, history_days: int) -> List[Dict[str, Any]]:
+    since = (utc_now() - dt.timedelta(days=history_days)).strftime("%Y-%m-%d %H:%M:%S")
+    conn = db_conn(); cur = conn.cursor()
+    cur.execute(f"""
+    SELECT event_id, created_at, coin, direction, score,
+           ret_1h, ret_4h, ret_24h, ret_72h, ret_7d, ret_15d, ret_30d,
+           mark_return_pct, mfe_pct, mae_pct
+    FROM {table}
+    WHERE created_at >= ? AND COALESCE(model_version, 1)=?
+    ORDER BY created_at DESC
+    """, (since, model_version))
+    rows = [dict(x) for x in cur.fetchall()]
+    conn.close()
+    return rows
+
+
+def _dashboard_period_metric(rows: List[Dict[str, Any]], label: str, col: str, hurdle: float) -> Dict[str, Any]:
+    vals = [net_direction_return(r.get(col)) for r in rows if net_direction_return(r.get(col)) is not None]
+    waiting_rows = [r for r in rows if safe_float(r.get(col)) is None]
+    horizon_hours = {"1h": 1, "4h": 4, "24h": 24, "72h": 72, "7d": 168, "15d": 360, "30d": 720}[label]
+    overdue = 0
+    for row in waiting_rows:
+        born = parse_time(row.get("created_at"))
+        if born and (utc_now() - born).total_seconds() >= horizon_hours * 3600:
+            overdue += 1
+    wins = sum(1 for v in vals if v > 0)
+    hurdle_wins = sum(1 for v in vals if v >= hurdle)
+    return {
+        "events": len(rows),
+        "mature": len(vals),
+        "pending": len(waiting_rows),
+        "overdue": overdue,
+        "win_rate_pct": (wins / len(vals) * 100.0) if vals else None,
+        "hurdle_rate_pct": (hurdle_wins / len(vals) * 100.0) if vals else None,
+        "avg_net_pct": (sum(vals) / len(vals)) if vals else None,
+        "median_net_pct": statistics.median(vals) if vals else None,
+        "hurdle_pct": hurdle,
+    }
+
+
+def build_performance_dashboard_v3(history_days: Optional[int] = None) -> Dict[str, Any]:
+    """Build a presentation-only dashboard without mixing legacy and V2 populations."""
+    days = max(history_days or 0, SIGNAL_EVENT_KEEP_DAYS, 90)
+    summary_rows: List[Dict[str, Any]] = []
+    scopes: List[Tuple[str, int, bool]] = [(f"V{SIGNAL_MODEL_VERSION}", SIGNAL_MODEL_VERSION, False)]
+    if LEGACY_BASELINE_MODE and SIGNAL_MODEL_VERSION != 1:
+        scopes.append(("V1历史参考", 1, True))
+    sources = [
+        ("short_signal", "短期强信号", "signal_events"),
+        ("longterm_candidate", "正式长期候选", "longterm_events"),
+    ]
+    event_counts: Dict[Tuple[str, str], int] = {}
+    for scope_label, version, reference_only in scopes:
+        for source, source_cn, table in sources:
+            event_rows = _dashboard_event_rows(table, version, days)
+            event_counts[(scope_label, source)] = len(event_rows)
+            for side, direction in (("all", None), ("long", "bullish"), ("short", "bearish")):
+                subset = event_rows if direction is None else [r for r in event_rows if r.get("direction") == direction]
+                for period, col, hurdle in _backtest_periods(table):
+                    metric = _dashboard_period_metric(subset, period, col, hurdle)
+                    summary_rows.append({
+                        "dashboard_version": PERFORMANCE_DASHBOARD_VERSION,
+                        "model_scope": scope_label,
+                        "reference_only": 1 if reference_only else 0,
+                        "source": source,
+                        "source_cn": source_cn,
+                        "side": side,
+                        "period": period,
+                        **metric,
+                    })
+    conn = db_conn(); cur = conn.cursor()
+    cur.execute("""
+    SELECT COUNT(*)
+    FROM longterm_events l
+    WHERE COALESCE(l.model_version, 1)=1
+      AND EXISTS (
+          SELECT 1 FROM signal_events s
+          WHERE COALESCE(s.model_version, 1)=1
+            AND s.run_id=l.run_id AND s.coin=l.coin AND s.direction=l.direction
+      )
+    """)
+    legacy_long_overlap = safe_int(cur.fetchone()[0], 0)
+    conn.close()
+    return {
+        "history_days": days,
+        "rows": summary_rows,
+        "event_counts": event_counts,
+        "legacy_long_overlap": legacy_long_overlap,
+    }
+
+
+def _dashboard_group_lines(
+    dashboard: Dict[str, Any], scope: str, source: str, reference_only: bool = False
+) -> List[str]:
+    rows = [
+        r for r in dashboard.get("rows", [])
+        if r.get("model_scope") == scope and r.get("source") == source
+    ]
+    if not rows:
+        return []
+    source_cn = rows[0].get("source_cn")
+    all_rows = [r for r in rows if r.get("side") == "all"]
+    long_events = next((r.get("events") for r in rows if r.get("side") == "long"), 0)
+    short_events = next((r.get("events") for r in rows if r.get("side") == "short"), 0)
+    suffix = "｜仅参考，不计入V2指标" if reference_only else ""
+    lines = [f"{source_cn}：事件={all_rows[0].get('events') if all_rows else 0}（多={long_events} / 空={short_events}）{suffix}"]
+    for row in all_rows:
+        base = f"  {row['period']} 成熟={row['mature']} 待评估={row['pending']}"
+        if row.get("overdue"):
+            base += f" 超时缺值={row['overdue']}"
+        if row.get("mature"):
+            base += (
+                f"｜普胜={row['win_rate_pct']:.1f}% 达标={row['hurdle_rate_pct']:.1f}%"
+                f" 净均={row['avg_net_pct']:+.2f}% 净中位={row['median_net_pct']:+.2f}%"
+            )
+        lines.append(base)
+    return lines
+
+
+def export_performance_dashboard_v3() -> Dict[str, Any]:
+    ensure_dirs()
+    dashboard = build_performance_dashboard_v3()
+    rows = dashboard["rows"]
+    csv_path = os.path.join(DETAILS_DIR, "signal_performance_dashboard_v3_latest.csv")
+    if rows:
+        with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()), extrasaction="ignore")
+            writer.writeheader(); writer.writerows(rows)
+    else:
+        with open(csv_path, "w", encoding="utf-8-sig") as f:
+            f.write("empty\n")
+    lines = [
+        f"【收益面板 V{PERFORMANCE_DASHBOARD_VERSION}】",
+        f"信号模型：V{SIGNAL_MODEL_VERSION}｜历史窗口：{dashboard['history_days']}天｜往返成本：{BACKTEST_ROUNDTRIP_COST_PCT:.2f}%",
+        "短期只看1h/4h/24h；正式长期只看72h/7d/15d/30d。成熟与待评估样本分开。",
+        "",
+        f"【当前 V{SIGNAL_MODEL_VERSION}】",
+    ]
+    lines += _dashboard_group_lines(dashboard, f"V{SIGNAL_MODEL_VERSION}", "short_signal")
+    lines += [""] + _dashboard_group_lines(dashboard, f"V{SIGNAL_MODEL_VERSION}", "longterm_candidate")
+    if LEGACY_BASELINE_MODE:
+        lines += ["", "【V1历史参考】", "旧事件继续展示，但准入定义不等同V2，绝不参与V2胜率和阈值优化。"]
+        lines += _dashboard_group_lines(dashboard, "V1历史参考", "short_signal", reference_only=True)
+        lines += [""] + _dashboard_group_lines(dashboard, "V1历史参考", "longterm_candidate", reference_only=True)
+        legacy_long = dashboard["event_counts"].get(("V1历史参考", "longterm_candidate"), 0)
+        lines.append(
+            f"原长期表重叠检查：{dashboard['legacy_long_overlap']}/{legacy_long} 条与短期事件重叠；"
+            "因此只作为原始历史参考，不能视为独立长期样本。"
+        )
+    with open(os.path.join(REPORT_DIR, "signal_performance_dashboard_v3.txt"), "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+    dashboard["text_lines"] = lines
+    return dashboard
 
 
 
@@ -5503,7 +6056,7 @@ def wilson_lower_bound(wins: int, total: int, z: float = 1.96) -> Optional[float
 
 
 def _agg_ret(rows: List[Dict[str, Any]], col: str, hurdle: float) -> Dict[str, Any]:
-    vals = [_safe_pct(r.get(col)) for r in rows if _safe_pct(r.get(col)) is not None]
+    vals = [net_direction_return(r.get(col)) for r in rows if net_direction_return(r.get(col)) is not None]
     if not vals:
         return {"n": 0, "win": None, "hurdle_win": None, "win_lower_95": None, "hurdle_lower_95": None, "avg": None, "median": None}
     vals_sorted = sorted(vals)
@@ -5516,7 +6069,7 @@ def _agg_ret(rows: List[Dict[str, Any]], col: str, hurdle: float) -> Dict[str, A
         "win_lower_95": wilson_lower_bound(direction_wins, len(vals)),
         "hurdle_lower_95": wilson_lower_bound(hurdle_wins, len(vals)),
         "avg": sum(vals) / len(vals),
-        "median": vals_sorted[len(vals_sorted)//2],
+        "median": statistics.median(vals_sorted),
     }
 
 
@@ -5534,12 +6087,12 @@ def _load_event_rows_for_research(table: str, days: int = 90) -> List[Dict[str, 
     since = (utc_now() - dt.timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
     try:
         cur.execute(f"""
-        SELECT event_id, run_id, created_at, coin, direction, score, entry_px, reason,
+        SELECT event_id, model_version, run_id, created_at, coin, direction, score, entry_px, reason,
                ret_24h, ret_72h, ret_7d, ret_15d, ret_30d
         FROM {table}
-        WHERE created_at >= ?
+        WHERE created_at >= ? AND COALESCE(model_version, 1)=?
         ORDER BY created_at DESC
-        """, (since,))
+        """, (since, SIGNAL_MODEL_VERSION))
         rows = [dict(x) for x in cur.fetchall()]
     except Exception:
         rows = []
@@ -5673,8 +6226,9 @@ def export_research_intelligence_files(run_id: int) -> None:
 def export_backtest_files() -> None:
     if not BACKTEST_MODE:
         return
-    _export_event_backtest_table("signal_events", "signal_backtest_latest.csv", "强信号/观察信号回测")
-    _export_event_backtest_table("longterm_events", "longterm_backtest_latest.csv", "长期单候选回测")
+    _export_event_backtest_table("signal_events", "signal_backtest_latest.csv", "短期强信号收益面板 V3")
+    _export_event_backtest_table("longterm_events", "longterm_backtest_latest.csv", "正式长期候选收益面板 V3")
+    export_performance_dashboard_v3()
 
 
 def write_last_run_status(run_id: int, wallet_rows: List[Dict[str, Any]], perp_rows: List[Dict[str, Any]], spot_rows: List[Dict[str, Any]], pushed: bool, note: str, started_at: Optional[str] = None) -> None:
@@ -5686,6 +6240,7 @@ def write_last_run_status(run_id: int, wallet_rows: List[Dict[str, Any]], perp_r
         duration_minutes = (utc_now() - start_dt).total_seconds() / 60
     semantic = spot_semantic_health(spot_rows)
     payload = {
+        "signal_model_version": SIGNAL_MODEL_VERSION,
         "last_run_cn": display_now_str(),
         "last_run_utc": now_str(),
         "run_id": run_id,
@@ -5718,12 +6273,23 @@ def create_signal_events(run_id: int, signals: List[Dict[str, Any]], prices: Dic
         px = prices.get(coin)
         if px is None or px <= 0:
             continue
-        if abs(s["final_score"]) < threshold(thresholds, coin, "min_watch_score"):
+        alert_score = safe_float(s.get("alert_score")) or 0.0
+        if abs(alert_score) < model_threshold(thresholds, coin, "alert_push"):
+            continue
+        if is_long_candidate_signal(s):
+            continue
+        cur.execute("""
+        SELECT 1 FROM signal_lifecycles
+        WHERE lifecycle_type='strong' AND coin=? AND direction=? AND status='open'
+          AND COALESCE(model_version, 1)=?
+        LIMIT 1
+        """, (coin, s["direction"], SIGNAL_MODEL_VERSION))
+        if cur.fetchone():
             continue
         # 同方向连续存在的信号不是独立样本。冷却期内只由 lifecycle 更新，不重复计入固定周期回测。
         cur.execute(
-            "SELECT created_at FROM signal_events WHERE coin=? AND direction=? ORDER BY event_id DESC LIMIT 1",
-            (coin, s["direction"]),
+            "SELECT created_at FROM signal_events WHERE coin=? AND direction=? AND COALESCE(model_version, 1)=? ORDER BY event_id DESC LIMIT 1",
+            (coin, s["direction"], SIGNAL_MODEL_VERSION),
         )
         prev_event = cur.fetchone()
         if prev_event:
@@ -5731,10 +6297,14 @@ def create_signal_events(run_id: int, signals: List[Dict[str, Any]], prices: Dic
             if prev_dt and (utc_now() - prev_dt).total_seconds() < SIGNAL_EVENT_COOLDOWN_HOURS * 3600:
                 continue
         try:
+            observed_at = now_str()
             cur.execute("""
-            INSERT INTO signal_events(run_id, created_at, coin, direction, score, entry_px, reason)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (run_id, now_str(), coin, s["direction"], s["final_score"], px, s["reason"]))
+            INSERT INTO signal_events(
+                model_version, run_id, created_at, coin, direction, score, entry_px, reason,
+                mark_return_pct, mfe_pct, mae_pct, mfe_at, mae_at, last_mark_px, last_mark_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?, ?, ?, ?)
+            """, (SIGNAL_MODEL_VERSION, run_id, observed_at, coin, s["direction"], alert_score, px, s.get("reason") or "",
+                  observed_at, observed_at, px, observed_at))
             created += 1
         except sqlite3.IntegrityError:
             pass
@@ -6093,11 +6663,11 @@ def recent_signal_summary(days: int = REPORT_REVIEW_WINDOW_DAYS) -> List[Dict[st
     cur.execute("""
     SELECT coin, direction, COUNT(*) AS n, AVG(score) AS avg_score, MAX(ABS(score)) AS max_abs_score
     FROM signal_events
-    WHERE created_at >= ?
+    WHERE created_at >= ? AND COALESCE(model_version, 1)=?
     GROUP BY coin, direction
     ORDER BY max_abs_score DESC
     LIMIT 50
-    """, (since,))
+    """, (since, SIGNAL_MODEL_VERSION))
     rows = [dict(x) for x in cur.fetchall()]
     conn.close()
     return rows
@@ -6157,30 +6727,69 @@ def should_push_daily() -> bool:
 
 
 def get_coin_recent_rows(coin: str, run_id: int, limit: int = 6) -> List[Dict[str, Any]]:
-    """读取某个币最近几轮信号，用于判断连续性。"""
+    """读取最近扫描槽位；币种缺席的健康轮次也会作为断点返回。"""
     conn = db_conn()
     cur = conn.cursor()
     try:
         cur.execute("""
-        SELECT run_id, direction, final_score, confidence, signal_state, signal_type
-        FROM coin_signals
-        WHERE coin = ? AND run_id <= ?
+        SELECT run_id
+        FROM runs
+        WHERE run_id <= ?
+          AND COALESCE(snapshot_complete, 0)=1
+          AND COALESCE(price_data_ok, 0)=1
         ORDER BY run_id DESC
         LIMIT ?
-        """, (coin, run_id, limit))
-        rows = [dict(x) for x in cur.fetchall()]
+        """, (run_id, limit))
+        run_slots = [safe_int(x[0], 0) for x in cur.fetchall()]
+        if run_slots:
+            marks = ",".join("?" for _ in run_slots)
+            cur.execute(f"""
+            SELECT slots.run_id, cs.direction, cs.final_score, cs.alert_score, cs.long_score,
+                   cs.long_candidate_score, cs.short_candidate_score, cs.confidence,
+                   cs.signal_state, cs.signal_type
+            FROM (
+                SELECT run_id FROM runs WHERE run_id IN ({marks})
+            ) AS slots
+            LEFT JOIN coin_signals cs ON cs.run_id=slots.run_id AND cs.coin=?
+                AND COALESCE(cs.model_version, 1)=?
+            ORDER BY slots.run_id DESC
+            """, (*run_slots, coin, SIGNAL_MODEL_VERSION))
+            rows = [dict(x) for x in cur.fetchall()]
+        else:
+            # Small unit fixtures and very old databases may not have trusted
+            # run markers yet. Preserve their historical read behaviour.
+            cur.execute("""
+            SELECT run_id, direction, final_score, alert_score, long_score,
+                   long_candidate_score, short_candidate_score, confidence, signal_state, signal_type
+            FROM coin_signals
+            WHERE coin = ? AND run_id <= ? AND COALESCE(model_version, 1)=?
+            ORDER BY run_id DESC
+            LIMIT ?
+            """, (coin, run_id, SIGNAL_MODEL_VERSION, limit))
+            rows = [dict(x) for x in cur.fetchall()]
     except Exception:
         rows = []
     conn.close()
     return rows
 
 
-def signal_streak(coin: str, direction: str, run_id: int, min_abs_score: float = 0.0) -> int:
-    """统计最近连续同方向轮数。只统计分数达到 min_abs_score 的轮次。"""
+def signal_streak(
+    coin: str,
+    direction: str,
+    run_id: int,
+    min_abs_score: float = 0.0,
+    *,
+    score_field: str = "final_score",
+    include_current: bool = False,
+    current_score: Optional[float] = None,
+) -> int:
+    """统计最近连续同方向轮数，可显式计入尚未落库的当前轮。"""
     rows = get_coin_recent_rows(coin, run_id, limit=8)
+    if include_current and (not rows or safe_int(rows[0].get("run_id"), -1) != int(run_id)):
+        rows.insert(0, {"run_id": run_id, "direction": direction, score_field: current_score})
     streak = 0
     for r in rows:
-        fs = abs(safe_float(r.get("final_score")) or 0.0)
+        fs = abs(safe_float(r.get(score_field)) or 0.0)
         if r.get("direction") == direction and fs >= min_abs_score:
             streak += 1
         else:
@@ -6461,6 +7070,7 @@ def build_report(
     lines.append(f"扫描开始{DISPLAY_TZ_NAME}：{signal_time_cn(run_id)}")
     lines.append(f"报告生成{DISPLAY_TZ_NAME}：{display_now_str()} | UTC：{now_str()}")
     lines.append(f"run_id：{run_id}")
+    lines.append(f"信号模型：V{SIGNAL_MODEL_VERSION}（短期强信号与正式长期候选分开统计）")
     stats = run_wallet_stats(run_id)
     lines.append("【扫描健康】")
     lines.append(
@@ -6637,36 +7247,38 @@ def build_report(
     lines.append("")
     if BACKTEST_MODE:
         try:
-            lines.append("【强信号 / 长期单回测摘要】")
-            lines.append("说明：普胜=方向收益>0；门胜=达到门槛收益，长期单优先看门胜。")
-            for title, table in (("信号", "signal_events"), ("长期单", "longterm_events")):
-                since = (utc_now() - dt.timedelta(days=SIGNAL_BACKTEST_WINDOW_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
-                conn = db_conn(); cur = conn.cursor()
-                cur.execute(f"SELECT direction, ret_24h, ret_72h, ret_7d, ret_15d, ret_30d FROM {table} WHERE created_at >= ?", (since,))
-                brs = [dict(x) for x in cur.fetchall()]; conn.close()
-                parts_sum = []
-                for label, col, hurdle in _backtest_periods():
-                    vals = [safe_float(r.get(col)) for r in brs if safe_float(r.get(col)) is not None]
-                    if vals:
-                        dir_win = sum(1 for v in vals if v > 0) / len(vals) * 100
-                        hurdle_win = sum(1 for v in vals if v >= hurdle) / len(vals) * 100
-                        lower95 = (wilson_lower_bound(sum(1 for v in vals if v > 0), len(vals)) or 0.0) * 100
-                        avg = sum(vals) / len(vals)
-                        mature = [r for r in brs if safe_float(r.get(col)) is not None]
-                        fixed_long = sum(
-                            (safe_float(r.get(col)) or 0.0) if r.get("direction") == "bullish" else -(safe_float(r.get(col)) or 0.0)
-                            for r in mature
-                        ) / len(mature)
-                        net_avg = avg - BACKTEST_ROUNDTRIP_COST_PCT
-                        parts_sum.append(
-                            f"{label} {len(vals)}次 普胜{dir_win:.0f}% 门胜{hurdle_win:.0f}% "
-                            f"均{avg:+.1f}% 净{net_avg:+.1f}% 固定做多{fixed_long:+.1f}% 95%下限{lower95:.0f}%"
+            dashboard = build_performance_dashboard_v3()
+            lines.append(f"【收益面板 V{PERFORMANCE_DASHBOARD_VERSION}｜信号模型V{SIGNAL_MODEL_VERSION}】")
+            lines.append(f"短期看1h/4h/24h；正式长期看72h/7d/15d/30d；净收益已逐事件扣成本{BACKTEST_ROUNDTRIP_COST_PCT:.2f}%。")
+            lines += _dashboard_group_lines(dashboard, f"V{SIGNAL_MODEL_VERSION}", "short_signal")
+            lines += _dashboard_group_lines(dashboard, f"V{SIGNAL_MODEL_VERSION}", "longterm_candidate")
+            if LEGACY_BASELINE_MODE:
+                legacy_short = dashboard["event_counts"].get(("V1历史参考", "short_signal"), 0)
+                legacy_long = dashboard["event_counts"].get(("V1历史参考", "longterm_candidate"), 0)
+                lines.append(
+                    f"V1历史参考：短期事件={legacy_short}；原长期事件={legacy_long}，"
+                    f"其中重叠={dashboard['legacy_long_overlap']}；旧口径单列，不计入V2。"
+                )
+                # Existing data remains useful as a baseline.  Show aggregate
+                # short-horizon outcomes, while keeping it visibly separate.
+                legacy_rows = [
+                    r for r in dashboard["rows"]
+                    if r.get("model_scope") == "V1历史参考"
+                    and r.get("source") == "short_signal"
+                    and r.get("side") == "all"
+                ]
+                legacy_parts = []
+                for row in legacy_rows:
+                    if row.get("mature"):
+                        legacy_parts.append(
+                            f"{row['period']} {row['mature']}次 普胜{row['win_rate_pct']:.0f}% 净均{row['avg_net_pct']:+.2f}%"
                         )
-                lines.append(f"{title}：" + ("；".join(parts_sum) if parts_sum else "暂无成熟样本"))
+                if legacy_parts:
+                    lines.append("V1短期基线（仅参考）：" + "；".join(legacy_parts))
             lines.append("")
         except Exception:
             pass
-    lines.append(f"【过去{REPORT_REVIEW_WINDOW_DAYS}天 信号复盘】")
+    lines.append(f"【过去{REPORT_REVIEW_WINDOW_DAYS}天 V{SIGNAL_MODEL_VERSION}短期信号复盘】")
     summary = recent_signal_summary(REPORT_REVIEW_WINDOW_DAYS)
     if not summary:
         lines.append(f"暂无{REPORT_REVIEW_WINDOW_DAYS}天信号数据。")
@@ -6685,7 +7297,7 @@ def build_report(
     lines.append("【说明】")
     lines.append("做多/做空观察不是自动下单建议，只是监控信号方向。")
     lines.append("第一次运行只建立快照，第二次开始才有趋势对比。")
-    lines.append("如果 TG 太少，降低 coin_thresholds.json 的 score_push；如果太多，提高 score_push。")
+    lines.append("短期提醒频率调整 alert_score_push；长期候选调整 long_score_push。未配置V2键时继续回退 score_push。")
     return "\n".join(lines)
 
 
@@ -6801,6 +7413,7 @@ def save_daily_archive(run_id: int, report: str) -> None:
         "rolling_flow_report.txt",
         "long_short_state_report.txt",
         "wallet_cluster_report.txt",
+        "signal_performance_dashboard_v3.txt",
         "last_run_status.json",
     ]
     # 3) 关键 CSV：每天保留少量，用于长期复盘
@@ -6812,6 +7425,7 @@ def save_daily_archive(run_id: int, report: str) -> None:
         "wallet_position_performance_latest.csv",
         "signal_backtest_latest.csv",
         "longterm_backtest_latest.csv",
+        "signal_performance_dashboard_v3_latest.csv",
         "signal_lifecycle_latest.csv",
         "data_quality_report.txt",
     ]
@@ -6840,8 +7454,8 @@ def save_daily_archive(run_id: int, report: str) -> None:
         f"run_id: {run_id}\n"
         f"updated_at_cn: {signal_time_cn(run_id)}\n"
         f"updated_at_utc: {now_str()}\n\n"
-        f"主要看：final_report.txt、long_term_plan.txt、signal_explain_report.txt、coin_risk_report.txt、rolling_flow_report.txt\n"
-        f"关键 CSV：coin_signals.csv、rolling_flow.csv、wallet_quality.csv、wallet_position_performance.csv、signal_backtest.csv、longterm_backtest.csv、signal_lifecycle.csv\n"
+        f"主要看：final_report.txt、signal_performance_dashboard_v3.txt、long_term_plan.txt、signal_explain_report.txt、coin_risk_report.txt、rolling_flow_report.txt\n"
+        f"关键 CSV：coin_signals.csv、rolling_flow.csv、wallet_quality.csv、wallet_position_performance.csv、signal_backtest.csv、longterm_backtest.csv、signal_performance_dashboard_v3.csv、signal_lifecycle.csv\n"
         f"全量明细请看仓库 reports/details/，长期历史保存在本地 SQLite 数据库。\n"
     )
     with open(os.path.join(day_dir, "README.txt"), "w", encoding="utf-8") as f:
@@ -6890,6 +7504,14 @@ def prune_daily_archives(keep_days: int) -> None:
 
 
 async def run_once(args: argparse.Namespace) -> None:
+    # Windows PowerShell may expose a GBK stdout even though all report files
+    # are UTF-8.  Replace unsupported console glyphs instead of failing after a
+    # successful 20-minute scan.
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(errors="replace")
+    except Exception:
+        pass
     ensure_dirs()
     step_log(f"启动脚本 | backend={'turso' if USE_TURSO else 'sqlite'} | DB_BACKEND={DB_BACKEND} | USE_TURSO={USE_TURSO}")
     init_db()
@@ -7217,10 +7839,17 @@ def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: 
             except sqlite3.OperationalError:
                 pass
 
-        # 事件类保留 30d 回测窗口 + 缓冲。
-        for t in ("wallet_actions", "coin_flow_snapshots", "signal_events", "longterm_events", "position_trade_events", "signal_lifecycle_events", "final_reports"):
+        # 大体积事件保留常规窗口；小体积信号事件保留更长时间，确保
+        # 30d结果成熟后仍有足够回看区间。
+        for t in ("wallet_actions", "coin_flow_snapshots", "position_trade_events", "signal_lifecycle_events", "final_reports"):
             try:
                 cur.execute(f"DELETE FROM {t} WHERE created_at < ?", (cutoff_str,))
+            except sqlite3.OperationalError:
+                pass
+        signal_cutoff = (utc_now() - dt.timedelta(days=max(60, SIGNAL_EVENT_KEEP_DAYS))).strftime("%Y-%m-%d %H:%M:%S")
+        for t in ("signal_events", "longterm_events"):
+            try:
+                cur.execute(f"DELETE FROM {t} WHERE created_at < ?", (signal_cutoff,))
             except sqlite3.OperationalError:
                 pass
 
@@ -7230,9 +7859,9 @@ def prune_database_for_github(current_run_id: Optional[int] = None, aggressive: 
         except sqlite3.OperationalError:
             pass
 
-        # 已结束的生命周期，保留最近窗口；open 记录不删。
+        # 生命周期体积很小，与信号事件使用同一较长窗口；open 记录不删。
         try:
-            cur.execute("DELETE FROM signal_lifecycles WHERE status='closed' AND exit_time IS NOT NULL AND exit_time < ?", (cutoff_str,))
+            cur.execute("DELETE FROM signal_lifecycles WHERE status='closed' AND exit_time IS NOT NULL AND exit_time < ?", (signal_cutoff,))
         except sqlite3.OperationalError:
             pass
 
@@ -7316,6 +7945,11 @@ def _ensure_coin_signal_state_columns(conn) -> None:
     for col in ("signal_category", "candidate_state", "candidate_gate", "candidate_block_reasons", "candidate_side"):
         if col not in cols:
             cur.execute(f"ALTER TABLE coin_signals ADD COLUMN {col} TEXT")
+    for col in ("alert_threshold_score", "long_threshold_score"):
+        if col not in cols:
+            cur.execute(f"ALTER TABLE coin_signals ADD COLUMN {col} REAL")
+    if "model_version" not in cols:
+        cur.execute("ALTER TABLE coin_signals ADD COLUMN model_version INTEGER DEFAULT 1")
 
 
 def _bool_from_parts(parts: Dict[str, Any], key: str) -> bool:
@@ -7345,7 +7979,12 @@ def _long_short_gate(sig: Dict[str, Any], direction: str) -> Tuple[bool, List[st
     if _bool_from_parts(parts, "rolling_immature_risk"):
         reasons.append("长窗口未成熟")
     if _bool_from_parts(parts, "rolling_gap_risk"):
-        reasons.append("含断跑gap")
+        coverage = safe_float(parts.get("best_coverage")) or 0.0
+        # Occasional missed Cloudflare/GitHub runs already reduce rolling
+        # quality.  Only block when the selected horizon itself lacks enough
+        # coverage; otherwise keep the gap as a warning rather than a veto.
+        if coverage < 0.80:
+            reasons.append(f"含断跑gap且覆盖不足({coverage:.0%})")
     top1 = safe_float(parts.get("best_top1_share"))
     if top1 is not None and top1 >= LONG_SHORT_BLOCK_TOP1_SHARE:
         reasons.append(f"Top1贡献过高({top1:.0%})")
@@ -7389,7 +8028,10 @@ def _candidate_state_for(sig: Dict[str, Any], direction: str, run_id: int, score
         return "WATCH"
     if not gate_ok:
         return "BLOCKED"
-    streak = signal_streak(sig.get("coin"), direction, run_id, min_abs_score=min_watch)
+    streak = signal_streak(
+        sig.get("coin"), direction, run_id, min_abs_score=min_watch,
+        score_field="long_score", include_current=True, current_score=score,
+    )
     if score >= th_score and streak >= LONG_SHORT_MIN_STREAK_CANDIDATE:
         return "CANDIDATE"
     if streak >= LONG_SHORT_MIN_STREAK_FORMING and score >= min_watch + 1.0:
@@ -7404,8 +8046,9 @@ def enhance_long_short_state(run_id: int, signals: List[Dict[str, Any]], thresho
     for s in signals:
         coin = s.get("coin")
         direction = s.get("direction")
-        th_score = threshold(thresholds, coin, "score_push")
-        min_watch = threshold(thresholds, coin, "min_watch_score")
+        th_score = model_threshold(thresholds, coin, "long_push")
+        min_watch = model_threshold(thresholds, coin, "long_watch")
+        alert_th_score = safe_float(s.get("alert_threshold_score")) or model_threshold(thresholds, coin, "alert_push")
         abs_long = abs(safe_float(s.get("long_score")) or 0.0)
         long_candidate_score = abs_long if direction == "bullish" else 0.0
         short_candidate_score = abs_long if direction == "bearish" else 0.0
@@ -7424,7 +8067,7 @@ def enhance_long_short_state(run_id: int, signals: List[Dict[str, Any]], thresho
             else:
                 category = "长期资格未通过"
         alert_score_abs = abs(safe_float(s.get("alert_score")) or 0.0)
-        if not gate_ok and alert_score_abs >= th_score and old_category in {"现货异常变化", "高杠杆短线异动", "短线突发异动"}:
+        if not gate_ok and alert_score_abs >= alert_th_score and old_category in {"现货异常变化", "高杠杆短线异动", "短线突发异动"}:
             category = old_category
         watchlist = side if (gate_ok and state == "CANDIDATE" and candidate_score >= th_score) else "observe"
         if gate_ok and state == "CANDIDATE":
@@ -7453,6 +8096,9 @@ def enhance_long_short_state(run_id: int, signals: List[Dict[str, Any]], thresho
             "long_candidate_score": long_candidate_score,
             "short_candidate_score": short_candidate_score,
             "candidate_score": candidate_score,
+            "long_threshold_score": th_score,
+            "alert_threshold_score": alert_th_score,
+            "model_version": SIGNAL_MODEL_VERSION,
             "candidate_state": state,
             "candidate_gate": "PASS" if gate_ok else "BLOCK",
             "candidate_side": side,
@@ -7478,14 +8124,16 @@ def save_coin_signals(run_id: int, rows: List[Dict[str, Any]]) -> None:
     INSERT INTO coin_signals (
         run_id, created_at, created_at_cn, coin, direction, score, confidence, signal_type, signal_state, watchlist,
         perp_active, spot_active, weighted_flow, price_position, pct_1h, pct_4h, pct_24h,
-        final_score, threshold_score, avg_leverage, avg_liq_distance, longterm_leverage_ratio, highrisk_leverage_ratio, leverage_note,
+        final_score, threshold_score, alert_threshold_score, long_threshold_score, model_version,
+        avg_leverage, avg_liq_distance, longterm_leverage_ratio, highrisk_leverage_ratio, leverage_note,
         alert_score, long_score, long_candidate_score, short_candidate_score, signal_category, candidate_state, candidate_gate, candidate_block_reasons, candidate_side,
         conclusion, risk, reason
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, [(
         run_id, created_at, created_at_cn, r.get("coin"), r.get("direction"), r.get("score"), r.get("confidence"), r.get("signal_type"), r.get("signal_state"), r.get("watchlist"),
         r.get("perp_active"), r.get("spot_active"), r.get("weighted_flow"), r.get("price_position"), r.get("pct_1h"), r.get("pct_4h"), r.get("pct_24h"),
-        r.get("final_score"), r.get("threshold_score"), r.get("avg_leverage"), r.get("avg_liq_distance"), r.get("longterm_leverage_ratio"), r.get("highrisk_leverage_ratio"), r.get("leverage_note"),
+        r.get("final_score"), r.get("threshold_score"), r.get("alert_threshold_score"), r.get("long_threshold_score"), r.get("model_version", SIGNAL_MODEL_VERSION),
+        r.get("avg_leverage"), r.get("avg_liq_distance"), r.get("longterm_leverage_ratio"), r.get("highrisk_leverage_ratio"), r.get("leverage_note"),
         r.get("alert_score"), r.get("long_score"), r.get("long_candidate_score"), r.get("short_candidate_score"), r.get("signal_category"), r.get("candidate_state"), r.get("candidate_gate"), r.get("candidate_block_reasons"), r.get("candidate_side"),
         r.get("conclusion"), r.get("risk"), r.get("reason"),
     ) for r in rows])
@@ -7577,8 +8225,8 @@ def build_long_term_candidates(run_id: int, signals: List[Dict[str, Any]], ctx_m
         direction = s.get("direction")
         side = s.get("candidate_side") or _candidate_side_name(direction)
         score = safe_float(s.get("long_candidate_score" if side == "long" else "short_candidate_score")) or 0.0
-        min_watch = threshold(thresholds, coin, "min_watch_score")
-        th_score = threshold(thresholds, coin, "score_push")
+        min_watch = model_threshold(thresholds, coin, "long_watch")
+        th_score = model_threshold(thresholds, coin, "long_push")
         state = s.get("candidate_state") or "WATCH"
         gate_ok = s.get("candidate_gate") == "PASS"
         if score < min_watch or not gate_ok:
@@ -7588,7 +8236,7 @@ def build_long_term_candidates(run_id: int, signals: List[Dict[str, Any]], ctx_m
         ctx = ctx_map.get(coin, {})
         s_for_plan = dict(s)
         s_for_plan["final_score"] = score if direction == "bullish" else -score
-        streak = signal_streak(coin, direction, run_id, min_abs_score=min_watch)
+        streak = signal_streak(coin, direction, run_id, min_abs_score=min_watch, score_field="long_score")
         plan = long_term_entry_plan(s_for_plan, ctx, streak)
         state_bonus = {"FORMING": 0.3, "CONFIRMED": 1.0, "CANDIDATE": 1.8}.get(state, 0.0)
         lt_score = score + state_bonus

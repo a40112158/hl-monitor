@@ -17,6 +17,29 @@ SPEC.loader.exec_module(compactor)
 
 
 class CompactDatabaseTests(unittest.TestCase):
+    def test_empty_runs_table_never_deletes_raw_snapshots(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "monitor.db"
+            conn = sqlite3.connect(db)
+            conn.executescript(
+                """
+                CREATE TABLE runs (run_id INTEGER PRIMARY KEY, started_at TEXT);
+                CREATE TABLE wallet_states (run_id INTEGER, address TEXT);
+                INSERT INTO wallet_states VALUES (7, 'orphan-but-recoverable');
+                """
+            )
+            conn.commit(); conn.close()
+
+            env = {"HARDCAP_VACUUM_MIN_FREE_MB": "999999", "HARDCAP_VACUUM_MIN_FREE_RATIO": "1"}
+            with mock.patch.dict(os.environ, env):
+                compactor.compact(db, raw_keep=2, history_days=30, final_reports_days=7, hard=False)
+
+            conn = sqlite3.connect(db)
+            try:
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM wallet_states").fetchone()[0], 1)
+            finally:
+                conn.close()
+
     def test_compact_keeps_recent_snapshots_and_events(self):
         with tempfile.TemporaryDirectory() as tmp:
             db = Path(tmp) / "monitor.db"

@@ -2,6 +2,12 @@ name: Hyperliquid Wallet Monitor FINAL
 
 on:
   workflow_dispatch:
+    inputs:
+      send_start_test:
+        description: "Send a Telegram startup test message"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -51,6 +57,11 @@ jobs:
             if [ -f "$file" ]; then python -m py_compile "$file"; fi
           done
 
+      - name: Run regression tests
+        env:
+          PYTHONUTF8: "1"
+        run: python -m unittest discover -s tests -v
+
       - name: Configure Google Cloud credentials for Vertex AI
         env:
           GCP_SA_KEY_JSON: ${{ secrets.GCP_SA_KEY_JSON }}
@@ -72,7 +83,7 @@ jobs:
           fi
 
       - name: Test Telegram on manual run
-        if: github.event_name == 'workflow_dispatch'
+        if: ${{ inputs.send_start_test == true }}
         env:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
@@ -153,6 +164,9 @@ jobs:
           SPOT_MAX_ANOMALY_RATIO: "0.10"
           SPOT_MIN_TRUSTED_ROWS: "10"
           SIGNAL_EVENT_COOLDOWN_HOURS: "12"
+          LONGTERM_EVENT_COOLDOWN_HOURS: "24"
+          SIGNAL_MODEL_VERSION: "2"
+          SIGNAL_EVENT_KEEP_DAYS: "90"
           BACKTEST_ROUNDTRIP_COST_PCT: "0.12"
           DAILY_DETAIL_KEEP_DAYS: "7"
           WALLET_QUALITY_DECAY_HALF_LIFE_DAYS: "14"
@@ -192,6 +206,8 @@ jobs:
           SIGNAL_LIFECYCLE_MODE: "1"
           STRONG_SIGNAL_MISSING_ROUNDS: "1"
           LONGTERM_SIGNAL_MISSING_ROUNDS: "2"
+          STRONG_SIGNAL_MAX_HOLD_HOURS: "24"
+          LONGTERM_SIGNAL_MAX_HOLD_HOURS: "720"
           # 主导钱包名单 + API异常保护
           DOMINANT_WALLETS_MODE: "1"
           DOMINANT_WALLET_TOP_N: "5"
@@ -211,6 +227,9 @@ jobs:
           HARDCAP_RAW_KEEP: "12"
           HARDCAP_HISTORY_DAYS: "35"
           HARDCAP_FINAL_REPORTS_DAYS: "7"
+          LEGACY_BASELINE_MODE: "1"
+          BACKTEST_HURDLE_1H: "0.25"
+          BACKTEST_HURDLE_4H: "0.5"
           BACKTEST_HURDLE_24H: "1"
           BACKTEST_HURDLE_72H: "2"
           BACKTEST_HURDLE_7D: "4"
@@ -338,6 +357,7 @@ jobs:
           HARDCAP_RAW_KEEP: "12"
           HARDCAP_HISTORY_DAYS: "35"
           HARDCAP_FINAL_REPORTS_DAYS: "7"
+          SIGNAL_EVENT_KEEP_DAYS: "90"
           HARDCAP_VACUUM_MIN_FREE_MB: "16"
           HARDCAP_VACUUM_MIN_FREE_RATIO: "0.10"
         run: |
@@ -423,7 +443,9 @@ jobs:
             git rm --cached -f hl_monitor.db 2>/dev/null || true
             rm -f hl_monitor.db || true
 
-            git add -f hl_monitor.db.gz reports coin_thresholds.json coin_thresholds_auto.json .gitignore scripts/compact_sqlite_hardcap.py || true
+            # Only stage files produced by this run. Static code/config must never be
+            # written back by an older runner after a deployment.
+            git add -f hl_monitor.db.gz reports coin_thresholds_auto.json || true
 
             if git diff --cached --quiet; then
               echo "No changes to commit."

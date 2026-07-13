@@ -93,13 +93,14 @@ class EndToEndAnalysisTests(unittest.TestCase):
                 """
                 CREATE TABLE signal_events (
                     event_id INTEGER PRIMARY KEY, created_at TEXT, coin TEXT,
-                    direction TEXT, score REAL, ret_24h REAL, ret_72h REAL, ret_7d REAL
+                    direction TEXT, score REAL, ret_24h REAL, ret_72h REAL, ret_7d REAL,
+                    model_version INTEGER
                 )
                 """
             )
             for row in synthetic_rows():
                 conn.execute(
-                    "INSERT INTO signal_events VALUES (?, ?, ?, 'bullish', ?, ?, ?, ?)",
+                    "INSERT INTO signal_events VALUES (?, ?, ?, 'bullish', ?, ?, ?, ?, 2)",
                     (
                         row["event_id"], row["created_at"], row["coin"], row["abs_score"],
                         row["ret_24h"], row["ret_72h"], row["ret_7d"],

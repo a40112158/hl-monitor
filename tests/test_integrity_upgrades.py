@@ -63,7 +63,12 @@ class SignalDedupTests(unittest.TestCase):
             monitor.DB_FILE, monitor.USE_TURSO = os.path.join(td, "test.db"), False
             try:
                 monitor.init_db()
-                signal = {"coin": "BTC", "direction": "bullish", "final_score": 12.0, "reason": "test"}
+                signal = {
+                    "coin": "BTC", "direction": "bullish", "alert_score": 12.0,
+                    "final_score": 12.0, "signal_category": "短线突发异动",
+                    "candidate_gate": "BLOCK", "candidate_state": "WATCH",
+                    "watchlist": "observe", "reason": "test",
+                }
                 thresholds = {"DEFAULT": {"min_watch_score": 5, "score_push": 8, "perp": 1, "spot": 1}}
                 self.assertEqual(monitor.create_signal_events(1, [signal], {"BTC": 100.0}, thresholds), 1)
                 self.assertEqual(monitor.create_signal_events(2, [signal], {"BTC": 101.0}, thresholds), 0)

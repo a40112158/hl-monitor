@@ -23,11 +23,10 @@ RAW_TABLES = [
 EVENT_TABLES = [
     "wallet_actions",
     "coin_flow_snapshots",
-    "signal_events",
-    "longterm_events",
     "position_trade_events",
     "signal_lifecycle_events",
 ]
+SIGNAL_EVENT_TABLES = ["signal_events", "longterm_events"]
 
 
 def mb(path: Path) -> float:
@@ -90,6 +89,8 @@ def compact(db_path: Path, raw_keep: int, history_days: int, final_reports_days:
     final_reports_days = max(1, int(final_reports_days))
 
     cutoff = (utc_now() - dt.timedelta(days=history_days)).strftime("%Y-%m-%d %H:%M:%S")
+    signal_keep_days = max(60, int(os.getenv("SIGNAL_EVENT_KEEP_DAYS", "90")))
+    signal_cutoff = (utc_now() - dt.timedelta(days=signal_keep_days)).strftime("%Y-%m-%d %H:%M:%S")
     final_cutoff = (utc_now() - dt.timedelta(days=final_reports_days)).strftime("%Y-%m-%d %H:%M:%S")
 
     before_mb = mb(db_path)
@@ -100,14 +101,14 @@ def compact(db_path: Path, raw_keep: int, history_days: int, final_reports_days:
         if table_exists(cur, "runs") and col_exists(cur, "runs", "run_id"):
             cur.execute("SELECT run_id FROM runs ORDER BY run_id DESC LIMIT ?", (raw_keep,))
             keep_ids = [int(r[0]) for r in cur.fetchall()]
-            cutoff_run = min(keep_ids) if keep_ids else 10**18
+            cutoff_run = min(keep_ids) if keep_ids else None
         else:
-            cutoff_run = 10**18
+            cutoff_run = None
 
         print(f"[hardcap] start db={before_mb:.2f}MB raw_keep={raw_keep} cutoff_run={cutoff_run} history_days={history_days}", flush=True)
 
         for t in RAW_TABLES:
-            if col_exists(cur, t, "run_id"):
+            if cutoff_run is not None and col_exists(cur, t, "run_id"):
                 deleted = execute_delete(cur, f"DELETE FROM {t} WHERE run_id < ?", (cutoff_run,))
                 if deleted:
                     print(f"[hardcap] {t}: deleted {deleted} old rows", flush=True)
@@ -116,6 +117,11 @@ def compact(db_path: Path, raw_keep: int, history_days: int, final_reports_days:
             deleted = delete_old_by_created_at(cur, t, cutoff)
             if deleted:
                 print(f"[hardcap] {t}: deleted {deleted} old rows", flush=True)
+
+        for t in SIGNAL_EVENT_TABLES:
+            deleted = delete_old_by_created_at(cur, t, signal_cutoff)
+            if deleted:
+                print(f"[hardcap] {t}: deleted {deleted} rows older than {signal_keep_days}d", flush=True)
 
         # final_reports can contain large text; reports files are already kept in GitHub, so DB copies can be short-lived.
         deleted = delete_old_by_created_at(cur, "final_reports", final_cutoff)
@@ -129,12 +135,12 @@ def compact(db_path: Path, raw_keep: int, history_days: int, final_reports_days:
                 print(f"[hardcap] position_trades: deleted {deleted} old rows", flush=True)
 
         if table_exists(cur, "signal_lifecycles") and col_exists(cur, "signal_lifecycles", "status") and col_exists(cur, "signal_lifecycles", "exit_time"):
-            deleted = execute_delete(cur, "DELETE FROM signal_lifecycles WHERE status='closed' AND exit_time IS NOT NULL AND exit_time < ?", (cutoff,))
+            deleted = execute_delete(cur, "DELETE FROM signal_lifecycles WHERE status='closed' AND exit_time IS NOT NULL AND exit_time < ?", (signal_cutoff,))
             if deleted:
                 print(f"[hardcap] signal_lifecycles: deleted {deleted} old rows", flush=True)
 
         # Optional hard mode: keep run index only for recent raw snapshots + history window.
-        if hard and table_exists(cur, "runs") and col_exists(cur, "runs", "run_id") and col_exists(cur, "runs", "started_at"):
+        if hard and cutoff_run is not None and table_exists(cur, "runs") and col_exists(cur, "runs", "run_id") and col_exists(cur, "runs", "started_at"):
             deleted = execute_delete(cur, "DELETE FROM runs WHERE run_id < ? AND started_at < ?", (cutoff_run, cutoff))
             if deleted:
                 print(f"[hardcap] runs: deleted {deleted} old rows", flush=True)

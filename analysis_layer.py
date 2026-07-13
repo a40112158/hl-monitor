@@ -32,6 +32,8 @@ THRESHOLD_FILE = os.getenv("THRESHOLD_FILE", "coin_thresholds.json")
 AUTO_THRESHOLD_FILE = os.getenv("AUTO_THRESHOLD_FILE", "coin_thresholds_auto.json")
 REPORT_DIR = os.getenv("REPORT_DIR", "reports")
 DETAILS_DIR = os.getenv("DETAILS_DIR", os.path.join(REPORT_DIR, "details"))
+SIGNAL_MODEL_VERSION = max(2, int(os.getenv("SIGNAL_MODEL_VERSION", "2")))
+BACKTEST_ROUNDTRIP_COST_PCT = float(os.getenv("BACKTEST_ROUNDTRIP_COST_PCT", "0.12"))
 
 MODE = os.getenv("AUTO_OPTIMIZE_MODE", "shadow").strip().lower()
 MIN_SAMPLES = max(12, int(os.getenv("AUTO_OPTIMIZE_MIN_SAMPLES", "24")))
@@ -114,14 +116,21 @@ def load_events(db_path: Path) -> List[Dict[str, Any]]:
         ).fetchone()
         if not exists:
             return []
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(signal_events)").fetchall()}
+        if "model_version" not in columns:
+            return []
         rows = conn.execute(
-            """
+            f"""
             SELECT event_id, created_at, coin, direction, score,
-                   ret_24h, ret_72h, ret_7d
+                   ret_24h - {BACKTEST_ROUNDTRIP_COST_PCT} AS ret_24h,
+                   ret_72h - {BACKTEST_ROUNDTRIP_COST_PCT} AS ret_72h,
+                   ret_7d - {BACKTEST_ROUNDTRIP_COST_PCT} AS ret_7d
             FROM signal_events
-            WHERE ret_24h IS NOT NULL OR ret_72h IS NOT NULL OR ret_7d IS NOT NULL
+            WHERE COALESCE(model_version, 1)=?
+              AND (ret_24h IS NOT NULL OR ret_72h IS NOT NULL OR ret_7d IS NOT NULL)
             ORDER BY created_at, event_id
-            """
+            """,
+            (SIGNAL_MODEL_VERSION,),
         ).fetchall()
     finally:
         conn.close()
@@ -627,6 +636,12 @@ def run_analysis(
 
     manual = load_json(manual_path, {"DEFAULT": {"score_push": 8.0, "min_watch_score": 5.0}})
     auto = load_json(auto_path, {"version": 1, "overrides": {}, "meta": {}})
+    if int(auto.get("signal_model_version") or 1) != SIGNAL_MODEL_VERSION:
+        # Scores and event admission changed in V2; never carry learned V1
+        # thresholds or pending shadows into the new population.
+        auto = {"version": 1, "signal_model_version": SIGNAL_MODEL_VERSION, "overrides": {}, "meta": {}, "shadows": {}}
+    else:
+        auto["signal_model_version"] = SIGNAL_MODEL_VERSION
     auto.setdefault("version", 1)
     auto.setdefault("overrides", {})
     auto.setdefault("meta", {})
