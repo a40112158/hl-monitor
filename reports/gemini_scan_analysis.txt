@@ -2,50 +2,69 @@
 
 状态：success
 模型：gemini-2.5-flash
-紧急度：watch
+紧急度：normal
 
 【执行摘要】
-本轮扫描未发现达到币种专属阈值的短线强信号，所有信号均处于“只观察”状态。多数信号因现货主导、钱包集中度过高或高杠杆占比过高等风险被风控否决。现货异常比例有所升高，但仍在阻断阈值以下。市场整体情绪中性，需持续观察。
+本轮扫描健康度良好，成功率100%。但现货异常比例略有升高，需持续关注。市场整体缺乏明确的短线强信号和长期建仓机会。多数观察币种因现货主导、高杠杆集中或样本不足等原因被风控否决。ZEC出现智能资金多空双向主动变化，但信号强度不足以形成明确交易指令。
 
 【数据质量】
-本轮扫描成功率为100%，共监控2419个钱包，无部分成功或失败的记录，数据完整性良好。现货语义质量方面，可信数据9018条，异常隔离620条，异常率为6.43%。系统提示异常现货比例升高，但仍低于10.00%的阻断阈值，需保持关注。
+本轮扫描共监控2419个钱包，成功率达100.00%，未出现部分成功或失败的钱包。永续合约数据10012行，现货数据11709行。现货语义质量方面，可信数据9018行，异常隔离620行，异常率为6.43%。虽然异常率有所升高，但仍低于10.00%的阻断阈值，数据质量整体可接受。
 
 【市场与资金结构】
-BTC和ETH在1小时、4小时和24小时周期内波动较小，市场情绪整体呈中性。
-资金费率方面，VIRTUAL、ASTER、ENA、ETHFI、GRAM、GRASS、VVV、XMR等币种资金费率均处于低风险水平。
-24小时成交额及流动性风险：
-- 流动性高风险币种：VIRTUAL ($3.23M), ASTER ($1.66M), ENA ($4.90M), ETHFI ($1.80M), GRAM ($1.53M), GRASS ($892.67K), VVV ($2.61M), XMR ($4.24M)。
-- 流动性低风险币种：HYPE ($450.21M), LIT ($54.77M), ZEC ($123.97M), ETH ($1.17B), SOL ($222.24M), XRP ($36.69M)。
-OI、多空人数比、主动买卖比等指标数据不足。
+大盘环境显示，BTC在1小时和4小时内微涨，24小时内微跌，处于中性（neutral）状态。ETH在1小时内持平，4小时内微跌，24小时内微涨，处于接近高位（near_high）状态。
+
+资金费率方面，所有列出的币种（ASTER, ENA, ETHFI, GRAM, GRASS, VIRTUAL, VVV, XMR）资金费率风险均为低。然而，ASTER、ENA、ETHFI、GRAM、GRASS、VIRTUAL、VVV、XMR的24小时成交额较低，被标记为高流动性风险。FARTCOIN、PUMP、SUI、UNI、XLM、XPL的流动性风险为中。
+
+本轮扫描暂无达到币种专属阈值的短线强异动信号，也无明确的做多或做空观察目标。
+
+在“只观察 / 信号不足”的币种中，LIT和HYPE的alert分数相对较高，但均存在历史样本/胜率不足、窗口内含断跑gap等风险。HYPE的同方向高杠杆仓位偏多43%。MAX、KNTQ、UANSEM、UPUMP、BASED、NEKO、UBONK、HWAVE、BUDDY、SWAP等币种的信号主要由现货主导，可能为转账/归集/划转行为，不代表合约方向，且普遍存在历史样本/胜率不足、窗口内含断跑gap、钱包集中度过高、持续性不足或长窗口未成熟等风险。ETH、ZEC、BTC、SOL则因高杠杆占比过高（74%-83%）而被风控否决。
+
+单钱包主动变化方面，0x35c5...d29d (smart_money) 新开多ZEC 10x $503.11K，为高杠杆短线型操作。同时，0x5323...b23c (smart_money) 减少ZEC多单仓位$500.29K，为中杠杆趋势型操作。这两个钱包在ZEC上呈现多空双向主动变化。
+
+关联钱包行为聚类识别出3个聚类，其中cluster:5323b922包含0x5323...b23c，该钱包在本轮有ZEC的合约多单变化。
 
 【相比上次 AI 分析】
-本轮扫描结果与上次报告相比，市场结构和信号状态无显著变化。仍未出现达到阈值的短线强信号，所有信号均处于“只观察”状态，且多数因现货主导、钱包集中度过高或高杠杆占比过高等风险被风控否决。现货异常比例升高的警告持续存在。
+上次AI分析报告被标记为不完整，缺失了风险提示、参数观察和下一轮重点检查等章节。本轮报告结构完整，内容覆盖全面。在市场信号方面，本轮与上轮类似，均未出现明确的短线强信号或长期建仓候选，市场整体仍处于观察状态。
 
 【重点观察】
-- **LIT (偏多):** 资金流入信号较强（资金分+1.6），且杠杆结构健康（低/中杠杆99%，均4.9x）。主要风险是历史样本/胜率不足，且窗口内含断跑gap。
-- **HYPE (偏空):** 资金流出信号较强（资金分-1.6），但同方向高杠杆仓位偏多43%。主要风险是历史样本/胜率不足，且窗口内含断跑gap。
-- **NEKO (偏空):** 现货主动变化巨大（-$230.64M），但信号现货主导，可能为转账/归集/划转，不等于合约方向，且本轮异动与滚动方向冲突。风险：历史样本/胜率不足。
-- **ZEC (偏多):** 资金流入信号较强（资金分+1.2），但高杠杆占比过高（60%），长期资格未通过。风险：历史样本/胜率不足。
-- **ETH (偏空):** 高杠杆占比过高（74%），平均杠杆15.1x，偏短线。长期资格未通过。风险：历史样本/胜率不足。
-- **XRP (偏空):** 高杠杆占比过高（98%），平均杠杆17.3x，偏短线。长期资格未通过。风险：历史样本/胜率不足。
-- **SOL (偏空):** 高杠杆占比过高（79%），平均杠杆15.9x，偏短线。长期资格未通过。风险：历史样本/胜率不足。
+本轮值得继续观察的币种和方向如下：
+*   **LIT (偏多)**：理由是其alert分数相对较高，但风险在于历史样本/胜率不足，且窗口内含断跑gap。
+*   **HYPE (偏空)**：理由是其alert分数相对较高，但风险在于历史样本/胜率不足，窗口内含断跑gap，且同方向高杠杆仓位偏多43%。
+
 暂无明确高优先级目标。
 
 【AI 风控结论】
-- LIT (偏多): WATCH
-- HYPE (偏空): WATCH
-- NEKO (偏空): VETO
-- ZEC (偏多): VETO
-- KNTQ (偏空): VETO
-- MAX (偏空): VETO
-- UANSEM (偏多): VETO
-- BASED (偏多): VETO
-- UPUMP (偏空): VETO
-- UBONK (偏多): VETO
-- BUDDY (偏空): VETO
-- HWAVE (偏空): VETO
-- SWAP (偏空): VETO
-- GRAM
+*   LIT (bullish): WATCH
+*   HYPE (bearish): WATCH
+*   MAX (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
+*   KNTQ (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
+*   UANSEM (bullish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
+*   UPUMP (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
+*   BASED (bullish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
+*   ETH (bearish): VETO (local_candidate_gate_failed, high_leverage_concentration, maturity_or_concentration_warning)
+*   NEKO (bullish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
+*   UBONK (bullish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
+*   HWAVE (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
+*   BUDDY (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
+*   SWAP (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
+*   GRAM (bearish): VETO (local_candidate_gate_failed, high_liquidity_risk, maturity_or_concentration_warning)
+*   ZEC (bullish): VETO (local_candidate_gate_failed, high_leverage_concentration)
+*   BTC (bullish): VETO (local_candidate_gate_failed, high_leverage_concentration)
+*   SOL (bearish): VETO (local_candidate_gate_failed, high_leverage_concentration, maturity_or_concentration_warning)
 
-【本地完整性校验】
-⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
+【风险提示】
+1.  **流动性不足风险**：ASTER、ENA、ETHFI、GRAM、GRASS、VIRTUAL、VVV、XMR等币种24小时成交额较低，存在较高的流动性风险，可能导致价格剧烈波动或难以平仓。
+2.  **数据质量风险**：现货异常比例升高至6.43%，虽然未达阻断阈值，但仍需警惕潜在的数据噪音或异常行为。
+3.  **信号质量风险**：多数“只观察”信号存在历史样本/胜率不足、滚动信号现货主导（可能为转账/归集/划转）、钱包集中度过高（单钱包异动）、持续性不足或长窗口未成熟等问题，可靠性较低。
+4.  **高杠杆风险**：ETH、ZEC、BTC、SOL等币种的同方向高杠杆仓位占比过高，平均杠杆偏高，存在较高的爆仓风险，不适合作为长期低杠杆建仓目标。
+5.  **假突破风险**：大盘BTC和ETH处于中性或接近高位，但缺乏强劲动能，需警惕潜在的假突破或震荡行情。
+
+【参数观察】
+当前筛选参数在过滤掉大量现货主导、高杠杆集中、钱包集中度过高以及持续性不足的信号方面表现出较强的保守性和有效性。这导致本轮没有出现强信号或长期建仓候选。鉴于现货异常比例的警告，以及市场缺乏明确方向，目前的参数设置可能在一定程度上避免了风险。然而，要判断参数是否过严或过松，需要更多轮数据来观察被过滤信号的后续表现以及市场整体的趋势变化。
+
+【下一轮重点检查】
+1.  持续关注现货异常比例的变化，若继续升高需进一步调查原因。
+2.  密切观察LIT和HYPE的信号演变，特别是其风险指标（历史样本/胜率、断跑gap、高杠杆占比）是否有改善。
+3.  对流动性风险较高的币种保持警惕，避免在流动性不足的市场中进行操作。
+4.  关注ZEC上智能资金多空双向变化的后续发展，判断是否有明确的方向性趋势形成。
+5.  继续追踪被风控否决的币种，看其风险因素（如高杠杆占比、现货主导）是否有所缓解，以判断参数设置的长期有效性。
