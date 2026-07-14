@@ -1,7 +1,7 @@
 {
   "status": "incomplete_output",
   "urgency": "normal",
-  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【市场与资金结构】、【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
+  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【参数观察】、【下一轮重点检查】、报告结尾",
   "data_quality": "unknown",
   "market_structure": "unknown",
   "changes_since_previous": [],
@@ -10,8 +10,8 @@
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动，也无适合低杠杆长期单的候选。所有有信号的币种均处于“只观察”状态，且存在显著风险，如历史样本不足、现货主导、高杠杆集中或流动性不足。现货异常比例略有升高，但仍在可接受范围内。整体市场环境偏多，但信号质量普遍较低，需保持谨慎观察。\n\n【数据质量】\n本轮扫描的钱包成功率为100%，共监控2419个钱包，未出现部分成功或失败\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
-  "generated_at": "2026-07-14T15:23:49Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强信号。多数观察信号因高杠杆占比、现货主导、钱包集中度过高或历史样本不足等原因被风控否决。BTC和ETH处于“near_high”状态，但其偏多信号因高杠杆风险被否决。现货异常数据比例略有升高，但仍在阻断阈值内。整体市场结构和资金流向未显示出明确的、可操作的异常信号，建议继续保持观察。\n\n【数据质量】\n本轮扫描健康度良好，监控钱包成功率达100%，无部分成功或失败的扫描。现货语义质量方面，可信数据8985条，异常隔离664条，异常率为6.88%，略高于正常水平，但仍低于10.00%的阻断阈值。多数“只观察”信号提示历史样本/胜率不足，且部分滚动窗口数据存在断跑gap，可能影响信号的连续性和可靠性。此外，ASTER、ETHFI、GRAM、GRASS、MON、VVV、XMR、ZRO等多个币种的24小时成交额较低，存在较高的流动性风险。\n\n【市场与资金结构】\nBTC和ETH目前处于“near_high”的市场状态，过去24小时分别上涨4.00%和5.81%，显示出近期强势。资金费率普遍处于低位（+0.00%至+0.0013%），表明市场情绪相对中性，未出现极端狂热或恐慌。\n在资金流方面，UANSEM出现本轮现货主动变化$89.84M，钱包质量加权资金流达$125.78M，但其信号为现货主导，不等于合约方向。BTC本轮合约主动变化$48.38M，钱包质量加权资金流$13.99M。\n多个币种（如ASTER、ETHFI、GRAM、GRASS、MON、VVV、XMR、ZRO）的24小时成交额低于400万美元，流动性风险较高，不适合大资金参与。\n\n【相比上次 AI 分析】\n上次AI分析报告内容不完整，缺失了市场与资金结构、比较分析等多个章节，因此无法进行有效的比较。\n\n【重点观察】\n*   **LIT (偏多)**：Alert score +0.78，滚动建仓/减仓信号，连续4轮。杠杆健康度良好（99%低/中杠杆，平均杠杆4.9x）。主要风险是历史样本/胜率不足和窗口内含断跑gap。\n*   **HYPE (偏空)**：Alert score -0.4，合约主导信号，连续4轮。主要风险是历史样本/胜率不足、窗口内含断跑gap以及同方向高杠杆仓位偏多（42%）。\n\n【AI 风控结论】\n*   UANSEM (偏多): VETO\n*   LIT (偏多): WATCH\n*   BTC (偏多): VETO\n*   HYPE (偏空): WATCH\n*   ZEC (偏多): VETO\n*   ETH (偏多): VETO\n*   GRAM (偏空): VETO\n*   SOL (偏空): VETO\n*   KNTQ (偏空): VETO\n*   MAX (偏空): VETO\n*   BASED (偏多): VETO\n*   UXPL (偏多): VETO\n*   NEKO (偏空): VETO\n*   UPUMP (偏空): VETO\n*   SWAP (偏空): VETO\n*   BUDDY (偏空): VETO\n*   HWAVE (偏多): VETO\n*   XRP (偏多): VETO\n\n【风险提示】\n*   **数据质量风险**：异常现货数据比例升高至6.88%，需持续关注，若接近或超过10%阻断阈值，可能影响整体数据可靠性。\n*   **流动性不足风险**：ASTER、ETHFI、GRAM、GRASS、MON、VVV、XMR、ZRO等币种24小时成交额较低，可能导致交易滑点大、难以快速进出仓。\n*   **高杠杆集中风险**：BTC、ETH、ZEC、SOL、XRP等币种的偏多/偏空信号中，高杠杆仓位占比过高，平均杠杆极高，存在短线爆仓风险，不适合保守策略。\n*   **现货主导信号误判风险**：UANSEM、KNTQ、MAX、BASED、UXPL、NEKO、UPUMP、SW\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
+  "generated_at": "2026-07-14T16:23:49Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
