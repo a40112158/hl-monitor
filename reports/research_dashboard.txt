@@ -1,21 +1,21 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-15 07:23:00 | UTC：2026-07-14 23:23:00
+更新时间北京时间：2026-07-15 08:22:57 | UTC：2026-07-15 00:22:57
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0x3b88...04a7 [money_printer] grade=B score=100.0 样本=22 72h胜率=0.58951872657154 30d胜率=None 主币=ZEC,HYPE,XRP,BCH,AVAX
+0x3b88...04a7 [money_printer] grade=B score=100.0 样本=22 72h胜率=0.5895187265715399 30d胜率=None 主币=ZEC,HYPE,XRP,BCH,AVAX
 0x5649...80c5 [money_printer] grade=B score=90.9 样本=14 72h胜率=0.7113354429114374 30d胜率=None 主币=ZEC,LIT,BTC,ETH
 0xaeaa...2416 [money_printer] grade=C score=76.0 样本=11 72h胜率=0.4227941234594235 30d胜率=None 主币=BTC,ETH
-0xa516...37b0 [smart_money] grade=B score=74.1 样本=14 72h胜率=0.6226466872569456 30d胜率=None 主币=ETH,HYPE,BTC,ZEC
-0xf17d...dab2 [money_printer] grade=C score=70.7 样本=12 72h胜率=0.5183001122776852 30d胜率=None 主币=HYPE,BTC
-0x8c96...ca57 [smart_money] grade=B score=65.4 样本=13 72h胜率=0.29299283424067385 30d胜率=None 主币=BTC,MAX
+0xa516...37b0 [smart_money] grade=B score=74.1 样本=14 72h胜率=0.6226466872569455 30d胜率=None 主币=ETH,HYPE,BTC,ZEC
+0xf17d...dab2 [money_printer] grade=C score=70.7 样本=12 72h胜率=0.5183001122776854 30d胜率=None 主币=HYPE,BTC
+0x8c96...ca57 [smart_money] grade=B score=65.4 样本=13 72h胜率=0.2929928342406739 30d胜率=None 主币=BTC,MAX
 0x4e23...20c3 [money_printer] grade=C score=63.3 样本=43 72h胜率=0.287756880238328 30d胜率=None 主币=HYPE,ETH,MAX
-0x1658...f65b [smart_money] grade=C score=60.4 样本=28 72h胜率=0.4332561404644813 30d胜率=None 主币=SUI
-0x3e7a...1589 [money_printer] grade=C score=59.0 样本=25 72h胜率=0.20142340666698888 30d胜率=None 主币=BTC,HYPE,ETH
-0xa4de...b3c4 [money_printer] grade=C score=58.9 样本=29 72h胜率=0.282060773569382 30d胜率=None 主币=HYPE,BTC,SOL,CASHCAT
+0x1658...f65b [smart_money] grade=C score=60.4 样本=28 72h胜率=0.43325614046448147 30d胜率=None 主币=SUI
+0x3e7a...1589 [money_printer] grade=C score=59.0 样本=25 72h胜率=0.20142340666698885 30d胜率=None 主币=BTC,HYPE,ETH
+0xa4de...b3c4 [money_printer] grade=C score=58.9 样本=29 72h胜率=0.28206077356938186 30d胜率=None 主币=HYPE,BTC,SOL,CASHCAT
 
 【Top 币种画像】
 
