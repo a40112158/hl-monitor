@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-15 20:22:18 | UTC：2026-07-15 12:22:18
+更新时间北京时间：2026-07-15 21:22:49 | UTC：2026-07-15 13:22:49
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -8,14 +8,14 @@
 【Top 钱包画像】
 0x3b88...04a7 [money_printer] grade=B score=100.0 样本=22 72h胜率=0.58951872657154 30d胜率=None 主币=ZEC,HYPE,XRP,BCH,AVAX
 0x9c2a...f6a8 [money_printer] grade=B score=100.0 样本=12 72h胜率=0.6684314784781498 30d胜率=None 主币=SOL,BTC,ETH,HYPE,XRP
-0x049b...5e7d [money_printer] grade=C score=81.5 样本=18 72h胜率=0.3878583683265387 30d胜率=None 主币=BTC,ETH,MAX
+0x049b...5e7d [money_printer] grade=C score=81.5 样本=18 72h胜率=0.3596258117348733 30d胜率=None 主币=BTC,ETH,MAX
 0xaeaa...2416 [money_printer] grade=C score=76.0 样本=11 72h胜率=0.4227941234594236 30d胜率=None 主币=BTC,ETH
-0xa516...37b0 [smart_money] grade=B score=74.1 样本=14 72h胜率=0.6226466872569456 30d胜率=None 主币=ETH,HYPE,BTC,ZEC
-0x5649...80c5 [money_printer] grade=C score=71.6 样本=14 72h胜率=0.4826530687558258 30d胜率=None 主币=ZEC,LIT,BTC,ETH
-0xf17d...dab2 [money_printer] grade=C score=70.7 样本=12 72h胜率=0.5183001122776851 30d胜率=None 主币=HYPE,BTC
-0x1658...f65b [smart_money] grade=C score=69.0 样本=30 72h胜率=0.4332561404644813 30d胜率=None 主币=SUI
-0x8c96...ca57 [smart_money] grade=B score=65.4 样本=13 72h胜率=0.24470132312720583 30d胜率=None 主币=BTC,MAX
-0x4e23...20c3 [money_printer] grade=C score=63.7 样本=47 72h胜率=0.28775688023832807 30d胜率=None 主币=HYPE,ETH,MAX,NEAR
+0xa516...37b0 [smart_money] grade=B score=74.1 样本=14 72h胜率=0.6226466872569457 30d胜率=None 主币=ETH,HYPE,BTC,ZEC
+0x5649...80c5 [money_printer] grade=C score=71.6 样本=14 72h胜率=0.48265306875582575 30d胜率=None 主币=ZEC,LIT,BTC,ETH
+0x8c96...ca57 [smart_money] grade=B score=65.4 样本=13 72h胜率=0.20987631578834023 30d胜率=None 主币=BTC,MAX
+0xf17d...dab2 [money_printer] grade=C score=64.1 样本=12 72h胜率=0.5183001122776852 30d胜率=None 主币=HYPE,BTC
+0x1658...f65b [smart_money] grade=C score=63.8 样本=30 72h胜率=0.43325614046448124 30d胜率=None 主币=SUI
+0x4e23...20c3 [money_printer] grade=C score=63.7 样本=48 72h胜率=0.2745755083881941 30d胜率=None 主币=HYPE,ETH,NEAR,MAX
 
 【Top 币种画像】
 
