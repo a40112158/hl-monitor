@@ -1,21 +1,21 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-17 02:22:49 | UTC：2026-07-16 18:22:49
+更新时间北京时间：2026-07-17 03:22:39 | UTC：2026-07-16 19:22:39
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0x3b88...04a7 [money_printer] grade=B score=100.0 样本=26 72h胜率=0.49285945855001 30d胜率=None 主币=ZEC,HYPE,SUI,XRP,BCH
-0x3e7a...1589 [money_printer] grade=A score=100.0 样本=25 72h胜率=0.2014234066669889 30d胜率=None 主币=BTC,HYPE,ETH
-0x9c2a...f6a8 [money_printer] grade=B score=100.0 样本=13 72h胜率=0.6684314784781497 30d胜率=None 主币=SOL,BTC,ETH,HYPE,XRP
-0xaeaa...2416 [money_printer] grade=C score=80.6 样本=11 72h胜率=0.4227941234594235 30d胜率=None 主币=BTC,ETH
+0x3b88...04a7 [money_printer] grade=B score=100.0 样本=26 72h胜率=0.49285945855000995 30d胜率=None 主币=ZEC,HYPE,SUI,XRP,BCH
+0x3e7a...1589 [money_printer] grade=A score=100.0 样本=25 72h胜率=0.20142340666698885 30d胜率=None 主币=BTC,HYPE,ETH
+0x9c2a...f6a8 [money_printer] grade=B score=100.0 样本=13 72h胜率=0.6684314784781498 30d胜率=None 主币=SOL,BTC,ETH,HYPE,XRP
+0xaeaa...2416 [money_printer] grade=C score=80.6 样本=11 72h胜率=0.42279412345942363 30d胜率=None 主币=BTC,ETH
 0x6cd5...1968 [smart_money] grade=C score=79.8 样本=13 72h胜率=0.5092315626066352 30d胜率=None 主币=NEKO,UANSEM
-0x1658...f65b [smart_money] grade=C score=78.1 样本=31 72h胜率=0.43325614046448124 30d胜率=None 主币=SUI
+0x1658...f65b [smart_money] grade=C score=78.1 样本=31 72h胜率=0.4332561404644814 30d胜率=None 主币=SUI
 0xa516...37b0 [smart_money] grade=B score=76.8 样本=14 72h胜率=0.6344180855213114 30d胜率=None 主币=ETH,HYPE,BTC,ZEC
-0x5649...80c5 [money_printer] grade=C score=67.6 样本=18 72h胜率=0.4337752525168442 30d胜率=None 主币=ZEC,LIT,BTC,ETH
+0x5649...80c5 [money_printer] grade=C score=67.6 样本=18 72h胜率=0.4337752525168443 30d胜率=None 主币=ZEC,LIT,BTC,ETH
 0x362a...1d9f [smart_money] grade=B score=67.0 样本=10 72h胜率=0.2764010512495447 30d胜率=None 主币=SOL,BTC
-0x4e23...20c3 [money_printer] grade=C score=64.7 样本=61 72h胜率=0.2262039164855636 30d胜率=None 主币=HYPE,ETH,NEAR,MAX
+0x4e23...20c3 [money_printer] grade=C score=64.7 样本=62 72h胜率=0.2262039164855636 30d胜率=None 主币=HYPE,ETH,NEAR,MAX
 
 【Top 币种画像】
 
