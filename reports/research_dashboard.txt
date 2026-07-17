@@ -1,21 +1,21 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-18 02:22:47 | UTC：2026-07-17 18:22:47
+更新时间北京时间：2026-07-18 03:22:41 | UTC：2026-07-17 19:22:41
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0x3b88...04a7 [money_printer] grade=B score=100.0 样本=27 72h胜率=0.49481281930596627 30d胜率=None 主币=ZEC,HYPE,SUI,XRP,BCH
-0xe867...c78e [money_printer] grade=A score=84.4 样本=20 72h胜率=0.0922730199642684 30d胜率=None 主币=HYPE
-0x3e7a...1589 [money_printer] grade=C score=82.7 样本=25 72h胜率=0.20142340666698888 30d胜率=None 主币=BTC,HYPE,ETH
-0x6cd5...1968 [smart_money] grade=C score=80.9 样本=16 72h胜率=0.4447769086502296 30d胜率=None 主币=UANSEM,NEKO
-0xaeaa...2416 [money_printer] grade=C score=75.4 样本=11 72h胜率=0.42279412345942347 30d胜率=None 主币=BTC,ETH
-0xa516...37b0 [smart_money] grade=B score=74.9 样本=14 72h胜率=0.6344180855213112 30d胜率=None 主币=ETH,HYPE,BTC,ZEC
-0x7c93...c8fd [money_printer] grade=B score=74.5 样本=16 72h胜率=0.6158974663833292 30d胜率=None 主币=ETH,BTC,SUI
-0x362a...1d9f [smart_money] grade=B score=67.9 样本=12 72h胜率=0.395318963370338 30d胜率=None 主币=SOL,BTC
+0x3b88...04a7 [money_printer] grade=B score=100.0 样本=27 72h胜率=0.49481281930596643 30d胜率=None 主币=ZEC,HYPE,SUI,XRP,BCH
+0xe867...c78e [money_printer] grade=S score=89.9 样本=20 72h胜率=0.09227301996426841 30d胜率=None 主币=HYPE
+0x3e7a...1589 [money_printer] grade=C score=82.7 样本=25 72h胜率=0.20142340666698882 30d胜率=None 主币=BTC,HYPE,ETH
+0x6cd5...1968 [smart_money] grade=C score=80.9 样本=16 72h胜率=0.4447769086502297 30d胜率=None 主币=UANSEM,NEKO
+0xaeaa...2416 [money_printer] grade=C score=75.4 样本=11 72h胜率=0.4227941234594236 30d胜率=None 主币=BTC,ETH
+0xa516...37b0 [smart_money] grade=B score=74.9 样本=14 72h胜率=0.6344180855213113 30d胜率=None 主币=ETH,HYPE,BTC,ZEC
+0x7c93...c8fd [money_printer] grade=B score=74.5 样本=16 72h胜率=0.6158974663833293 30d胜率=None 主币=ETH,BTC,SUI
+0x362a...1d9f [smart_money] grade=B score=67.9 样本=12 72h胜率=0.39531896337033806 30d胜率=None 主币=SOL,BTC
 0x1658...f65b [smart_money] grade=C score=65.2 样本=34 72h胜率=0.4332561404644813 30d胜率=None 主币=SUI
-0x9996...91f6 [money_printer] grade=C score=64.1 样本=11 72h胜率=0.323094522751344 30d胜率=None 主币=NEKO,LIT,MAX
+0x9996...91f6 [money_printer] grade=C score=64.1 样本=11 72h胜率=0.32309452275134404 30d胜率=None 主币=NEKO,LIT,MAX
 
 【Top 币种画像】
 
