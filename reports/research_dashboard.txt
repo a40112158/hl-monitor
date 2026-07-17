@@ -1,21 +1,21 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-17 07:22:50 | UTC：2026-07-16 23:22:50
+更新时间北京时间：2026-07-17 08:22:44 | UTC：2026-07-17 00:22:44
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0x3b88...04a7 [money_printer] grade=B score=100.0 样本=26 72h胜率=0.49382525200604427 30d胜率=None 主币=ZEC,HYPE,SUI,XRP,BCH
-0x3e7a...1589 [money_printer] grade=A score=100.0 样本=25 72h胜率=0.20142340666698885 30d胜率=None 主币=BTC,HYPE,ETH
+0x3b88...04a7 [money_printer] grade=B score=100.0 样本=26 72h胜率=0.4601820186102225 30d胜率=None 主币=ZEC,HYPE,SUI,XRP,BCH
+0x3e7a...1589 [money_printer] grade=A score=100.0 样本=25 72h胜率=0.20142340666698882 30d胜率=None 主币=BTC,HYPE,ETH
 0x9c2a...f6a8 [money_printer] grade=B score=100.0 样本=13 72h胜率=0.6684314784781497 30d胜率=None 主币=SOL,BTC,ETH,HYPE,XRP
-0xaeaa...2416 [money_printer] grade=C score=80.6 样本=11 72h胜率=0.4227941234594234 30d胜率=None 主币=BTC,ETH
-0x6cd5...1968 [smart_money] grade=C score=80.2 样本=14 72h胜率=0.5838534605987374 30d胜率=None 主币=UANSEM,NEKO
-0x1658...f65b [smart_money] grade=C score=78.3 样本=32 72h胜率=0.4332561404644813 30d胜率=None 主币=SUI
-0xa516...37b0 [smart_money] grade=B score=74.9 样本=14 72h胜率=0.6344180855213113 30d胜率=None 主币=ETH,HYPE,BTC,ZEC
-0x5649...80c5 [money_printer] grade=C score=72.3 样本=18 72h胜率=0.4877255657563922 30d胜率=None 主币=ZEC,LIT,BTC,ETH
+0xaeaa...2416 [money_printer] grade=C score=80.6 样本=11 72h胜率=0.4227941234594235 30d胜率=None 主币=BTC,ETH
+0x6cd5...1968 [smart_money] grade=C score=80.5 样本=15 72h胜率=0.5838534605987373 30d胜率=None 主币=UANSEM,NEKO
+0x1658...f65b [smart_money] grade=C score=78.3 样本=32 72h胜率=0.43325614046448135 30d胜率=None 主币=SUI
+0xa516...37b0 [smart_money] grade=B score=74.9 样本=14 72h胜率=0.6344180855213114 30d胜率=None 主币=ETH,HYPE,BTC,ZEC
+0x5649...80c5 [money_printer] grade=C score=72.3 样本=18 72h胜率=0.4877255657563923 30d胜率=None 主币=ZEC,LIT,BTC,ETH
 0x362a...1d9f [smart_money] grade=B score=67.0 样本=10 72h胜率=0.2764010512495447 30d胜率=None 主币=SOL,BTC
-0x4e23...20c3 [money_printer] grade=C score=64.7 样本=62 72h胜率=0.2262039164855636 30d胜率=None 主币=HYPE,ETH,NEAR,MAX
+0x4e23...20c3 [money_printer] grade=C score=64.7 样本=62 72h胜率=0.22620391648556357 30d胜率=None 主币=HYPE,ETH,NEAR,MAX
 
 【Top 币种画像】
 
