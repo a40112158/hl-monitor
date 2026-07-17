@@ -1,7 +1,7 @@
 【数据质量 / API异常保护】
-run_id=659 | 北京时间=2026-07-18 03:00:27 | UTC=2026-07-17 19:16:39 | note=github half-hourly
+run_id=660 | 北京时间=2026-07-18 04:00:26 | UTC=2026-07-17 20:16:38 | note=github half-hourly
 监控钱包=2419 | ok=2419 | partial=0 | failed=0 | 成功率=100.00% | 最低要求=85.00%
 全局价格：allMids=936 | spot_token=296 | spot_coin=296 | 状态=ok
-现货语义质量：可信行=8982 | 异常行=639 | 异常占比=6.64% | 状态=ok | 原因={"position_value_over_dynamic_limit": 591, "missing_or_invalid_price": 48}
+现货语义质量：可信行=8983 | 异常行=638 | 异常占比=6.63% | 状态=ok | 原因={"position_value_over_dynamic_limit": 590, "missing_or_invalid_price": 48}
 
 本轮数据质量通过，可以正常参考信号。
