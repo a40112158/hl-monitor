@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-17T21:22:52Z",
+  "generated_at": "2026-07-17T22:22:41Z",
   "items": [
     {
       "coin": "LIT",
@@ -21,11 +21,9 @@
     },
     {
       "coin": "HYPE",
-      "direction": "bullish",
-      "verdict": "VETO",
+      "direction": "bearish",
+      "verdict": "WATCH",
       "reasons": [
-        "local_candidate_gate_failed",
-        "high_leverage_concentration",
         "maturity_or_concentration_warning"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
