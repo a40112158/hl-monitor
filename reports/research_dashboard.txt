@@ -1,21 +1,21 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-18 12:23:10 | UTC：2026-07-18 04:23:10
+更新时间北京时间：2026-07-18 13:23:12 | UTC：2026-07-18 05:23:12
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0x3b88...04a7 [money_printer] grade=B score=100.0 样本=27 72h胜率=0.4948128193059666 30d胜率=None 主币=ZEC,HYPE,SUI,XRP,BCH
+0x3b88...04a7 [money_printer] grade=B score=100.0 样本=27 72h胜率=0.4948128193059664 30d胜率=None 主币=ZEC,HYPE,SUI,XRP,BCH
 0xe867...c78e [money_printer] grade=S score=89.9 样本=20 72h胜率=0.09227301996426839 30d胜率=None 主币=HYPE
-0x3e7a...1589 [money_printer] grade=C score=82.7 样本=25 72h胜率=0.2014234066669888 30d胜率=None 主币=BTC,HYPE,ETH
-0xaeaa...2416 [money_printer] grade=C score=75.4 样本=11 72h胜率=0.4227941234594236 30d胜率=None 主币=BTC,ETH
-0xa516...37b0 [smart_money] grade=B score=74.9 样本=14 72h胜率=0.6344180855213115 30d胜率=None 主币=ETH,HYPE,BTC,ZEC
-0x7c93...c8fd [money_printer] grade=B score=74.5 样本=16 72h胜率=0.5460682784531372 30d胜率=None 主币=ETH,BTC,SUI
+0x3e7a...1589 [money_printer] grade=C score=82.7 样本=25 72h胜率=0.20142340666698882 30d胜率=None 主币=BTC,HYPE,ETH
+0xaeaa...2416 [money_printer] grade=C score=75.4 样本=11 72h胜率=0.42279412345942347 30d胜率=None 主币=BTC,ETH
+0xa516...37b0 [smart_money] grade=B score=74.9 样本=14 72h胜率=0.6344180855213113 30d胜率=None 主币=ETH,HYPE,BTC,ZEC
+0x7c93...c8fd [money_printer] grade=B score=74.5 样本=16 72h胜率=0.5460682784531373 30d胜率=None 主币=ETH,BTC,SUI
 0x6cd5...1968 [smart_money] grade=C score=69.2 样本=16 72h胜率=0.3252723915704469 30d胜率=None 主币=UANSEM,NEKO
-0x4e23...20c3 [money_printer] grade=C score=66.1 样本=64 72h胜率=0.2522392840124315 30d胜率=None 主币=HYPE,ETH,NEAR,MAX
+0x4e23...20c3 [money_printer] grade=C score=66.1 样本=64 72h胜率=0.2522392840124316 30d胜率=None 主币=HYPE,ETH,NEAR,MAX
 0x9996...91f6 [money_printer] grade=C score=64.1 样本=11 72h胜率=0.20174310240204638 30d胜率=None 主币=NEKO,LIT,MAX
-0x1728...2b1d [smart_money] grade=C score=62.9 样本=10 72h胜率=0.3241993084243909 30d胜率=None 主币=ZEC
+0x1728...2b1d [smart_money] grade=C score=62.9 样本=10 72h胜率=0.32419930842439093 30d胜率=None 主币=ZEC
 
 【Top 币种画像】
 
