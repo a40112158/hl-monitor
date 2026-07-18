@@ -1,2 +1,1 @@
-﻿address,groups,coin,market,direction,action_type,active_delta,price_effect,qty_delta,entry_px,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings,execution_evidence,fill_count,ledger_evidence,ledger_count,evidence_status,evidence_class,cluster_id
-0xdcac85ecae7148886029c20e661d848a4de99ce2,smart_money,NEKO,spot,bearish,sell_spot,-179457933.7092061,0.0,-2806.3542263,63947.0,-,-,-,现货卖出NEKO -$179.46M 数量Δ=-2.81K @ 63.95K,-,-,WOW $2.62M 数量=43.86K；BRIDGE $1.86M 数量=462.31；CFX0 $1.36M 数量=544.86K,未发现区间内成交,0,未发现充值/转账/提现账本更新,0,ok,balance_change_unconfirmed,0xdcac85ecae7148886029c20e661d848a4de99ce2
+﻿empty
