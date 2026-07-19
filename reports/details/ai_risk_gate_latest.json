@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-19T00:23:38Z",
+  "generated_at": "2026-07-19T01:23:35Z",
   "items": [
     {
-      "coin": "ZEC",
+      "coin": "LIT",
       "direction": "bullish",
       "verdict": "WATCH",
       "reasons": [
@@ -11,7 +11,7 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "LIT",
+      "coin": "ZEC",
       "direction": "bullish",
       "verdict": "WATCH",
       "reasons": [
@@ -49,6 +49,16 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
+      "coin": "BASED",
+      "direction": "bullish",
+      "verdict": "VETO",
+      "reasons": [
+        "local_candidate_gate_failed",
+        "maturity_or_concentration_warning"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
       "coin": "KNTQ",
       "direction": "bearish",
       "verdict": "VETO",
@@ -60,16 +70,6 @@
     },
     {
       "coin": "UPUMP",
-      "direction": "bullish",
-      "verdict": "VETO",
-      "reasons": [
-        "local_candidate_gate_failed",
-        "maturity_or_concentration_warning"
-      ],
-      "rule": "AI may keep or downgrade this verdict, never upgrade it"
-    },
-    {
-      "coin": "BASED",
       "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
@@ -101,7 +101,7 @@
     },
     {
       "coin": "MAX",
-      "direction": "bearish",
+      "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
@@ -146,6 +146,16 @@
       "reasons": [
         "local_candidate_gate_failed",
         "maturity_or_concentration_warning"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
+      "coin": "BTC",
+      "direction": "bearish",
+      "verdict": "VETO",
+      "reasons": [
+        "local_candidate_gate_failed",
+        "high_leverage_concentration"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     }
