@@ -1,7 +1,7 @@
 {
   "status": "incomplete_output",
   "urgency": "normal",
-  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【市场与资金结构】、【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
+  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【参数观察】、【下一轮重点检查】、报告结尾",
   "data_quality": "unknown",
   "market_structure": "unknown",
   "changes_since_previous": [],
@@ -10,8 +10,8 @@
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描成功率100%，但现货异常数据比例略有升高（5.75%），需持续关注。未发现达到阈值的短线强信号或适合低杠杆的长期交易候选。所有有信号的币种均处于“只观察”状态，并因数据不足、高杠杆集中或现货主导等原因被本地风控否决。大盘BTC和ETH处于“near_high”区域，24小时内有上涨，但短期略有回调。\n\n【数据质量】\n本轮扫描成功率为100%，所有24\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
-  "generated_at": "2026-07-21T09:25:07Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：watch\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动信号。所有观察到的币种均处于“只观察”状态，且被本地风控系统否决。市场整体处于“near_high”状态，但现货异常比例有所升高，需保持警惕。\n\n【数据质量】\n本轮扫描成功率为100%，共监控2419个钱包，无部分成功或失败情况，数据收集完整。然而，现货语义质量异常隔离比例达到5.76%，尽管低于10.00%的阻断阈值，但该比例的升高值得关注。多数“只观察”币种存在历史样本/胜率不足、窗口内含断跑gap等问题，影响信号的可靠性和长期资格判断。\n\n【市场与资金结构】\nBTC在1小时内持平，4小时上涨0.56%，24小时上涨3.08%，市场状态为“near_high”。\nETH在1小时内上涨0.01%，4小时上涨0.37%，24小时上涨3.92%，市场状态为“near_high”。\n资金费率方面，VVV、ASTER、GRAM、JTO、XLM、XPL、ZRO、AAVE等币种的资金费率均为低风险（+0.00%）。\n流动性方面，VVV、ASTER、GRAM、JTO、XLM、XPL、ZRO的24小时成交额较低，流动性风险为“高”。AAVE、ENA、LIT、HYPE、SOL、ZEC、ETH、XRP的流动性风险为“中”或“低”。\n\n【相比上次 AI 分析】\n上次AI分析报告内容不完整，缺失了多个关键章节，因此无法进行有效的比较。本轮报告数据更为完整。\n\n【重点观察】\n暂无明确高优先级目标。所有信号均被本地风控否决。\n\n【AI 风控结论】\nLIT: VETO\nHYPE: VETO\nZEC: VETO\nSOL: VETO\nKNTQ: VETO\nUANSEM: VETO\nUXPL: VETO\nUPUMP: VETO\nMAX: VETO\nBASED: VETO\nUBONK: VETO\nETH: VETO\nENA: VETO\nNEKO: VETO\nBRIDGE: VETO\nBUDDY: VETO\nXRP: VETO\n\n【风险提示】\n1.  **数据质量风险：** 异常现货比例升高至5.76%，可能影响部分现货数据的准确性。\n2.  **样本不足风险：** 多数“只观察”币种存在历史样本/胜率\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
+  "generated_at": "2026-07-21T10:25:10Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
