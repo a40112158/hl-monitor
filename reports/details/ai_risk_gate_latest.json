@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-26T20:23:21Z",
+  "generated_at": "2026-07-26T21:23:24Z",
   "items": [
     {
       "coin": "LIT",
@@ -62,8 +62,8 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "NEKO",
-      "direction": "bearish",
+      "coin": "UPUMP",
+      "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
@@ -72,8 +72,8 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "UPUMP",
-      "direction": "bullish",
+      "coin": "NEKO",
+      "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
