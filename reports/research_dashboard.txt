@@ -1,21 +1,21 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-26 22:22:41 | UTC：2026-07-26 14:22:41
+更新时间北京时间：2026-07-26 23:22:41 | UTC：2026-07-26 15:22:41
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0x3b88...04a7 [money_printer] grade=C score=83.1 样本=29 72h胜率=0.46708520743030363 30d胜率=None 主币=ZEC,HYPE,SUI,SOL,ETH
-0xfba7...c826 [smart_money] grade=A score=80.4 样本=14 72h胜率=0.2641971465341373 30d胜率=None 主币=HYPE,ZEC
-0xaeaa...2416 [money_printer] grade=C score=78.4 样本=11 72h胜率=0.42279412345942347 30d胜率=None 主币=BTC,ETH
+0x3b88...04a7 [money_printer] grade=C score=83.1 样本=29 72h胜率=0.4670852074303038 30d胜率=None 主币=ZEC,HYPE,SUI,SOL,ETH
+0xfba7...c826 [smart_money] grade=A score=80.4 样本=14 72h胜率=0.2641971465341372 30d胜率=None 主币=HYPE,ZEC
+0xaeaa...2416 [money_printer] grade=C score=78.4 样本=11 72h胜率=0.4227941234594234 30d胜率=None 主币=BTC,ETH
 0x7fda...17d1 [money_printer] grade=C score=73.3 样本=56 72h胜率=0.27786657865715564 30d胜率=None 主币=HYPE,BTC,LIT,ETH,XRP
 0x7c93...c8fd [money_printer] grade=C score=73.1 样本=16 72h胜率=0.5460682784531373 30d胜率=None 主币=ETH,BTC,SUI
-0xd4c1...3d1d [money_printer] grade=C score=71.9 样本=15 72h胜率=0.37866167520101046 30d胜率=None 主币=ZEC,BTC,HYPE,XRP,ETH
+0xd4c1...3d1d [money_printer] grade=C score=71.9 样本=15 72h胜率=0.3786616752010104 30d胜率=None 主币=ZEC,BTC,HYPE,XRP,ETH
 0x3e7a...1589 [money_printer] grade=C score=69.1 样本=27 72h胜率=0.24749232685727288 30d胜率=None 主币=BTC,HYPE,ETH,ZEC
-0x7a51...900d [smart_money] grade=C score=67.8 样本=21 72h胜率=0.2652230601327383 30d胜率=None 主币=HYPE
+0x7a51...900d [smart_money] grade=C score=67.8 样本=21 72h胜率=0.26522306013273833 30d胜率=None 主币=HYPE
 0xa516...37b0 [smart_money] grade=C score=64.3 样本=16 72h胜率=0.5550335129942263 30d胜率=None 主币=ETH,HYPE,ZEC,BTC
-0x4e23...20c3 [money_printer] grade=C score=61.1 样本=64 72h胜率=0.34682607046658787 30d胜率=None 主币=HYPE,ETH,NEAR,MAX
+0x4e23...20c3 [money_printer] grade=C score=61.1 样本=64 72h胜率=0.3468260704665878 30d胜率=None 主币=HYPE,ETH,NEAR,MAX
 
 【Top 币种画像】
 
