@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-26T15:22:47Z",
+  "generated_at": "2026-07-26T16:22:46Z",
   "items": [
     {
       "coin": "ZEC",
@@ -23,9 +23,10 @@
     },
     {
       "coin": "HYPE",
-      "direction": "bearish",
-      "verdict": "WATCH",
+      "direction": "bullish",
+      "verdict": "VETO",
       "reasons": [
+        "local_candidate_gate_failed",
         "maturity_or_concentration_warning"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
@@ -92,7 +93,7 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "UPUMP",
+      "coin": "UANSEM",
       "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
@@ -102,7 +103,7 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "UANSEM",
+      "coin": "UPUMP",
       "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
