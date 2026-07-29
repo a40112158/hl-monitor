@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-30 03:23:26 | UTC：2026-07-29 19:23:26
+更新时间北京时间：2026-07-30 04:23:23 | UTC：2026-07-29 20:23:23
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -7,15 +7,15 @@
 
 【Top 钱包画像】
 0xfba7...c826 [smart_money] grade=A score=100.0 样本=15 72h胜率=0.26419714653413723 30d胜率=None 主币=HYPE,ZEC
-0x7c93...c8fd [money_printer] grade=A score=96.4 样本=11 72h胜率=0.5990474793671042 30d胜率=1.0 主币=ETH,SUI,BTC
 0xaeaa...2416 [money_printer] grade=C score=85.9 样本=10 72h胜率=0.45933189838968275 30d胜率=None 主币=BTC,ETH
-0x3e7a...1589 [money_printer] grade=C score=79.3 样本=24 72h胜率=0.2693424247719619 30d胜率=1.0 主币=HYPE,BTC,ETH,ZEC
-0x7fda...17d1 [money_printer] grade=C score=72.7 样本=57 72h胜率=0.2898495160816454 30d胜率=None 主币=HYPE,LIT,BTC,ETH,XRP
-0xd4c1...3d1d [money_printer] grade=C score=69.4 样本=16 72h胜率=0.2708944899163592 30d胜率=None 主币=ZEC,BTC,HYPE,ETH,XRP
-0x7737...bf66 [money_printer] grade=C score=62.4 样本=92 72h胜率=0.2618300923960065 30d胜率=None 主币=ZEC,ETH,SOL,LIT,XPL
-0x3b88...04a7 [money_printer] grade=C score=60.6 样本=25 72h胜率=0.44874458673346523 30d胜率=None 主币=ZEC,HYPE,SUI,SOL,ETH
+0x7c93...c8fd [money_printer] grade=A score=76.6 样本=10 72h胜率=0.5673599770304278 30d胜率=None 主币=ETH,SUI,BTC
+0x3e7a...1589 [money_printer] grade=C score=74.0 样本=23 72h胜率=0.2469017256989438 30d胜率=1.0 主币=HYPE,BTC,ETH,ZEC
+0x7fda...17d1 [money_printer] grade=C score=72.7 样本=59 72h胜率=0.28984951608164533 30d胜率=None 主币=HYPE,BTC,LIT,ETH,XRP
+0xd4c1...3d1d [money_printer] grade=C score=69.4 样本=16 72h胜率=0.2708944899163593 30d胜率=None 主币=ZEC,BTC,HYPE,ETH,XRP
+0x6cd5...1968 [smart_money] grade=C score=67.3 样本=18 72h胜率=0.28869319446789576 30d胜率=None 主币=UANSEM,NEKO
+0x7737...bf66 [money_printer] grade=C score=62.4 样本=92 72h胜率=0.26183009239600663 30d胜率=None 主币=ZEC,ETH,SOL,LIT,XPL
+0x3b88...04a7 [money_printer] grade=C score=60.6 样本=25 72h胜率=0.4487445867334651 30d胜率=None 主币=ZEC,HYPE,SUI,SOL,ETH
 0x5b23...43a8 [smart_money] grade=C score=56.7 样本=12 72h胜率=0.11652210279961414 30d胜率=None 主币=HWAVE,MAX
-0x6cd5...1968 [smart_money] grade=C score=54.8 样本=18 72h胜率=0.2886931944678957 30d胜率=None 主币=UANSEM,NEKO
 
 【Top 币种画像】
 
