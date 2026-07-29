@@ -1,17 +1,17 @@
 {
-  "status": "completed",
-  "urgency": "watch",
-  "executive_summary": "本轮扫描未发现达到币种专属阈值的短线强异动信号。多数观察币种存在历史样本不足、高杠杆集中或现货主导等风险，导致信号被降级或否决。BTC和ETH出现高杠杆多头异动，但因杠杆过高被否决。HWAVE出现大额现货流出，但因现货主导和钱包集中度高，仅作为观察。整体市场环境保持中性。",
-  "data_quality": "详见 Markdown 报告【数据质量】部分。",
-  "market_structure": "详见 Markdown 报告【市场与资金结构】部分。",
+  "status": "incomplete_output",
+  "urgency": "normal",
+  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【参数观察】、【下一轮重点检查】、报告结尾",
+  "data_quality": "unknown",
+  "market_structure": "unknown",
   "changes_since_previous": [],
   "focus_items": [],
   "risk_warnings": [],
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动信号。多数观察币种存在历史样本不足、高杠杆集中或现货主导等风险，导致信号被降级或否决。BTC和ETH出现高杠杆多头异动，但因杠杆过高被否决。HWAVE出现大额现货流出，但因现货主导和钱包集中度高，仅作为观察。整体市场环境保持中性。\n\n【数据质量】\n本轮扫描健康度良好，监控钱包成功率100%，无部分或失败扫描。现货语义质量可信度高，异常隔离率为6.25%，低于10.00%的阻断阈值，但仍需关注。多数币种信号存在“历史样本/胜率不足”的风险提示，部分信号窗口内含“断跑gap”，表明数据连续性或历史深度有待提升。自动优化分析层显示“暂无可分析的成熟信号样本”，说明当前缺乏足够成熟的信号样本进行回测和优化。\n\n【市场与资金结构】\nBTC和ETH大盘环境在1小时、4小时和24小时周期内均呈现小幅上涨，市场情绪保持中性。\n资金费率方面，所有列出的币种（AIXBT, SUI, VVV, XLM, LINK, XMR, WLD）资金费率风险均为“低”，表明市场情绪相对平稳，未出现极端的多空偏离。\n流动性方面，AIXBT、SUI、VVV、XLM、LINK、XMR的24小时成交额较低，流动性风险被评估为“高”。WLD的流动性风险为“中”。BTC、ETH、HYPE、LIT、NEAR、SOL、ZEC的流动性风险为“低”，成交额相对较高。\nOI、多空人数比、主动买卖比等数据未在本次扫描结果中明确提供，数据不足以进行详细分析。\n\n【相比上次 AI 分析】\n上次AI分析报告内容不完整，缺失了多个关键章节，因此本轮报告无法与上次进行有效比较。\n\n【重点观察】\n*   **HWAVE 偏空**：出现显著的现货主动卖出（-$12.61M），钱包质量加权资金流出-$9.71M。但信号现货主导，且钱包集中度过高（Top1占比100%），持续性不足，长期资格未通过。风险较高，仅作观察。\n*   **WLD 偏多**：首次出现偏多信号，合约主导，本轮合约主动变化$1.06M。但存在历史样本/胜率不足的风险，且同方向高杠杆仓位偏多41%，流动性偏低（24h成交额$10.27M）。\n*   **BTC 偏多**：本轮合约主动变化$21.21M，但长期资格未通过，滚动窗口未成熟。同方向高杠杆/爆仓边缘仓位占比高达88%，平均杠杆24.1x，存在极高杠杆短线风险。\n*   **ZEC 偏多**：主滚动窗口72h资金流入$20.58M，杠杆健康（低/中杠杆73%，均4.3x），覆盖率高。但仍提示历史样本/胜率不足。\n*   **LIT 偏多**：主滚动窗口30d资金流入$31.98M，杠杆健康（低/中杠杆99%，均4.9x），覆盖率高。但提示历史样本/胜率不足，且窗口内含断跑gap。\n\n【AI 风控结论】\n*   ZEC (bullish): WATCH\n*   HWAVE (bearish): VETO\n*   LIT (bullish): WATCH\n*   WLD (bullish): WATCH\n*   HYPE (bearish): WATCH\n*   BTC (bullish): VETO\n*   KNTQ (bearish): VETO\n*   UPUMP (bearish): VETO\n*   MAX (bearish): VETO\n*   ETH (bearish): VETO\n*   UANSEM (bullish): VETO\n*   BASED (bearish): VETO\n*   UBONK (bullish): VETO\n*   BUDDY (bearish): VETO\n*   NEAR (bullish): VETO\n*   PUMP (bearish): VETO\n*   NEKO (bullish): VETO\n*   GRAM (bullish): VETO\n*   SOL (bearish): VETO\n\n【风险提示】\n1.  **数据不足风险**：多数观察币种存在“历史样本/胜率不足”的问题，信号的可靠性有待时间验证。\n2.  **高杠杆风险**：BTC、ETH、NEAR等币种的高杠杆/爆仓边缘仓位占比过高，平均杠杆极高，存在短线剧烈波动的风险。\n3.  **流动性风险**：AIXBT、SUI、VVV、XLM、LINK、XMR等币种的24小时成交额较低，流动性差，可能导致价格剧烈波动或难以平仓。\n4.  **现货主导信号风险**：HWAVE、KNTQ、UPUMP、MAX、UANSEM、BASED、UBONK、BUDDY、NEKO等币种的信号现货主导，可能为转账、归集或划转行为，不代表合约方向。\n5.  **钱包集中度风险**：HWAVE、BASED、UBONK、GRAM等币种的信号钱包集中度过高，可能为单钱包异动，不具备普遍性。\n6.  **信号持续性风险**：部分信号持续性不足或窗口内含断跑gap，不适合作为长期建仓依据。\n7.  **极端行情风险**：市场环境虽为中性，但高杠杆仓位集中可能在极端行情下引发连锁反应。\n\n【参数观察】\n自动优化分析层显示“暂无可分析的成熟信号样本”，这可能意味着当前的筛选参数对于识别成熟信号而言可能过严，或者系统仍在积累足够的历史数据。需要更多轮次的扫描数据来判断当前筛选参数是否合适。\n\n【下一轮重点检查】\n1.  持续关注“只观察”币种的信号演变，特别是ZEC和LIT，观察其历史样本和胜率是否有所改善。\n2.  密切监控BTC和ETH的高杠杆仓位占比和平均杠杆变化，警惕潜在的爆仓风险。\n3.  对流动性风险较高的币种（AIXBT, SUI, VVV, XLM, LINK, XMR, WLD）保持警惕，避免在流动性不足的市场中进行操作。\n4.  重点追踪现货主导和钱包集中度过高的信号，确认其是否能转化为合约方向的有效信号。\n5.  观察是否有新的币种出现达到阈值的短线强信号。",
-  "generated_at": "2026-07-29T18:24:04Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：watch\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动信号。现货异常比例略有升高，需持续关注。多数观察币种因历史样本不足、高杠杆集中或现货主导等风险，信号被降级或否决。BTC和ETH仍有高杠杆异动，但因杠杆过高被风控否决。一个钱包在ETH上开立了高杠杆空单，强平距离极低，存在爆仓风险。\n\n【数据质量】\n本轮扫描成功率为100%，未出现部分成功或失败的钱包。现货语义质量方面，可信数据9007条，异常隔离600条，异常率为6.25%，略高于正常水平，但仍在阻断阈值10.00%以下，需持续观察。多数“只观察”币种存在“历史样本/胜率不足”的风险提示，部分币种的滚动窗口数据“含断跑gap”，表明数据连续性可能存在问题。\n\n【市场与资金结构】\nBTC当前处于“near_high”状态，1小时下跌0.05%，4小时上涨0.78%，24小时上涨0.90%。ETH处于“neutral”状态，1小时下跌0.04%，4小时上涨1.45%，24小时下跌0.12%。\n资金费率方面，所有列出的币种（LINK, VVV, ZRO, SUI, AIXBT, XLM, XMR, WLD, PUMP, GRAM, AAVE, CASHCAT, ENA, HYPE, LIT, NEAR, SOL, XPL, XRP）资金费率风险均为“低”。\n流动性方面，LINK, VVV, ZRO, SUI, AIXBT, XLM, XMR的24小时成交额较低，流动性风险为“高”。WLD, PUMP, GRAM, AAVE, CASHCAT, ENA, XPL的流动性风险为“中”。BTC, ETH, HYPE, LIT, NEAR, SOL, XRP的流动性风险为“低”。\n净流入/流出方面，本轮BTC合约主动变化为$42.76M（偏多），SOL合约主动变化为-$3.83M（偏空），ETH合约主动变化为$85.72万（偏空，但权重资金流为负）。ZEC合约主动变化为$2.06M（偏多）。\n多空人数比、主动买卖比、OI等数据未在汇总层面提供。\n\n【相比上次 AI 分析】\n本轮扫描的紧急度与上次保持一致，仍为“watch”。市场环境描述与上次类似，未出现短线强异动信号，多数信号仍因风险因素被降级或否决。\nZEC的偏多信号alert_score从上次的0.775显著提升至本轮的4.268，资金流入增强。\nSOL的偏空信号alert_score从上次的0降至本轮的-3.608，显示出更强的空头异动，但其高杠杆和钱包集中度问题依然存在。\nHYPE的偏空信号alert_score从上次的-1.42375回升至本轮的0，信号强度减弱。\nBTC的偏多信号alert_score从上次的1.9略微上升至1.975，但其高杠杆风险依然突出。\n整体而言，市场结构和信号质量未见显著改善，风险控制仍是主要考量。\n\n【重点观察】\n1.  **ZEC (偏多)**：alert_score显著提升至4.27，资金流入明显，且杠杆结构健康（低/中杠杆73%，均4.3x），平均强平距离较安全（51.0%）。\n    *   理由：资金面有积极信号，杠杆结构稳健。\n    *   风险：历史样本/胜率不足，信号仍处于“只观察”阶段，未达到阈值。\n2.  **SOL (偏空)**：alert_score为-3.61，显示较强的空头异动。\n    *   理由：有明显的空头资金流出信号。\n    *   风险：钱包集中度过高（Top1贡献73%），高杠杆占比过高（83%），平均杠杆16.1x，存在单钱包异动和高杠杆短线风险，长期资格未通过。\n3.  **BTC (偏多)**：本轮合约主动变化达$42.76M。\n    *   理由：有大额资金流入。\n    *   风险：高杠杆占比过高（88%），平均杠杆23.4x，极高杠杆短线风险，滚动窗口未成熟，长期资格未通过。\n4.  **ETH (偏空)**：本轮合约主动变化有资金流出。\n    *   理由：有空头资金流出信号。\n    *   风险：高杠杆仓位偏多（52%），平均杠杆11.9x，偏短线，长期资格未通过。\n5.  **钱包 0x50b3...9f20 (ETH 偏空)**：该钱包新开ETH 25x空单，主动变化-$22.74M，强平距离仅为+4.63%。\n    *   理由：大额高杠杆异动，且处于爆仓边缘。\n    *   风险：极高风险操作，可能面临快速清算，对市场价格造成短期冲击。\n\n【AI 风控结论】\n*   ZEC (bullish): WATCH\n*   SOL (bearish): VETO\n*   LIT (bullish): WATCH\n*   HYPE (bearish): WATCH\n*   BTC (bullish): VETO\n*   PUMP (bearish): VETO\n*   KNTQ (bearish): VETO\n*   MAX (bearish): VETO\n*   UPUMP (bearish): VETO\n*   ETH (bearish): VETO\n*   UANSEM (bullish): VETO\n*   BASED (bearish): VETO\n*   NEAR (bullish): VETO\n*   UBONK (bullish): VETO\n*   BUDDY (bearish): VETO\n*   NEKO (bullish): VETO\n*   HWAVE (bearish): VETO\n*   GRAM (bullish): VETO\n\n【风险提示】\n1.  **数据质量风险**：异常现货比例升高至6.25%，虽然未达阻断阈值，但需警惕数据异常可能带来的误判。\n2.  **样本不足风险**：多数观察币种存在“历史样本/胜率不足”的问题，信号可靠性有待进一步验证。\n3.  **高杠杆风险**：BTC、SOL、ETH、NEAR等币种的高杠杆仓位占比过高，平均杠杆偏高，存在极高杠杆短线风险\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
+  "generated_at": "2026-07-29T19:24:04Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
@@ -25,6 +25,6 @@
   ],
   "force_analysis": true,
   "force_reason": "manual",
-  "tg_sent": true,
+  "tg_sent": false,
   "error_tg_sent": false
 }
