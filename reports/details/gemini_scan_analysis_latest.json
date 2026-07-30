@@ -1,17 +1,17 @@
 {
-  "status": "completed",
-  "urgency": "high",
-  "executive_summary": "本轮扫描未发现达到币种专属阈值的短线强异动信号。多数观察信号因历史样本不足、现货主导或高杠杆占比过高而被标记为“只观察”或被风控否决。现货异常比例略有升高，但仍在可接受范围内。整体市场环境保持中性。",
-  "data_quality": "详见 Markdown 报告【数据质量】部分。",
-  "market_structure": "详见 Markdown 报告【市场与资金结构】部分。",
+  "status": "incomplete_output",
+  "urgency": "normal",
+  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【市场与资金结构】、【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
+  "data_quality": "unknown",
+  "market_structure": "unknown",
   "changes_since_previous": [],
   "focus_items": [],
   "risk_warnings": [],
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动信号。多数观察信号因历史样本不足、现货主导或高杠杆占比过高而被标记为“只观察”或被风控否决。现货异常比例略有升高，但仍在可接受范围内。整体市场环境保持中性。\n\n【数据质量】\n本轮监控钱包成功率为100.00%，未出现部分成功或失败的扫描。现货语义质量显示可信数据9002条，异常隔离597条，异常率为6.22%。系统发出“异常现货比例升高”的告警，但仍低于10.00%的阻断阈值，数据质量整体可接受，但异常现货比例值得持续关注。\n\n【市场与资金结构】\n大盘环境：\nBTC: 1h -0.00% | 4h -0.04% | 24h +1.74% | regime=neutral\nETH: 1h -0.01% | 4h -0.15% | 24h +1.46% | regime=neutral\n\n资金费率与流动性：\n*   XMR：资金费率-0.01%（低风险），24h成交额$3.75M（高流动性风险）\n*   AIXBT：资金费率-0.01%（低风险），24h成交额$204.05K（高流动性风险）\n*   FARTCOIN：资金费率+0.00%（低风险），24h成交额$3.92M（高流动性风险）\n*   GRAM：资金费率+0.00%（低风险），24h成交额$955.83K（高流动性风险）\n*   SUI：资金费率+0.00%（低风险），24h成交额$4.25M（高流动性风险）\n*   VVV：资金费率+0.00%（低风险），24h成交额$1.95M（高流动性风险）\n*   ZRO：资金费率+0.00%（低风险），24h成交额$1.34M（高流动性风险）\n*   XLM：资金费率-0.00%（低风险），24h成交额$790.81K（高流动性风险）\n*   LIT：资金费率+0.0013%（低风险），24h成交额$14.63M（中流动性风险）\n*   PUMP：资金费率+0.0010%（低风险），24h成交额$14.54M（中流动性风险）\n*   NEAR：资金费率+0.0013%（低风险），24h成交额$8.78M（中流动性风险）\n\n主动买卖比、净流入、OI、多空人数比等数据不足。\n\n单钱包主动变化Top：\n*   BUDDY (spot 偏空): 0x7737...bf66 [money_printer] 主动减持现货-$18.76M，未发现成交证据。\n*   BUDDY (spot 偏空): 0x25fc...9c38 [smart_money] 主动减持现货-$16.93M，未发现成交证据。\n*   ETH (perp 偏空): 0xecb6...2b00 [money_printer] 合约空单变化ETH 15x -$3.31M，有成交证据。同时现货买入UXPL $937.50K。\n\n【相比上次 AI 分析】\n上次AI分析报告内容不完整，无法进行直接的分析内容比较。\n从信号变化来看：\n*   BTC：方向由上次的看多转为本轮的看空，alert_score从2.0125降至0.0，weighted_flow大幅减少。\n*   BUDDY：方向由上次的看多转为本轮的看空，alert_score从0.0降至-1.62525，weighted_flow大幅减少。\n*   ETH：方向由上次的看多转为本轮的看空，alert_score从1.54375降至0.0，weighted_flow有较大波动。\n*   UXPL：方向由上次的看空转为本轮的看多，alert_score从-1.6升至1.6，weighted_flow有较大波动。\n*   KNTQ、UPUMP、UBONK、NEAR、GRAM、HYPE、LIT、MAX、NEKO、PUMP、SOL、UANSEM、ZEC等币种的信号方向和alert_score变化不大，多数仍处于“只观察”状态，且风险因素持续存在。\n\n【重点观察】\n本轮暂无明确高优先级目标。所有信号均处于“只观察”状态，且存在显著风险。\n*   **ZEC (偏多)**：alert_score为0.7，杠杆健康（低/中杠杆72%，均4.4x），平均强平距离53.5%较安全。但风险提示为“历史样本/胜率不足”。\n*   **LIT (偏多)**：alert_score为0.35，杠杆健康（低/中杠杆99%，均4.9x），平均强平距离68.3%较安全。但存在“历史样本/胜率不足”、“窗口内含断跑gap”和“流动性偏低”的风险。\n*   **HYPE (偏空)**：alert_score为-0.2，平均强平距离126.4%较安全。但存在“历史样本/胜率不足”、“窗口内含断跑gap”和“同方向高杠杆仓位偏多41%”的风险。\n*   **BUDDY (偏空)**：alert_score为-1.62525，本轮现货主动变化-$35.69M。主要风险是“现货主导”、“持续性不足”、“缺少合约/低杠杆确认”以及“历史样本/胜率不足”。\n*   **UXPL (偏多)**：alert_score为1.6，本轮现货主动变化$1.02M。主要风险是“滚动窗口未成熟”、“缺少合约/低杠杆确认”以及“历史样本/胜率不足”。\n\n【AI 风控结论】\n*   ZEC (bullish): WATCH\n*   LIT (bullish): WATCH\n*   HYPE (bearish): WATCH\n*   BUDDY (bearish): VETO\n*   UXPL (bullish): VETO\n*   PUMP (bearish): VETO\n*   SOL (bearish): VETO\n*   MAX (bearish): VETO\n*   ETH (bearish): VETO\n*   UANSEM (bullish): VETO\n*   BASED (bearish): VETO\n*   KNTQ (bearish): VETO\n*   UPUMP (bearish): VETO\n*   NEAR (bullish): VETO\n*   NEKO (bullish): VETO\n*   UBONK (bearish): VETO\n*   BTC (bearish): VETO\n*   GRAM (bullish): VETO\n\n【风险提示】\n1.  **数据不足风险**：多数信号被标记为“历史样本/胜率不足”，表明模型对这些币种的历史表现缺乏足够信心。\n2.  **现货主导风险**：多个信号（如BUDDY, UXPL, MAX, UANSEM, BASED, KNTQ, UPUMP, NEKO, UBONK）被标记为“现货主导”，这可能代表转账、归集或划转行为，而非明确的合约方向信号。\n3.  **高杠杆风险**：SOL、PUMP、ETH、NEAR、BTC等币种的信号存在“高杠杆占比过高”或“平均杠杆过高”的风险，可能导致仓位脆弱，易受市场波动影响。\n4.  **流动性不足风险**：XMR, AIXBT, FARTCOIN, GRAM, SUI, VVV, ZRO, XLM等币种的24h成交额较低，存在高流动性风险，可能导致交易滑点大或难以平仓。LIT, PUMP, NEAR也存在流动性偏低风险。\n5.  **信号持续性不足/窗口未成熟风险**：部分信号（如BUDDY, UXPL, UBONK）存在“持续性不足”或“滚动窗口未成熟”的问题，不宜作为长期建仓依据。\n6.  **钱包集中度过高风险**：BASED, UBONK, BTC, GRAM等币种的信号存在“钱包集中度过高”的风险，可能由少数大额钱包的异动引起，而非广泛的市场共识。\n7.  **断跑gap风险**：多个信号（如LIT, HYPE, PUMP, SOL, MAX, ETH, UANSEM, BASED, KNTQ, UPUMP, NEKO, GRAM）的窗口内含断跑gap，可能影响信号的连续性和可靠性。\n8.  **异常现货比例升高**：虽然未达阻断阈值，但6.22%的异常现货比例升高提示需要对现货数据质量保持警惕。\n\n【参数观察】\n本轮扫描结果显示，绝大多数信号未能达到强信号阈值，且大量信号因“历史样本/胜率不足”、“长期资格未通过”或“高杠杆占比过高”等原因被标记为“只观察”或被风控否决。自动优化分析层也指出“暂无可分析的成熟信号样本”。这表明当前的筛选参数可能偏严，导致难以捕捉到符合长期低杠杆策略的成熟信号。需要更多轮数据来判断参数是否需要调整以平衡信号数量和质量。\n\n【下一轮重点检查】\n1.  持续关注异常现货比例的变化趋势。\n2.  重点观察ZEC、LIT、HYPE等WATCH状态币种的信号强度、持续性及风险因素是否改善。\n3.  追踪",
-  "generated_at": "2026-07-30T19:23:56Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动信号。多数观察信号因历史样本不足、现货主导或高杠杆占比过高而被标记为“只观察”或被风控否决。异常现货比例略有升高至6.23%，但仍在可接受范围内。整体市场环境保持中性，BTC和ETH均处于“near_high”状态。\n\n【数据质量】\n本轮扫描健康度良好，监控钱包成功率达100%（2419个钱包全部成功扫描，无partial或failed）。现货语义\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
+  "generated_at": "2026-07-30T20:23:21Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
@@ -25,6 +25,6 @@
   ],
   "force_analysis": true,
   "force_reason": "manual",
-  "tg_sent": true,
+  "tg_sent": false,
   "error_tg_sent": false
 }
