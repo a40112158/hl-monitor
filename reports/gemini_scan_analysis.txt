@@ -2,78 +2,13 @@
 
 状态：success
 模型：gemini-2.5-flash
-紧急度：normal
+紧急度：watch
 
 【执行摘要】
-本轮扫描未发现达到币种专属阈值的短线强信号。多数观察币种存在历史样本不足、高杠杆占比过高、信号现货主导或流动性偏低等风险，导致长期资格未通过或被风控否决。整体市场环境平稳，但需警惕部分币种的异常现货比例升高。
+本轮扫描未发现达到币种专属阈值的短线强信号。多数观察币种因历史样本不足、高杠杆占比过高、信号现货主导或流动性偏低等风险，未能通过长期资格硬门槛或被风控否决。值得注意的是，异常现货比例已升高至6.12%，虽未达阻断阈值，但需持续关注。整体市场环境保持中性。
 
 【数据质量】
-本轮扫描监控钱包2419个，成功率100%，无partial或failed情况，数据获取完整。然而，现货语义质量中异常隔离数据占6.23%，略高于正常水平，但仍在阻断阈值10.00%以下。多数信号存在“历史样本/胜率不足”的风险提示，表明模型对这些币种的分析深度受限于历史数据积累。
+本轮扫描成功率为100%（2419个钱包全部成功），数据完整性良好。共处理永续
 
-【市场与资金结构】
-*   **大盘环境**：BTC在1小时和24小时内微涨，4小时微跌，整体处于neutral（中性）状态。ETH在1小时和24小时内微涨，4小时微跌，处于near_low（接近低位）状态。
-*   **资金费率 / 流动性过滤**：多数币种资金费率风险为低。然而，AIXBT、GRAM、JTO、TAO、VVV、XPL、kPEPE、XLM等多个币种的24小时成交额较低，流动性风险被评估为高。LIT、XMR、PUMP、NEAR、CASHCAT、ENA、LINK、SUI、WLD的流动性风险为中。
-*   **短线强信号 / 异动雷达**：本轮暂无达到币种专属阈值的短线强异动。
-*   **做多观察**：暂无明确做多观察目标。
-*   **做空观察**：暂无明确做空观察目标。
-*   **只观察 / 信号不足**：
-    *   BTC（偏空）：本轮合约主动变化-$21.23M，但高杠杆仓位占比68%，平均杠杆20.0x，长期资格未通过。
-    *   SOL（偏多）：本轮合约主动变化$4.55M，但高杠杆仓位占比64%，平均杠杆12.5x，且本轮异动与滚动方向冲突，长期资格未通过。
-    *   ZEC（偏多）：主滚动窗口72h资金流入$9.01M，低/中杠杆占比72%，平均杠杆4.4x，杠杆健康度较好，但历史样本/胜率不足。
-    *   LIT（偏多）：主滚动窗口30d资金流入$22.57M，低/中杠杆占比99%，平均杠杆4.9x，杠杆健康度较好，但历史样本/胜率不足，且流动性偏低。
-    *   XMR（偏多）：主滚动窗口72h资金流入$4.00M，价格靠近24h低位，但历史样本/胜率不足，且流动性偏低。
-    *   HYPE（偏空）：主滚动窗口30d资金流出-$51.14M，但同方向高杠杆仓位偏多41%，历史样本/胜率不足。
-    *   PUMP（偏空）：主滚动窗口15d资金流出-$10.42M，但高杠杆仓位偏多57%，流动性偏低，长期资格未通过。
-    *   ETH（偏空）：主滚动窗口30d资金流出-$102.85M，但高杠杆仓位偏多49%，平均杠杆11.3x，长期资格未通过。
-    *   KNTQ, UPUMP, MAX, BASED, NEKO, UBONK, UANSEM, BUDDY：这些币种的信号多为现货主导，可能是转账/归集/划转，不等于合约方向，且存在钱包集中度过高、持续性不足等风险，长期资格未通过。
-*   **单钱包主动变化 Top**：
-    *   SOL perp 偏多：0x1658...f65b (smart_money) 平空$12.59M，杠杆20x，爆仓边缘型，强平距+2.88%。
-    *   SOL perp 偏空：0x5986...89d9 (smart_money) 平多-$5.77M，杠杆20x，爆仓边缘型，强平距+6.01%。
-    *   BTC perp 偏空：0xbcd4...0dd2 (money_printer) 平多-$5.15M，杠杆20x，极高杠杆短线型，强平距+61.18%。
-    这些主要为平仓操作，显示部分大额钱包在SOL和BTC上进行仓位调整。
-*   **资金流样本**：观察到多笔USDC减少（疑似资金流出/买入）和USDC增加（疑似资金回流）的记录，金额从数十万到百万美元不等，涉及多个钱包类型和币种。
-
-【相比上次 AI 分析】
-上次AI分析报告不完整，本轮报告完整性相比上轮有显著提升。
-
-【重点观察】
-暂无明确高优先级目标。
-本轮扫描中，ZEC和LIT的杠杆健康度相对较好，但仍面临历史样本/胜率不足的风险，且LIT流动性偏低。BTC和SOL虽有大额钱包平仓动作，但其信号因高杠杆占比过高而被风控否决。
-
-【AI 风控结论】
-*   ZEC (bullish): WATCH (insufficient_evidence_for_pass)
-*   LIT (bullish): WATCH (maturity_or_concentration_warning)
-*   BTC (bearish): VETO (local_candidate_gate_failed, high_leverage_concentration)
-*   XMR (bullish): WATCH (insufficient_evidence_for_pass)
-*   SOL (bullish): VETO (local_candidate_gate_failed, high_leverage_concentration, maturity_or_concentration_warning)
-*   HYPE (bearish): WATCH (maturity_or_concentration_warning)
-*   PUMP (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   ETH (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   KNTQ (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   UPUMP (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   MAX (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   BASED (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   NEKO (bullish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   UBONK (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   UANSEM (bullish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   BUDDY (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   GRAM (bullish): VETO (local_candidate_gate_failed, high_liquidity_risk, maturity_or_concentration_warning)
-*   NEAR (bullish): VETO (local_candidate_gate_failed, high_leverage_concentration)
-
-【风险提示】
-1.  **数据质量风险**：异常现货比例升高至6.23%，虽然未达阻断阈值，但需持续关注其变化。
-2.  **流动性不足风险**：AIXBT、GRAM、JTO、TAO、VVV、XPL、kPEPE、XLM等多个币种24小时成交额低，存在较高的流动性风险，可能导致价格波动剧烈或难以平仓。
-3.  **高杠杆风险**：BTC、SOL、ETH、PUMP、NEAR等币种的观察信号中，同方向高杠杆/爆仓边缘仓位占比较高，平均杠杆偏高，存在短期内被清算的风险。
-4.  **信号成熟度风险**：多数观察信号被标记为“历史样本/胜率不足”或“滚动窗口未成熟”，表明信号尚未经过充分验证，可靠性较低。
-5.  **现货主导信号风险**：KNTQ、UPUMP、MAX、BASED、NEKO、UBONK、UANSEM、BUDDY等币种的信号现货主导，可能为转账/归集/划转行为，不代表合约方向，需谨慎对待。
-6.  **钱包集中度风险**：BASED、UBONK、GRAM等币种的信号存在钱包集中度过高的问题，可能为单钱包异动，非市场普遍行为。
-
-【参数观察】
-自动优化分析层显示“暂无可分析的成熟信号样本”，这可能意味着当前筛选参数对于识别成熟信号而言可能过严，或者市场中尚未出现足够多的成熟信号样本。需要更多轮数据来判断参数的合理性。
-
-【下一轮重点检查】
-1.  持续关注异常现货比例的变化趋势。
-2.  重点观察ZEC、LIT、XMR、HYPE等WATCH状态币种的信号持续性、杠杆结构和流动性变化，以判断其信号是否能进一步成熟。
-3.  密切监控BTC和SOL等主要币种的杠杆结构，特别是高杠杆仓位占比和平均杠杆的变化，以及大额钱包的后续动作。
-4.  对流动性风险高的币种，持续追踪其成交额和资金费率，评估风险是否有所缓解。
-5.  关注“只观察”列表中现货主导信号的后续发展，判断是否存在合约方向的确认信号。
+【本地完整性校验】
+⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
