@@ -1,20 +1,20 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-07-31 21:22:56 | UTC：2026-07-31 13:22:56
+更新时间北京时间：2026-07-31 22:23:05 | UTC：2026-07-31 14:23:05
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0x7fda...17d1 [money_printer] grade=B score=88.2 样本=60 72h胜率=0.3098220708049393 30d胜率=None 主币=HYPE,BTC,ETH,LIT,XRP
-0x3b88...04a7 [money_printer] grade=C score=86.5 样本=21 72h胜率=0.41903113437423034 30d胜率=None 主币=ZEC,HYPE,SUI,SOL,ETH
+0x7fda...17d1 [money_printer] grade=B score=88.2 样本=60 72h胜率=0.30982207080493934 30d胜率=None 主币=HYPE,BTC,ETH,LIT,XRP
+0x3b88...04a7 [money_printer] grade=C score=86.5 样本=21 72h胜率=0.41903113437423045 30d胜率=None 主币=ZEC,HYPE,SUI,SOL,ETH
 0xfba7...c826 [smart_money] grade=B score=79.7 样本=15 72h胜率=0.2253420022055012 30d胜率=None 主币=HYPE,ZEC
-0xd4c1...3d1d [money_printer] grade=C score=72.2 样本=16 72h胜率=0.3375707373563038 30d胜率=None 主币=ZEC,BTC,HYPE,ETH,XRP
-0x7a51...900d [smart_money] grade=C score=72.1 样本=20 72h胜率=0.35596682151912235 30d胜率=None 主币=HYPE
-0x5323...b23c [smart_money] grade=C score=57.0 样本=301 72h胜率=0.33307031857874186 30d胜率=None 主币=ZEC,HYPE,SOL,BNB
-0xc7ab...2bf8 [smart_money] grade=C score=56.1 样本=21 72h胜率=0.3847313222961178 30d胜率=None 主币=ETH,HYPE,BTC,SOL
+0xd4c1...3d1d [money_printer] grade=C score=72.2 样本=16 72h胜率=0.33757073735630366 30d胜率=None 主币=ZEC,BTC,HYPE,ETH,XRP
+0x7a51...900d [smart_money] grade=C score=72.1 样本=20 72h胜率=0.3559668215191224 30d胜率=None 主币=HYPE
+0x5323...b23c [smart_money] grade=C score=57.0 样本=301 72h胜率=0.3330703185787417 30d胜率=1.0 主币=ZEC,HYPE,SOL,BNB
+0xc7ab...2bf8 [smart_money] grade=C score=56.1 样本=21 72h胜率=0.38473132229611784 30d胜率=None 主币=ETH,HYPE,BTC,SOL
 0x6cd5...1968 [smart_money] grade=C score=55.2 样本=18 72h胜率=0.28869319446789576 30d胜率=None 主币=UANSEM,NEKO
-0xbcd4...0dd2 [money_printer] grade=C score=54.1 样本=13 72h胜率=0.5245539761520348 30d胜率=None 主币=ETH,XRP,MAX,LDO,ZRO
+0xbcd4...0dd2 [money_printer] grade=C score=54.1 样本=13 72h胜率=0.5245539761520349 30d胜率=None 主币=ETH,XRP,MAX,LDO,ZRO
 0xca23...e9e0 [money_printer] grade=A score=53.3 样本=18 72h胜率=0.3898612656586558 30d胜率=None 主币=HYPE,LINK,TRB,ETH,LIT
 
 【Top 币种画像】
