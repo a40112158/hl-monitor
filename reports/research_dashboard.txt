@@ -1,21 +1,21 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-02 21:22:46 | UTC：2026-08-02 13:22:46
+更新时间北京时间：2026-08-02 22:22:46 | UTC：2026-08-02 14:22:46
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0x7a51...900d [smart_money] grade=S score=99.9 样本=17 72h胜率=0.2932187246390216 30d胜率=None 主币=HYPE
-0x7fda...17d1 [money_printer] grade=S score=99.7 样本=53 72h胜率=0.2645561209568427 30d胜率=1.0 主币=HYPE,LIT,BTC,ETH,XRP
+0x7a51...900d [smart_money] grade=S score=99.9 样本=17 72h胜率=0.29321872463902154 30d胜率=None 主币=HYPE
+0x7fda...17d1 [money_printer] grade=A score=97.4 样本=52 72h胜率=0.26699033790120613 30d胜率=1.0 主币=HYPE,LIT,BTC,ETH,XRP
 0x3b88...04a7 [money_printer] grade=C score=90.5 样本=20 72h胜率=0.4034908515041689 30d胜率=None 主币=ZEC,SUI,HYPE,SOL,ETH
-0xfba7...c826 [smart_money] grade=B score=69.5 样本=12 72h胜率=0.16337518832264067 30d胜率=None 主币=HYPE,ZEC
-0xa516...37b0 [smart_money] grade=C score=65.6 样本=11 72h胜率=0.49924600522475854 30d胜率=None 主币=ETH,ZEC,HYPE
-0x2306...a9f1 [smart_money] grade=B score=61.2 样本=11 72h胜率=0.2656475295165501 30d胜率=None 主币=NEKO
-0x7f58...9e56 [smart_money] grade=B score=61.2 样本=11 72h胜率=0.2656475295165501 30d胜率=None 主币=NEKO
-0x8838...20a5 [smart_money] grade=B score=61.2 样本=11 72h胜率=0.2656475295165501 30d胜率=None 主币=NEKO
-0x7737...bf66 [money_printer] grade=C score=59.6 样本=92 72h胜率=0.28783099102986137 30d胜率=None 主币=ZEC,ETH,BUDDY,SOL,LIT
-0x5323...b23c [smart_money] grade=C score=58.5 样本=274 72h胜率=0.31309628130239503 30d胜率=None 主币=ZEC,HYPE,SOL,BNB
+0xfba7...c826 [smart_money] grade=B score=69.5 样本=12 72h胜率=0.16337518832264072 30d胜率=None 主币=HYPE,ZEC
+0xa516...37b0 [smart_money] grade=C score=65.6 样本=11 72h胜率=0.4992460052247586 30d胜率=None 主币=ETH,ZEC,HYPE
+0x2306...a9f1 [smart_money] grade=B score=61.2 样本=11 72h胜率=0.26564752951655013 30d胜率=None 主币=NEKO
+0x7f58...9e56 [smart_money] grade=B score=61.2 样本=11 72h胜率=0.26564752951655013 30d胜率=None 主币=NEKO
+0x8838...20a5 [smart_money] grade=B score=61.2 样本=11 72h胜率=0.26564752951655013 30d胜率=None 主币=NEKO
+0x7737...bf66 [money_printer] grade=C score=59.6 样本=92 72h胜率=0.28783099102986126 30d胜率=0.0 主币=ZEC,ETH,BUDDY,SOL,LIT
+0x5323...b23c [smart_money] grade=C score=58.5 样本=274 72h胜率=0.31309628130239475 30d胜率=None 主币=ZEC,HYPE,SOL,BNB
 
 【Top 币种画像】
 
