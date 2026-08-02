@@ -1,1 +1,2 @@
-﻿empty
+﻿address,groups,coin,market,direction,action_type,active_delta,price_effect,qty_delta,entry_px,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings,execution_evidence,fill_count,ledger_evidence,ledger_count,evidence_status,evidence_class,cluster_id
+0x93b259140d4e179a35d12313908695c1b3da6bec,smart_money,MAX,spot,bullish,buy_spot,4994718.83783665,0.0,761564.2049,6.5585,-,-,-,现货买入MAX $4.99M 数量Δ=761.56K @ 6.5585,-,-,MAX $4.99M 数量=761.56K；LICKO $110.41 数量=356.198；HYPE $9.06 数量=76.1564,未发现区间内成交,0,未发现充值/转账/提现账本更新,0,ok,balance_change_unconfirmed,cluster:42fd5648
