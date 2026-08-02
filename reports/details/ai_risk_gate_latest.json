@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-02T10:22:56Z",
+  "generated_at": "2026-08-02T11:22:52Z",
   "items": [
     {
       "coin": "ZEC",
@@ -69,7 +69,7 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "UBONK",
+      "coin": "BASED",
       "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
@@ -79,7 +79,7 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "BASED",
+      "coin": "UBONK",
       "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
