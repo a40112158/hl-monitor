@@ -1,1 +1,5 @@
-﻿empty
+﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings
+0x082e843a431aef031264dc232693dd710aedca88,money_printer,974168.8099620007,0.0,-116.92618815500937,USDC增加，疑似资金回流,-,-,-,-,-,HYPE多 5x $70.79M cross 强平距=+9.02% 爆仓边缘型,MAX $109.82K 数量=16.70K；UPUMP $0.13 数量=1.2225；HYPE $0.08 数量=0.678646
+0xb83de012dba672c76a7dbbbf3e459cb59d7d6e36,money_printer,743818.2307830006,0.0,0.0,USDC增加，疑似资金回流,-,-,-,-,-,ETH空 5x $79.20M cross 强平距=+75.90% 中杠杆趋势型；BTC空 5x $61.09M cross 强平距=+99.97% 中杠杆趋势型；HYPE空 5x $49.04M cross 强平距=+114.26% 中杠杆趋势型,UXPL $1.45M 数量=846.76K；HYPE $100.15K 数量=841.74K；LATINA $35.47K 数量=35.47K
+0x0ddf9bae2af4b874b96d287a5ad42eb47138a902,money_printer,727288.0093419999,0.0,-5.571439999999828e-06,USDC增加，疑似资金回流,-,-,-,-,-,ETH空 3x $92.66M cross 强平距=+17.77% 低杠杆长期型,XAUT0 $0.00 数量=0.0079592；HYPE $0.00 数量=0.00189545
+0x5b5d51203a0f9079f8aeb098a6523a13f298c060,money_printer,556883.0161719993,0.0,-0.0006399552007999739,USDC增加，疑似资金回流,-,-,-,-,-,ETH空 5x $58.16M cross 强平距=+55.09% 中杠杆趋势型；BTC空 5x $23.18M cross 强平距=+139.23% 中杠杆趋势型；HYPE空 5x $22.70M cross 强平距=+130.78% 中杠杆趋势型,LATINA $45.66K 数量=45.66K；HYPE $40.45K 数量=339.97K；LICKO $11.03K 数量=35.59K
