@@ -1,2 +1,2 @@
 ﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings
-0xa31441e058492bc7cfffda9aa7623c407ae83a81,money_printer,-2021666.3922550008,-2.3795999999891703e-06,0.0,USDC减少，疑似资金流出/买入,-,-,-,-,-,-,LICKO $104.39 数量=336.765；HYPE $0.22 数量=1.84892
+0x48d826da83e69844f2f84b2db50703a933d137a2,money_printer,-775920.3624729998,0.0,0.0,USDC减少，疑似资金流出/买入,-,-,-,-,-,HYPE空 5x $565.46K cross 强平距=+178.90% 中杠杆趋势型；BNB空 10x $164.07K cross 强平距=+616.71% 高杠杆短线型,HYPE $0.00 数量=2.12e-06
