@@ -1,17 +1,17 @@
 {
-  "status": "incomplete_output",
-  "urgency": "normal",
-  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
-  "data_quality": "unknown",
-  "market_structure": "unknown",
+  "status": "completed",
+  "urgency": "watch",
+  "executive_summary": "本轮扫描健康度良好，成功率100%。未发现达到币种专属阈值的短线强异动信号，也无适合低杠杆长期单的明确候选。现货异常比例有所升高，但仍在可接受范围内。多数观察币种因历史样本不足、高杠杆占比或现货主导等原因被风控系统标记为WATCH或VETO。",
+  "data_quality": "详见 Markdown 报告【数据质量】部分。",
+  "market_structure": "详见 Markdown 报告【市场与资金结构】部分。",
   "changes_since_previous": [],
   "focus_items": [],
   "risk_warnings": [],
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动信号。多数观察币种因历史样本不足、高杠杆集中、现货主导或流动性风险等原因未能通过长期资格硬门槛。市场整体环境保持中性，但现货异常比例略有升高，需持续关注。\n\n【数据质量】\n扫描成功率为100%，共监控2419个钱包，无部分成功或失败。现货语义质量方面，可信数据9002条，异常隔离594条，异常率为6.19%。此异常率已升高，但仍在阻断阈值10.00%以下。数据整体完整，但部分币种存在“窗口内含断跑gap”的风险提示，可能影响信号连续性。\n\n【市场与资金结构】\nBTC和ETH在1小时、4小时和24小时周期内价格波动较小，市场情绪显示为中性。\n资金费率方面，CASHCAT, GRAM, JTO, PAXG, SUI, TAO, XMR, kPEPE等币种资金费率均为+0.00%，风险评估为低。\n流动性方面：\n*   CASHCAT (24h成交额=$2.28M), GRAM ($271.63K), JTO ($600.40K), PAXG ($3.46M), SUI ($3.45M), TAO ($2.04M), XMR ($2.41M), kPEPE ($4.26M) 均存在高流动性风险。\n*   LIT ($8.10M), AAVE ($6.12M), NEAR ($5.12M), FARTCOIN ($5.75M) 存在中等流动性风险。\n*   BTC ($1.12B), ETH ($520.53M), HYPE ($175.52M), KAITO ($20.44M), PUMP ($24.82M), SOL ($81.29M), XRP ($16.02M), ZEC ($43.35M) 流动性可接受或较低风险。\n整体市场资金费率普遍中性，但部分小市值币种流动性风险较高。\n\n【相比上次 AI 分析】\n上次AI分析报告内容不完整，缺失了多个关键章节，因此本轮报告无法与上轮进行有效比较。\n\n【重点观察】\n*   **LIT (偏多):** 连续4轮观察，信号稳定增强。价格靠近24h低位，多头加分，低/中杠杆仓位占比99%，平均强平距离79.3%较安全。但存在历史样本/胜率不足，窗口内含断跑gap，且流动性偏低（24h成交额\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
-  "generated_at": "2026-08-02T23:23:20Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描健康度良好，成功率100%。未发现达到币种专属阈值的短线强异动信号，也无适合低杠杆长期单的明确候选。现货异常比例有所升高，但仍在可接受范围内。多数观察币种因历史样本不足、高杠杆占比或现货主导等原因被风控系统标记为WATCH或VETO。\n\n【数据质量】\n本轮扫描共监控2419个钱包，成功率100.00%，无partial或failed情况，数据完整性良好。共处理9643条永续合约数据和11658条现货数据。现货语义质量方面，可信数据8997条，异常隔离595条，异常率为6.20%，略有升高但低于10.00%的阻断阈值。历史样本不足是多个币种信号置信度低的主要原因。\n\n【市场与资金结构】\n**大盘环境：**\nBTC：1小时涨幅+0.01%，4小时涨幅+0.12%，24小时涨幅+1.19%，市场状态为near_high。\nETH：1小时跌幅-0.05%，4小时涨幅+0.03%，24小时涨幅+2.07%，市场状态为neutral。\n\n**资金费率与流动性：**\n多数币种资金费率较低，风险评估为低。\n流动性风险较高的币种包括：CASHCAT (24h成交额=$2.30M)、GRAM (24h成交额=$301.53K)、JTO (24h成交额=$591.37K)、PAXG (24h成交额=$3.47M)、TAO (24h成交额=$1.95M)、WLD (24h成交额=$4.01M)、XLM (24h成交额=$742.13K)、XMR (24h成交额=$2.41M)。\n\n**钱包主动变化：**\n*   0x8c96...ca57 (smart_money) 在BTC永续合约上主动做多$25.42M，杠杆20x，强平距离+4.16%，属于爆仓边缘型。\n*   0x023a...2355 (money_printer) 在UPUMP现货上主动增持$251.59K，同时在BTC、ETH、PUMP等币种上持有高杠杆合约仓位。\n\n**资金流：**\n*   0x60a8...85f6 (money_printer) 钱包USDC增加$833.11K，疑似资金回流。\n\n**其他市场结构指标（如OI、净流入、多空人数比、主动买卖比等）：**\n数据不足。\n\n【相比上次 AI 分析】\n上次AI分析报告内容不完整，缺失了【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】等关键章节，因此本轮无法进行全面的比较。但从本次报告来看，系统运行健康度保持稳定，未出现新的强信号，多数币种仍处于观察状态。\n\n【重点观察】\n本轮值得继续观察的币种及其方向、理由和风险如下：\n\n*   **LIT (偏多)**\n    *   **理由：** 滚动窗口显示30天内有$35.33M资金流入，低/中杠杆仓位占比99%，平均杠杆4.9x，平均强平距离79.2%较安全。价格靠近24小时低位，多头加分。\n    *   **风险：** 历史样本/胜率不足；窗口内含断跑gap；流动性偏低（24h成交额$8.24M）。\n    *   **AI 风控结论：** WATCH\n\n*   **ZEC (偏多)**\n    *   **理由：** 滚动窗口显示30天内有$44.91M资金流入，24小时表现强于BTC，靠近24小时高位，可能突破延续。同方向低/中杠杆仓位占比75%，平均强平距离56.4%较安全。\n    *   **风险：** 历史样本/胜率不足；窗口内含断跑gap。\n    *   **AI 风控结论：** WATCH\n\n*   **KAITO (偏空)**\n    *   **理由：** 滚动窗口显示72小时内有-$4.64M资金流出，24小时表现弱于BTC，靠近24小时低位，可能破位延续。同方向低/中杠杆仓位占比99%，平均强平距离1382.6%较安全。\n    *   **风险：** 历史样本/胜率不足。\n    *   **AI 风控结论：** WATCH\n\n*   **HYPE (偏空)**\n    *   **理由：** 滚动窗口显示30天内有-$50.80M资金流出，同方向平均强平距离142.2%较安全。\n    *   **风险：** 历史样本/胜率不足；窗口内含断跑gap；同方向高杠杆仓位偏多41%。\n    *   **AI 风控结论：** WATCH\n\n【AI 风控结论】\n*   LIT (偏多): WATCH (原因: maturity_or_concentration_warning)\n*   ZEC (偏多): WATCH (原因: maturity_or_concentration_warning)\n*   KAITO (偏空): WATCH (原因: insufficient_evidence_for_pass)\n*   HYPE (偏空): WATCH (原因: maturity_or_concentration_warning)\n*   XMR (偏多): VETO (原因: local_candidate_gate_failed, high_liquidity_risk)\n*   ETH (偏多): VETO (原因: local_candidate_gate_failed, high_leverage_concentration, maturity_or_concentration_warning)\n*   KNTQ (偏空): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)\n*   UPUMP (偏空): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)\n*   BUDDY (偏空): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)\n*   BASED (偏多): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)\n*   UBONK (偏多): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)\n*   NEKO (偏多): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)\n*   MAX (偏空): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)\n*   UANSEM (偏空): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)\n*   UXPL (偏空): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)\n*   HWAVE (偏多): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)\n*   AAVE (偏多): VETO (原因: local_candidate_gate_failed, high_leverage_concentration, maturity_or_concentration_warning)\n*   BTC (偏空): VETO (原因: local_candidate_gate_failed, high_leverage_concentration)\n\n【风险提示】\n*   **历史样本/胜率不足：** 多数观察币种的信号置信度较低，历史回测样本不足，可能导致信号不稳定性。\n*   **流动性不足：** 多个币种（如CASHCAT, GRAM, JTO, PAXG, TAO, WLD, XLM, XMR）24小时成交额偏低，存在流动性高风险，可能导致价格剧烈波动或难以平仓。\n*   **高杠杆占比过高：** ETH、BTC、AAVE等币种的同方向高杠杆/爆仓边缘仓位占比较高，存在短线爆仓风险。\n*   **现货主导信号：** KNTQ、UPUMP、BUDDY、BASED、UBONK、NEKO、MAX、UANSEM、UXPL、HWAVE等币种的滚动信号现货主导，可能只是转账/归集/划转行为，不代表合约方向。\n*   **窗口内含断跑gap：** 多个币种的信号窗口存在断跑gap，可能影响信号的连续性和准确性。\n*   **单钱包高度集中：** BASED、UBONK、UANSEM、HWAVE、AAVE等币种的信号钱包集中度过高，可能为单钱包异动，风险较高。\n*   **异常现货比例升高：** 本轮现货异常比例升高至6.20%，需持续关注数据质量。\n\n【参数观察】\n当前自动优化分析层显示“暂无可分析的成熟信号样本”，表明系统尚未积累足够的成熟信号数据来进行参数优化。因此，目前无法判断筛选参数是过严还是过松，需要更多轮数据积累以供分析。\n\n【下一轮重点检查】\n*   持续关注现货异常比例的变化趋势。\n*   重点观察LIT、ZEC、KAITO、HYPE等币种的信号强度和风险指标变化，特别是其历史样本和胜率数据。\n*   对于被VETO的币种，关注其导致VETO的具体风险（如高杠杆、流动性不足、现货主导等）是否有改善。\n*   监控资金流向，特别是大额USDC流入流出以及优质钱包的主动变化。\n*   等待更多轮数据积累，以便自动优化分析层能提供参数调整建议。",
+  "generated_at": "2026-08-03T00:23:56Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
@@ -25,6 +25,6 @@
   ],
   "force_analysis": true,
   "force_reason": "manual",
-  "tg_sent": false,
+  "tg_sent": true,
   "error_tg_sent": false
 }
