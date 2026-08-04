@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-04T03:23:23Z",
+  "generated_at": "2026-08-04T04:23:29Z",
   "items": [
     {
       "coin": "LIT",
@@ -108,6 +108,17 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
+      "coin": "XMR",
+      "direction": "bullish",
+      "verdict": "VETO",
+      "reasons": [
+        "local_candidate_gate_failed",
+        "high_liquidity_risk",
+        "maturity_or_concentration_warning"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
       "coin": "NEKO",
       "direction": "bullish",
       "verdict": "VETO",
@@ -148,13 +159,12 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "XMR",
-      "direction": "bullish",
+      "coin": "WLD",
+      "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
-        "high_liquidity_risk",
-        "maturity_or_concentration_warning"
+        "high_leverage_concentration"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     }

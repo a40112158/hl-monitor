@@ -1,7 +1,7 @@
 {
   "status": "incomplete_output",
   "urgency": "normal",
-  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【参数观察】、【下一轮重点检查】、报告结尾",
+  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
   "data_quality": "unknown",
   "market_structure": "unknown",
   "changes_since_previous": [],
@@ -10,8 +10,8 @@
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到阈值的短线强信号或长期交易候选。多数观察币种因历史样本不足、流动性偏低、现货主导或钱包集中度过高等因素，信号可靠性较低。扫描健康度良好，但现货异常比例略有升高，需持续关注。整体市场环境平稳，无明显异常或高优先级交易机会。\n\n【数据质量】\n本轮扫描成功率100%，共监控2419个钱包，未出现部分成功或失败情况。永续合约数据9631行，现货数据11659行。现货语义质量中，可信数据8997行，异常隔离597行，异常率为6.22%。该异常率虽低于10.00%的阻断阈值，但已发出升高警告，需留意。多个“只观察”币种明确指出“历史样本/胜率不足”，表明部分信号的样本量仍有待积累。\n\n【市场与资金结构】\n大盘环境显示，BTC和ETH在过去24小时内均有小幅上涨（BTC +1.49%，ETH +0.47%），且均处于 `near_high` 状态。\n\n资金费率方面，JTO、PAXG、SUI、TAO、VVV、XMR、XLM、PENGU等币种资金费率均为+0.00%，风险评级为低。然而，这些币种的24小时成交额普遍较低（从$861.60K到$4.30M不等），流动性风险被评为高。其他“只观察”币种的资金费率也多为中性或低风险。\n\n成交量方面，BTC和ETH的24小时成交额分别为$1.87B和$683.89M，流动性可接受。但JTO、PAXG、SUI、TAO、VVV、XMR、XLM、PENGU等币种的流动性风险较高。\n\n本轮扫描暂无达到币种专属阈值的短线强异动，也无明确的做多或做空观察目标。\n\n在“只观察”列表中，LIT、KAITO、ZEC、HYPE、ETH、MAX、UANSEM、BUDDY、UBONK、KNTQ、UXPL、NEKO、BASED、UPUMP、HWAVE、XMR等币种均因历史样本/胜率不足、窗口内含断跑gap、流动性偏低、现货主导（可能为转账/归集/划转）或钱包集中度过高、高杠杆占比过高等风险因素，未能形成强信号。\n\n单钱包主动变化方面，观察到两个大额异动：\n*   钱包 `0x50b3...9f20` (money_printer) 新开BTC多头仓位 $8.18M，20x杠杆，属于极高杠杆短线型操作。\n*   钱包 `0x7c93...c8fd` (money_printer) 调整XRP空单仓位 $947.22K，20x杠杆，同样是极高杠杆短线型。该钱包同时持有多个其他币种的空头仓位。\n\n资金流Lite显示，一个 `money_printer` 钱包发生USDC增加和现货UPUMP减少，疑似卖出或转出现金。\n\n【相比上次 AI 分析】\n数据不足，无法进行比较。上次 AI 分析报告不完整，缺失了此部分内容。\n\n【重点观察】\n暂无明确高优先级目标。\n\n【AI 风控结论】\n*   LIT (偏多): WATCH\n*   KAITO (偏空): WATCH\n*   ZEC (偏多): WATCH\n*   HYPE (偏空): WATCH\n*   ETH (偏空): VETO\n*   MAX (偏空): VETO\n*   UANSEM (偏多): VETO\n*   BUDDY (偏空): VETO\n*   UBONK (偏空): VETO\n*   KNTQ (偏空): VETO\n*   UXPL (偏多): VETO\n*   NEKO (偏多): VETO\n*   BASED (偏多): VETO\n*   UPUMP (偏空): VETO\n*   HWAVE (偏多): VETO\n*   XMR (偏多): VETO\n\n【风险提示】\n*   **数据不足风险**: 大部分“只观察”币种的信号均存在历史样本/胜率不足的问题，信号可靠性较低，不宜作为确定性交易依据。\n*   **流动性不足风险**: JTO、PAXG、SUI、TAO、VVV、XMR、XLM、PENGU等币种的24小时成交额较低，存在较高的流动性风险，可能导致价格波动剧烈或难以平仓。\n*   **现货主导信号风险**: 多个币种的信号由现货交易主导，\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
-  "generated_at": "2026-08-04T03:23:47Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描发现现货异常比例升高至6.23%，接近阻断阈值，值得关注。市场暂无达到币种专属阈值的短线强信号。多个币种因数据不足、流动性偏低或杠杆集中度过高而被列为只观察或否决。部分活跃钱包有大额现货减持，同时持有高杠杆合约仓位，其后续动向值得持续观察。\n\n【数据质量】\n本轮扫描成功率为100%，监控钱包数据完整。然而，现货语义异常比例升高至6.23%，需警惕。多数“只观察”币种的信号存在历史样本/胜率不足、窗口内含断跑gap等数据质量问题，导致信号置信度较低。\n\n【市场与资金结构】\n大盘BTC和ETH目前处于“near_high”状态，1小时、4小时和24小时涨跌幅均在小幅波动。\n资金费率方面，JTO、PAXG、SUI、TAO、VVV、XMR、XLM、PENGU等币种资金费率较低，但其24小时成交额均较低，存在较高的流动性风险。\n在资金流方面，LIT和ZEC在30天滚动窗口内显示有资金流入，而KAITO、HYPE和ETH则有资金流出。ETH和HYPE的资金流出伴随着较高的杠杆仓位占比（ETH空头高杠杆占比57%，HYPE空头高杠杆占比42%）。\n单钱包主动变化中，钱包0xecb6...2b00大额减持UPUMP和UXPL现货，同时持有ETH、SOL、XRP的高杠杆空单。钱包0xf17d...dab2有USDC增加和HYPE现货减持，并持有HYPE高杠杆空单。这些钱包的现货与合约操作可能存在关联，但信号本身多为现货主导或杠杆过高，被风控否决。\n\n【相比上次 AI 分析】\n本轮扫描成功率达到100%，报告完整性相比上次“Gemini 返回内容不完整”的情况有显著提升。在信号强度方面，ETH和MAX的alert_score和weighted_flow\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
+  "generated_at": "2026-08-04T04:23:53Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
