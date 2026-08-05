@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-05T17:24:03Z",
+  "generated_at": "2026-08-05T18:23:41Z",
   "items": [
     {
       "coin": "LIT",
@@ -16,16 +16,6 @@
       "verdict": "WATCH",
       "reasons": [
         "maturity_or_concentration_warning"
-      ],
-      "rule": "AI may keep or downgrade this verdict, never upgrade it"
-    },
-    {
-      "coin": "BTC",
-      "direction": "bullish",
-      "verdict": "VETO",
-      "reasons": [
-        "local_candidate_gate_failed",
-        "high_leverage_concentration"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
@@ -80,7 +70,7 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "BASED",
+      "coin": "UANSEM",
       "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
@@ -90,7 +80,7 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "UANSEM",
+      "coin": "BASED",
       "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
@@ -147,6 +137,16 @@
         "local_candidate_gate_failed",
         "high_liquidity_risk",
         "maturity_or_concentration_warning"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
+      "coin": "BTC",
+      "direction": "bullish",
+      "verdict": "VETO",
+      "reasons": [
+        "local_candidate_gate_failed",
+        "high_leverage_concentration"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     }
