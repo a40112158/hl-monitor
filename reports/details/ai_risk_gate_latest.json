@@ -1,11 +1,12 @@
 {
-  "generated_at": "2026-08-05T10:24:02Z",
+  "generated_at": "2026-08-05T11:23:57Z",
   "items": [
     {
-      "coin": "LIT",
-      "direction": "bullish",
-      "verdict": "WATCH",
+      "coin": "KNTQ",
+      "direction": "bearish",
+      "verdict": "VETO",
       "reasons": [
+        "local_candidate_gate_failed",
         "maturity_or_concentration_warning"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
@@ -20,12 +21,11 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "KAITO",
-      "direction": "bearish",
-      "verdict": "VETO",
+      "coin": "LIT",
+      "direction": "bullish",
+      "verdict": "WATCH",
       "reasons": [
-        "local_candidate_gate_failed",
-        "high_liquidity_risk"
+        "maturity_or_concentration_warning"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
@@ -34,16 +34,6 @@
       "direction": "bearish",
       "verdict": "WATCH",
       "reasons": [
-        "maturity_or_concentration_warning"
-      ],
-      "rule": "AI may keep or downgrade this verdict, never upgrade it"
-    },
-    {
-      "coin": "NEKO",
-      "direction": "bearish",
-      "verdict": "VETO",
-      "reasons": [
-        "local_candidate_gate_failed",
         "maturity_or_concentration_warning"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
@@ -69,16 +59,6 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "MAX",
-      "direction": "bearish",
-      "verdict": "VETO",
-      "reasons": [
-        "local_candidate_gate_failed",
-        "maturity_or_concentration_warning"
-      ],
-      "rule": "AI may keep or downgrade this verdict, never upgrade it"
-    },
-    {
       "coin": "UANSEM",
       "direction": "bullish",
       "verdict": "VETO",
@@ -89,7 +69,17 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "KNTQ",
+      "coin": "NEKO",
+      "direction": "bearish",
+      "verdict": "VETO",
+      "reasons": [
+        "local_candidate_gate_failed",
+        "maturity_or_concentration_warning"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
+      "coin": "MAX",
       "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
