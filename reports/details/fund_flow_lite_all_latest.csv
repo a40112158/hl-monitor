@@ -1,1 +1,5 @@
-﻿empty
+﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings
+0x2fcb6898d5a0623de19c3691904927685014c4d8,money_printer,-1998682.2503970005,0.0,0.0,USDC减少，疑似资金流出/买入,-,-,-,-,-,WLD空 10x $230.27K cross 强平距=+385.90% 高杠杆短线型；NEAR空 10x $14.78K cross 强平距=+6007.08% 高杠杆短线型；MELANIA空 3x $7.56K cross 强平距=+10572.86% 低杠杆长期型,HYPE $0.00 数量=4.5e-07
+0x5b5d51203a0f9079f8aeb098a6523a13f298c060,money_printer,644230.5832169056,-858.251521799997,0.007919445609899926,USDC增加 + 现货减少，疑似卖出/转现金,-,-,-,-,-,ETH空 5x $59.11M cross 强平距=+47.61% 中杠杆趋势型；HYPE空 5x $23.10M cross 强平距=+113.55% 中杠杆趋势型；SOL空 10x $7.08M cross 强平距=+396.17% 高杠杆短线型,LATINA $45.66K 数量=45.66K；HYPE $37.54K 数量=315.53K；LICKO $5.34K 数量=35.59K
+0x16c95227d8442946c1c152bc8ea16a37ebe1a282,smart_money,-578732.63173,40.28455680329879,0.0,USDC减少 + 现货增加，疑似买入,-,-,-,-,-,HYPE多 10x $7.00K cross 高杠杆短线型,USOL $1.87K 数量=1.89K；HYPE $121.96 数量=1.03K
+0x082e843a431aef031264dc232693dd710aedca88,money_printer,-523580.0599189978,0.0,-218.81900926149444,USDC减少，疑似资金流出/买入,-,-,-,-,-,HYPE多 5x $76.27M cross 强平距=+10.14% 中杠杆趋势型,MAX $106.86K 数量=16.70K；UPUMP $0.13 数量=1.2225；HYPE $0.08 数量=0.678586
