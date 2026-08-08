@@ -1,7 +1,7 @@
 {
   "status": "incomplete_output",
   "urgency": "normal",
-  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【数据质量】、【市场与资金结构】、【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
+  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【市场与资金结构】、【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
   "data_quality": "unknown",
   "market_structure": "unknown",
   "changes_since_previous": [],
@@ -10,8 +10,8 @@
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强信号。多个币种（如UPUMP、NEKO）出现大额现货流出，但多为现货主导且缺乏合约确认，信心不足。ZEC、LIT、XMR等币种虽有偏多/偏空信号，但均面临历史样本不足、流动性偏低或窗口数据不连续等风险。ETH、XRP、HYPE等币种因高杠杆仓位集中而被否决。整体市场环境平稳，但需警惕部分币种的现货异常流动\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
-  "generated_at": "2026-08-08T20:24:29Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动，也无明确的低杠杆长期交易候选。整体市场情绪中性，BTC和ETH价格波动较小。数据质量方面，扫描成功率100%，但异常现货比例有所升高，需持续关注。多数被标记为“只观察”的币种因历史样本不足、现货主导或高杠杆等风险因素，未能通过长期资格硬门槛。\n\n【数据质量】\n本轮扫描成功率为100%，共监控2419个钱包，全部成功。现\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
+  "generated_at": "2026-08-08T21:24:12Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
