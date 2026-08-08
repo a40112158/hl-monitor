@@ -1,1 +1,2 @@
-﻿empty
+﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings,execution_evidence,fill_count,ledger_evidence,ledger_count,evidence_status,evidence_class
+0xfa1413451bc8dd3484787eb3c3156a7e28c4aade,smart_money,3613.4020526800014,20080846.949035626,873.1766082825081,USDC增加，疑似资金回流,-,-,-,现货买入BUDDY $20.08M 数量Δ=263.08K @ 76.331,-,HYPE多 10x $640.45K cross 强平距=+45.45% 高杠杆短线型；BTC多 40x $264.26K cross 极高杠杆短线型,BRIDGE $197.82M 数量=46.29K；BUDDY $20.08M 数量=263.08K；UANSEM $215.61K 数量=1.07K,未发现区间内成交,0,未发现充值/转账/提现账本更新,0,ok,balance_change_unconfirmed
