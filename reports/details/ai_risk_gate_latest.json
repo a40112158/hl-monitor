@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-08T01:24:11Z",
+  "generated_at": "2026-08-08T02:24:21Z",
   "items": [
     {
       "coin": "LIT",
@@ -31,7 +31,7 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "MAX",
+      "coin": "NEKO",
       "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
@@ -52,16 +52,6 @@
     },
     {
       "coin": "KNTQ",
-      "direction": "bearish",
-      "verdict": "VETO",
-      "reasons": [
-        "local_candidate_gate_failed",
-        "maturity_or_concentration_warning"
-      ],
-      "rule": "AI may keep or downgrade this verdict, never upgrade it"
-    },
-    {
-      "coin": "NEKO",
       "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
@@ -102,8 +92,8 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "BASED",
-      "direction": "bullish",
+      "coin": "UBONK",
+      "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
@@ -112,7 +102,7 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "UBONK",
+      "coin": "BASED",
       "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
@@ -124,6 +114,16 @@
     {
       "coin": "UPUMP",
       "direction": "bearish",
+      "verdict": "VETO",
+      "reasons": [
+        "local_candidate_gate_failed",
+        "maturity_or_concentration_warning"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
+      "coin": "MAX",
+      "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
@@ -152,7 +152,7 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "BTC",
+      "coin": "XRP",
       "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
@@ -163,7 +163,7 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "XRP",
+      "coin": "BTC",
       "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
