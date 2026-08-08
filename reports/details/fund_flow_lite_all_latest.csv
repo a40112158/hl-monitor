@@ -1,3 +1,1 @@
-﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings,execution_evidence,fill_count,ledger_evidence,ledger_count,evidence_status,evidence_class
-0x3ab77725ac1ae06aff19d90a33c2a0fe126b7789,smart_money,0.0,4972720.362193306,0.0,现货变化,-,-,-,现货买入MAX $4.97M 数量Δ=768.08K @ 6.4742,-,-,MAX $4.97M 数量=768.08K；HYPE $297.67 数量=2.50K；SEDA $118.56 数量=395.20K,未发现区间内成交,0,未发现充值/转账/提现账本更新,0,ok,balance_change_unconfirmed
-0x023a3d058020fb76cca98f01b3c48c8938a22355,money_printer,501780.8140205401,-132.47028171604433,-25.829133667610556,USDC增加 + 现货减少，疑似卖出/转现金,-,-,-,-,-,ETH多 25x $10.00M cross 强平距=+79.57% 极高杠杆短线型；PUMP空 10x $4.02M cross 强平距=+184.82% 高杠杆短线型；TAO空 5x $2.55M cross 强平距=+277.90% 中杠杆趋势型,HREKT $11.97M 数量=278387.17M；UXPL $884.73K 数量=515.88K；UBONK $262.54K 数量=375.06M,,,,,,
+﻿empty
