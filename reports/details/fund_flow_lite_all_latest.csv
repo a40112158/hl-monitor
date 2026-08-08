@@ -1,1 +1,2 @@
-﻿empty
+﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings,execution_evidence,fill_count,ledger_evidence,ledger_count,evidence_status,evidence_class
+0xae2445cdc416b6a70bbf84a8678a13ea6003e7f8,smart_money,0.0,-148759878.00818473,3.61118525999998,现货变化,-,-,-,现货卖出NEKO -$148.76M 数量Δ=-2.29K @ 64.94K,-,-,LATINA $16.36K 数量=16.36K；WOW $604.16 数量=11.0434；UP $42.88 数量=42.8788,未发现区间内成交,0,未发现充值/转账/提现账本更新,0,ok,balance_change_unconfirmed
