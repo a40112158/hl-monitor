@@ -1,3 +1,1 @@
-﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings
-0x082e843a431aef031264dc232693dd710aedca88,money_printer,-560915.559094999,0.0,-48.44084937850579,USDC减少，疑似资金流出/买入,-,-,-,-,-,HYPE多 5x $75.58M cross 强平距=+10.74% 中杠杆趋势型,MAX $107.65K 数量=16.70K；UPUMP $0.13 数量=1.2225；HYPE $0.08 数量=0.678586
-0x5116ebe0e30b2192945893171ea21b788ee86d49,smart_money,-527365.372814,0.0,0.0,USDC减少，疑似资金流出/买入,-,-,-,-,-,-,-
+﻿empty
