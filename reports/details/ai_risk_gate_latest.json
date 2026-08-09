@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-09T11:23:43Z",
+  "generated_at": "2026-08-09T12:23:52Z",
   "items": [
     {
       "coin": "ZEC",
@@ -30,6 +30,16 @@
     },
     {
       "coin": "UPUMP",
+      "direction": "bullish",
+      "verdict": "VETO",
+      "reasons": [
+        "local_candidate_gate_failed",
+        "maturity_or_concentration_warning"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
+      "coin": "MAX",
       "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
@@ -50,16 +60,6 @@
     },
     {
       "coin": "BUDDY",
-      "direction": "bearish",
-      "verdict": "VETO",
-      "reasons": [
-        "local_candidate_gate_failed",
-        "maturity_or_concentration_warning"
-      ],
-      "rule": "AI may keep or downgrade this verdict, never upgrade it"
-    },
-    {
-      "coin": "MAX",
       "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
