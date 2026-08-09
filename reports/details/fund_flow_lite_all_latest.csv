@@ -1,2 +1,1 @@
-﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings
-0xecb63caa47c7c4e77f60f1ce858cf28dc2b82b00,money_printer,549684.6721351696,-1192.9806877725568,-2389.8359084786684,USDC增加 + 现货减少，疑似卖出/转现金,USOL $2.92K 数量Δ=3.17K @ 0.9201,UPUMP -$73.52K 数量Δ=-691.48K @ 0.10632；UXPL -$4.52K 数量Δ=-2.64K @ 1.715,UPUMP -$73.52K 数量Δ=-691.48K @ 0.10632；UXPL -$4.52K 数量Δ=-2.64K @ 1.715；USOL $2.92K 数量Δ=3.17K @ 0.9201,-,-,ETH空 15x $20.12M cross 强平距=+101.54% 高杠杆短线型；SOL空 20x $13.12M cross 强平距=+154.87% 极高杠杆短线型；BTC多 20x $11.18M cross 极高杠杆短线型,UXPL $2.41M 数量=1.41M；UBONK $1.67M 数量=2392.56M；WOW $717.56K 数量=13.12K
+﻿empty
