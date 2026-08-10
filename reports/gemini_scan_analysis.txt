@@ -5,64 +5,10 @@
 紧急度：normal
 
 【执行摘要】
-本轮扫描未发现达到币种专属阈值的短线强信号或明确的长期交易候选。市场整体处于“near_low”状态。扫描健康度存在异常现货比例升高的警告，但成功率仍为100%。多数观察币种因历史样本不足、流动性偏低、钱包集中度过高或现货主导等原因被风控降级或否决，暂无明确高优先级目标。
+本轮扫描未发现达到币种专属阈值的短线强信号或明确的长期交易候选。市场整体处于“near_low”状态。扫描健康度存在异常现货比例升高的警告（6.16%），但整体成功率仍为100%。多数观察币种因历史样本不足、高杠杆占比过高、流动性偏低或现货主导等原因被风控降级或否决，暂无明确高优先级目标。
 
 【数据质量】
-本轮扫描成功率为100%，监控钱包2419个，全部成功。现货语义质量显示可信数据9013条，异常隔离592条，异常率为6.16%，存在“异常现货比例升高”的警告，但未达到10.00%的阻断阈值。多数“只观察”信号因“历史样本/胜率不足”、“窗口内含断跑gap”、“滚动信号现货主导”、“钱包集中度过高”或“高杠杆占比过高”等原因被风控否决或降级，表明部分信号的质量和可靠性仍有待提升。
+本轮扫描成功率为100.00%，所有2419个监控钱包
 
-【市场与资金结构】
-大盘环境显示BTC和ETH在1小时、4小时内有小幅上涨，但24小时内均下跌，且整体处于“near_low”状态。
-资金费率方面，多数币种资金费率中性或偏低，KAITO资金费率偏高（-0.21%），存在高风险。
-流动性方面，AAVE、AERO、BNB、JTO、MINA、GRAM、PAXG等币种24小时成交额较低，流动性风险较高。KAITO、BTC、ETH、HYPE、PUMP流动性风险较低。
-净流入和OI数据在具体币种的信号解释中有所体现，但整体市场净流入和OI的宏观数据不足。
-多空人数比和主动买卖比数据不足。
-单钱包主动变化方面，观察到两个BTC永续合约的大额操作：一个“money_printer”钱包进行了方向反转，平多开空，主动变化量为-$6.40M，杠杆20x，处于爆仓边缘型；另一个“smart_money”钱包进行了合约空单变化，主动变化量为$5.88M，杠杆5x，为中杠杆趋势型。此外，UPUMP有现货买入和卖出的大额变动。
-
-【相比上次 AI 分析】
-本轮扫描与上次分析相比，市场结构和信号特征基本保持不变。上次报告已指出“未发现达到币种专属阈值的短线强信号或明确的长期交易候选”，本轮情况相同。大盘BTC和ETH仍处于“near_low”状态。数据质量方面，“异常现货比例升高”的警告依然存在。整体而言，市场缺乏明确的强信号，多数观察币种仍受制于样本不足、流动性、杠杆或集中度等风险因素，未见显著改善或恶化。
-
-【重点观察】
-暂无明确高优先级目标。
-
-【AI 风控结论】
-ZEC (bullish): WATCH (原因: maturity_or_concentration_warning)
-LIT (bullish): WATCH (原因: maturity_or_concentration_warning)
-MON (bearish): WATCH (原因: maturity_or_concentration_warning)
-XMR (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
-PUMP (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
-HYPE (bullish): VETO (原因: local_candidate_gate_failed, high_leverage_concentration, maturity_or_concentration_warning)
-BUDDY (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
-UANSEM (bullish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
-MAX (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
-NEKO (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
-UPUMP (bullish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
-KNTQ (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
-BRIDGE (bullish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
-UBONK (bullish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
-ETH (bearish): VETO (原因: local_candidate_gate_failed, high_leverage_concentration, maturity_or_concentration_warning)
-SWAP (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
-BASED (bullish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
-HWAVE (bullish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
-UAVAX (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
-BTC (bearish): VETO (原因: local_candidate_gate_failed, high_leverage_concentration, maturity_or_concentration_warning)
-
-【风险提示】
-1.  **数据质量风险**：异常现货比例升高至6.16%，虽然未达阻断阈值，但仍需警惕数据潜在的噪音或异常行为。
-2.  **流动性不足风险**：AAVE、AERO、BNB、JTO、MINA、GRAM、PAXG等币种24小时成交额低，存在较高的流动性风险，可能导致价格波动剧烈或难以平仓。
-3.  **高资金费率风险**：KAITO资金费率高达-0.21%，持有空头仓位成本极高，需警惕资金费率反转或极端行情下的额外损失。
-4.  **信号可靠性风险**：多数“只观察”币种的信号存在“历史样本/胜率不足”、“窗口内含断跑gap”等问题，其可靠性较低，不宜作为确定性交易依据。
-5.  **钱包集中度风险**：XMR、KNTQ、UBONK、BASED、HWAVE、UAVAX、BTC等币种的滚动信号存在钱包集中度过高或Top1贡献过高的问题，可能受少数大户行为影响，增加操纵风险。
-6.  **高杠杆风险**：PUMP、HYPE、ETH、BTC等币种的信号因同方向高杠杆仓位占比过高或平均杠杆过高而被否决，表明这些币种的持仓结构风险较高，易受市场波动影响而引发连锁清算。
-7.  **现货主导信号风险**：UPUMP、BUDDY、UANSEM、MAX、NEKO、KNTQ、BRIDGE、UBONK、SWAP、BASED、HWAVE、UAVAX等币种的信号现货主导，可能为转账、归集或划转行为，不代表合约方向，存在误判风险。
-8.  **大盘环境风险**：BTC和ETH均处于“near_low”状态，市场可能存在进一步下探或破位延续的风险。
-
-【参数观察】
-当前扫描未发现达到币种专属阈值的短线强信号，且“自动优化分析层”显示“暂无可分析的成熟信号样本”，这可能暗示当前的筛选参数（特别是阈值）相对严格。然而，考虑到多数观察币种存在多重风险（如历史样本不足、流动性偏低、钱包集中度过高、高杠杆占比过高或现货主导），这些风险因素导致信号无法通过长期资格硬门槛。因此，目前无法判断参数是否过严或过松，需要更多轮数据来观察市场信号的演变和参数调整的有效性。
-
-【下一轮重点检查】
-1.  持续关注异常现货比例的变化趋势，评估其对数据整体可靠性的影响。
-2.  密切观察BTC和ETH的价格走势，判断是否脱离“near_low”状态，以及大盘情绪的变化。
-3.  对KAITO的高资金费率进行持续跟踪，分析其背后的原因及潜在的市场影响。
-4.  重点关注当前被“WATCH”的币种（ZEC, LIT, MON），观察其风险因素是否有所改善，信号强度和持续性是否增强。
-5.  对因“钱包集中度过高”和“高杠杆占比过高”而被否决的币种，检查其持仓结构是否有变化，集中度或杠杆率是否下降。
-6.  继续追踪现货主导的信号，看是否有合约方向的确认出现。
+【本地完整性校验】
+⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
