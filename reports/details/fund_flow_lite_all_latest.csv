@@ -1,4 +1,1 @@
-﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings,execution_evidence,fill_count,ledger_evidence,ledger_count,evidence_status,evidence_class
-0x5b236d19f680ff47e7bf2a9eb88fc5cc03d443a8,smart_money,0.0,12856165.442405457,-16.555484640000124,现货变化,-,-,-,现货买入HWAVE $12.86M 数量Δ=1.97M @ 6.519,-,-,HWAVE $12.86M 数量=1.97M；BRIDGE $761.73K 数量=174.31；NEKO $23.02K 数量=0.36,未发现区间内成交,0,未发现充值/转账/提现账本更新,0,ok,balance_change_unconfirmed
-0x3ab77725ac1ae06aff19d90a33c2a0fe126b7789,smart_money,0.0,4988619.671991799,0.0,现货变化,-,-,-,现货买入MAX $4.99M 数量Δ=768.08K @ 6.4949,-,-,MAX $4.99M 数量=768.08K；HYPE $275.63 数量=2.50K；SEDA $47.42 数量=395.20K,未发现区间内成交,0,未发现充值/转账/提现账本更新,0,ok,balance_change_unconfirmed
-0x2cd991f48ba31536a96b772536a1daaaedf150ae,money_printer,-1630844.3807000003,0.0,0.00026402764922999855,USDC减少，疑似资金流出/买入,-,-,-,-,-,-,UZEC $0.03 数量=1.2755；UETH $0.00 数量=0.00889921；HYPE $0.00 数量=3.4e-07,,,,,,
+﻿empty
