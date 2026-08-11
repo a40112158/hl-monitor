@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-11 20:24:06 | UTC：2026-08-11 12:24:06
+更新时间北京时间：2026-08-11 21:23:48 | UTC：2026-08-11 13:23:48
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -8,14 +8,14 @@
 【Top 钱包画像】
 0x7a51...900d [smart_money] grade=A score=100.0 样本=30 72h胜率=0.3387391631072761 30d胜率=None 主币=HYPE
 0x3b88...04a7 [money_printer] grade=C score=81.5 样本=19 72h胜率=0.29311120695061105 30d胜率=None 主币=ZEC,ETH,XRP,HYPE,SOL
-0x7fda...17d1 [money_printer] grade=C score=75.4 样本=45 72h胜率=0.22746802262211838 30d胜率=None 主币=HYPE,ETH,BTC,LIT,NEAR
-0x049b...5e7d [money_printer] grade=B score=66.9 样本=10 72h胜率=0.5230113637099753 30d胜率=None 主币=ETH,MAX,BTC
-0x5323...b23c [smart_money] grade=C score=60.3 样本=173 72h胜率=0.36389973273330173 30d胜率=None 主币=ZEC,HYPE,SOL,BNB
-0x4537...8732 [smart_money] grade=C score=52.6 样本=13 72h胜率=0.46731557230562326 30d胜率=None 主币=XRP
-0x6cd5...1968 [smart_money] grade=C score=51.5 样本=17 72h胜率=0.21731109105466065 30d胜率=None 主币=NEKO,UANSEM
-0xfc27...9d9d [money_printer] grade=N score=50.0 样本=10 72h胜率=0.12615799602541133 30d胜率=None 主币=BTC,XRP,MAX
-0x2a72...267c [smart_money] grade=N score=50.0 样本=9 72h胜率=0.5747711132675285 30d胜率=None 主币=PUMP
-0x5649...80c5 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.691295721649274 30d胜率=None 主币=ZEC,BTC,LIT,ETH
+0x7fda...17d1 [money_printer] grade=C score=75.4 样本=45 72h胜率=0.22746802262211827 30d胜率=None 主币=HYPE,ETH,BTC,LIT,NEAR
+0x049b...5e7d [money_printer] grade=B score=66.9 样本=10 72h胜率=0.5230113637099754 30d胜率=0.0 主币=ETH,MAX,BTC
+0x5323...b23c [smart_money] grade=C score=60.3 样本=173 72h胜率=0.36389973273330173 30d胜率=0.0 主币=ZEC,HYPE,SOL,BNB
+0x4537...8732 [smart_money] grade=C score=52.6 样本=13 72h胜率=0.4673155723056232 30d胜率=None 主币=XRP
+0x6cd5...1968 [smart_money] grade=C score=51.5 样本=17 72h胜率=0.21731109105466065 30d胜率=0.0 主币=NEKO,UANSEM
+0xfc27...9d9d [money_printer] grade=N score=50.0 样本=10 72h胜率=0.12615799602541133 30d胜率=0.0 主币=BTC,XRP,MAX
+0x2a72...267c [smart_money] grade=N score=50.0 样本=9 72h胜率=0.5747711132675287 30d胜率=None 主币=PUMP
+0x5649...80c5 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.6912957216492739 30d胜率=None 主币=ZEC,BTC,LIT,ETH
 
 【Top 币种画像】
 
