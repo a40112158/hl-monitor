@@ -1,2 +1,2 @@
 ﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings
-0xd47587702a91731dc1089b5db0932cf820151a91,money_printer,-1502378.8308379985,0.0,0.0,USDC减少，疑似资金流出/买入,-,-,-,-,-,HYPE空 5x $8.25M cross 强平距=+38.31% 中杠杆趋势型；LIT空 3x $1.71M cross 强平距=+177.57% 低杠杆长期型；UNI空 10x $362.71K cross 强平距=+871.79% 高杠杆短线型,UPUMP $953.33 数量=8.97K；UXPL $0.38 数量=0.219946；HYPE $0.02 数量=0.21395
+0x4f7634c03ec4e87e14725c84913ade523c6fad5a,money_printer,-2010442.9537680005,-2.2033999944369497e-06,0.0,USDC减少，疑似资金流出/买入,-,-,-,-,-,HYPE空 5x $6.39M cross 强平距=+27.21% 中杠杆趋势型；LIT空 1x $931.08K cross 强平距=+178.22% 低杠杆长期型,MAX $2.80M 数量=432.63K；HYPE $116.83 数量=1.06K
