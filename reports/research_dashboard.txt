@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-12 13:23:29 | UTC：2026-08-12 05:23:29
+更新时间北京时间：2026-08-12 14:23:44 | UTC：2026-08-12 06:23:44
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -7,14 +7,14 @@
 
 【Top 钱包画像】
 0x7a51...900d [smart_money] grade=A score=100.0 样本=33 72h胜率=0.3387391631072761 30d胜率=None 主币=HYPE
-0x7fda...17d1 [money_printer] grade=C score=82.5 样本=45 72h胜率=0.22746802262211832 30d胜率=None 主币=HYPE,ETH,BTC,LIT,NEAR
+0x7fda...17d1 [money_printer] grade=C score=82.5 样本=45 72h胜率=0.22746802262211843 30d胜率=None 主币=HYPE,ETH,BTC,LIT,NEAR
 0x3b88...04a7 [money_printer] grade=C score=73.4 样本=18 72h胜率=0.3023594928119124 30d胜率=None 主币=ZEC,ETH,XRP,HYPE,SOL
-0x5323...b23c [smart_money] grade=C score=54.8 样本=160 72h胜率=0.37377965924204354 30d胜率=None 主币=ZEC,HYPE,SOL,BNB
-0x4e23...20c3 [money_printer] grade=C score=53.5 样本=65 72h胜率=0.30294022915003693 30d胜率=None 主币=HYPE,ETH,NEAR,BTC
-0x4537...8732 [smart_money] grade=C score=53.3 样本=15 72h胜率=0.4673155723056232 30d胜率=None 主币=XRP
-0x936c...bb0f [money_printer] grade=N score=50.0 样本=11 72h胜率=0.15054548580562785 30d胜率=None 主币=UAVAX,ETH
-0x049b...5e7d [money_printer] grade=N score=50.0 样本=10 72h胜率=0.5431099304146568 30d胜率=None 主币=ETH,MAX,BTC
-0x2a72...267c [smart_money] grade=N score=50.0 样本=9 72h胜率=0.5747711132675285 30d胜率=None 主币=PUMP
+0x5323...b23c [smart_money] grade=C score=55.1 样本=159 72h胜率=0.37129523967791606 30d胜率=None 主币=ZEC,HYPE,SOL,BNB
+0x4e23...20c3 [money_printer] grade=C score=53.5 样本=65 72h胜率=0.302940229150037 30d胜率=None 主币=HYPE,ETH,NEAR,BTC
+0x4537...8732 [smart_money] grade=C score=53.3 样本=15 72h胜率=0.46731557230562326 30d胜率=None 主币=XRP
+0x936c...bb0f [money_printer] grade=N score=50.0 样本=11 72h胜率=0.15054548580562788 30d胜率=None 主币=UAVAX,ETH
+0x049b...5e7d [money_printer] grade=N score=50.0 样本=10 72h胜率=0.543109930414657 30d胜率=None 主币=ETH,MAX,BTC
+0x2a72...267c [smart_money] grade=N score=50.0 样本=9 72h胜率=0.5747711132675286 30d胜率=None 主币=PUMP
 0xa4de...b3c4 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.11132744060162275 30d胜率=None 主币=HYPE
 
 【Top 币种画像】
