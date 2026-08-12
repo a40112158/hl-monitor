@@ -1,7 +1,7 @@
 {
   "status": "incomplete_output",
   "urgency": "normal",
-  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
+  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【市场与资金结构】、【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
   "data_quality": "unknown",
   "market_structure": "unknown",
   "changes_since_previous": [],
@@ -10,8 +10,8 @@
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：watch\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强信号。市场整体表现平稳，BTC和ETH价格波动不大。值得关注的是，一个“money_printer”钱包在BTC和ETH上新开高杠杆多头仓位，且为爆仓边缘型。多数观察币种存在历史样本不足、高杠杆集中或流动性风险，需持续观察。\n\n【数据质量】\n本轮扫描成功率为100%，所有监控钱包均已成功扫描，无部分成功或失败情况。现货数据异常比例为6.03%，略有升高但仍在阻断阈值10.00%以下，数据质量整体可信。模型未发现成熟回测样本，自动优化分析层暂无可分析的成熟信号样本。\n\n【市场与资金结构】\n大盘环境方面，BTC在1小时、4小时和24小时内波动均在±0.3%\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
-  "generated_at": "2026-08-12T06:25:35Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描成功率100%，但现货异常比例略有升高（6.05%），虽未达阻断阈值，仍需关注。未发现短线强信号或适合低杠杆的长期交易候选。多数“只观察”币种因历史样本不足、流动性偏低、钱包集中度过高或高杠杆仓位占比过高等原因，未能通过长期资格硬门槛。市场整体环境为BTC中性，ETH接近高位。\n\n【数据质量】\n本轮扫描监控钱包2419个，成功率10\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
+  "generated_at": "2026-08-12T07:24:10Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
