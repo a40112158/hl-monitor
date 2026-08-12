@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-12T04:23:29Z",
+  "generated_at": "2026-08-12T05:23:36Z",
   "items": [
     {
       "coin": "LIT",
@@ -32,12 +32,11 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "MON",
+      "coin": "UPUMP",
       "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
-        "high_liquidity_risk",
         "maturity_or_concentration_warning"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
@@ -62,17 +61,18 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "XMR",
+      "coin": "MON",
       "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
+        "high_liquidity_risk",
         "maturity_or_concentration_warning"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "BUDDY",
+      "coin": "XMR",
       "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
@@ -84,6 +84,16 @@
     {
       "coin": "UANSEM",
       "direction": "bullish",
+      "verdict": "VETO",
+      "reasons": [
+        "local_candidate_gate_failed",
+        "maturity_or_concentration_warning"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
+      "coin": "BUDDY",
+      "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
@@ -125,16 +135,6 @@
     {
       "coin": "NEKO",
       "direction": "bullish",
-      "verdict": "VETO",
-      "reasons": [
-        "local_candidate_gate_failed",
-        "maturity_or_concentration_warning"
-      ],
-      "rule": "AI may keep or downgrade this verdict, never upgrade it"
-    },
-    {
-      "coin": "UPUMP",
-      "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
@@ -195,7 +195,7 @@
     },
     {
       "coin": "HWAVE",
-      "direction": "bearish",
+      "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
