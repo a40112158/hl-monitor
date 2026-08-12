@@ -1,4 +1,1 @@
-﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings
-0xb83de012dba672c76a7dbbbf3e459cb59d7d6e36,money_printer,-623927.4189150035,744.2587148168302,0.0,USDC减少 + 现货增加，疑似买入,-,-,-,-,-,HYPE空 5x $43.56M cross 强平距=+51.35% 中杠杆趋势型；BTC空 5x $22.51M cross 强平距=+108.33% 中杠杆趋势型；ETH空 5x $15.22M cross 强平距=+159.04% 中杠杆趋势型,UXPL $1.45M 数量=846.76K；HYPE $75.65K 数量=686.64K；LATINA $35.47K 数量=35.47K
-0xc6877a65349b0fa45cc61a267ee682c7abf2b369,smart_money,581631.4411649294,-1189.791932,0.0,USDC增加 + 现货减少，疑似卖出/转现金,-,HYPE -$1.19K 数量Δ=-10.80K @ 0.11017,HYPE -$1.19K 数量Δ=-10.80K @ 0.11017,-,-,HYPE空 5x $1.65M cross 强平距=+482.36% 中杠杆趋势型,HYPE $327.19 数量=2.97K；LATINA $1.20 数量=1.1976
-0x05936f6a5ea9abfbfcc690f1a6140d97e80640f9,money_printer,-566625.6532691799,-233.0304845595867,0.0,USDC减少，疑似资金流出/买入,-,-,-,-,-,BTC空 20x $4.99M isolated 强平距=+3.52% 爆仓边缘型,HYPE $0.00 数量=0.00207212
+﻿empty
