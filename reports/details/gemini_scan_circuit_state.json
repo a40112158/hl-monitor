@@ -1,5 +1,6 @@
 {
-  "consecutive_failures": 0,
-  "last_success_at": "2026-08-13T04:24:29Z",
+  "consecutive_failures": 1,
+  "last_failure_at": "2026-08-13T05:26:50Z",
+  "last_error": "developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, pleas",
   "model": "gemini-2.5-flash"
 }

@@ -1,19 +1,24 @@
 【Gemini 本轮扫描分析】
 
-状态：success
+状态：api_error
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-本轮扫描未发现达到币种专属阈值的短线强异动或适合低杠杆的长期交易信号。现货异常比例略有升高至6.10%，但仍在可接受范围内。大盘BTC和ETH整体处于中性区间，波动不大。多数观察币种因历史样本不足、高杠杆集中或现货主导等原因被风控否决或标记为观察。市场缺乏明确方向，需持续关注异常现货比例，并等待更明确的市场信号。
+Gemini 分析层调用失败。
+
+错误信息：
+developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 9.024872442s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn mo
 
 【数据质量】
-本轮扫描的整体数据质量良好，监控钱包成功率达到100%，未出现部分或失败的扫描。然而，现货语义质量报告显示异常现货比例升高至6.10%，虽然低于10.00%的阻断阈值，但仍需警惕。此外，多个“只观察”币种的信号解释中明确指出历史样本或胜率不足，表明部分币种的数据深度有待提升。
+unknown
 
 【市场与资金结构】
-大盘环境：
-BTC：1小时跌幅-0.01%，4小时涨幅+0.11%，24小时跌幅-0.20%，整体处于中性区间。
-ETH：1小时涨幅+0.00%，4小时涨幅+0.36%，24小时跌幅-0.13%，整体
+unknown
 
-【本地完整性校验】
-⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
+【风险提示】
+- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
+- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
+
+【下一轮重点检查】
+- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
