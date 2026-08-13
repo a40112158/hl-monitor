@@ -1,1 +1,2 @@
-﻿empty
+﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings
+0x24fb6523036ebcb3cc51deff138066dccf6bed0f,smart_money,-651283.554824,-4.406799999992176e-06,-2.2809158400001708e-05,USDC减少，疑似资金流出/买入,-,-,-,-,-,SOL多 9x $533.50K cross 中高杠杆型；RENDER多 5x $25.32K cross 中杠杆趋势型,LICKO $211.46 数量=707.226；HYPE $0.11 数量=0.996612；USDT0 $0.05 数量=0.380153
