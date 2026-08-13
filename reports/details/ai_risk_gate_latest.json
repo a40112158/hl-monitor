@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-13T11:23:36Z",
+  "generated_at": "2026-08-13T12:23:36Z",
   "items": [
     {
       "coin": "ZEC",
@@ -12,7 +12,7 @@
     },
     {
       "coin": "ETH",
-      "direction": "bearish",
+      "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
@@ -22,11 +22,11 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "HYPE",
-      "direction": "bearish",
-      "verdict": "WATCH",
+      "coin": "UXPL",
+      "direction": "bullish",
+      "verdict": "VETO",
       "reasons": [
-        "insufficient_evidence_for_pass"
+        "local_candidate_gate_failed"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
@@ -41,18 +41,26 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "KNTQ",
+      "coin": "KAITO",
       "direction": "bearish",
-      "verdict": "VETO",
+      "verdict": "WATCH",
       "reasons": [
-        "local_candidate_gate_failed",
-        "maturity_or_concentration_warning"
+        "insufficient_evidence_for_pass"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "UANSEM",
-      "direction": "bullish",
+      "coin": "HYPE",
+      "direction": "bearish",
+      "verdict": "WATCH",
+      "reasons": [
+        "insufficient_evidence_for_pass"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
+      "coin": "KNTQ",
+      "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
@@ -73,6 +81,16 @@
     {
       "coin": "UPUMP",
       "direction": "bearish",
+      "verdict": "VETO",
+      "reasons": [
+        "local_candidate_gate_failed",
+        "maturity_or_concentration_warning"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
+      "coin": "UANSEM",
+      "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
