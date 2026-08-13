@@ -1,24 +1,58 @@
 【Gemini 本轮扫描分析】
 
-状态：api_error
+状态：success
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-Gemini 分析层调用失败。
-
-错误信息：
-developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 9.024872442s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn mo
+本轮扫描未发现达到币种专属阈值的短线强信号或异动。所有识别出的潜在信号均处于“只观察”状态，且多数因历史样本不足、高杠杆占比过高、现货主导（可能为转账/归集）或流动性风险等原因被风控否决。现货异常比例略有升高，但仍在可接受范围内。整体市场结构未显示出明确的趋势性资金流入或流出。
 
 【数据质量】
-unknown
+本轮扫描成功率为100%，共监控2419个钱包，无部分成功或失败的扫描。现货语义质量方面，可信数据9010条，异常隔离579条，异常率为6.04%。该异常率略高于正常水平，但低于10.00%的阻断阈值。数据整体完整，未发现空数据或极端值，但部分币种存在历史样本/胜率不足的问题。
 
 【市场与资金结构】
-unknown
+大盘环境：
+BTC：1小时 -0.01%，4小时 +0.50%，24小时 +0.25%，市场状态为中性（neutral）。
+ETH：1小时 +0.00%，4小时 +0.76%，24小时 +0.43%，市场状态为中性（neutral）。
 
-【风险提示】
-- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
-- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
+资金费率与流动性：
+多数币种资金费率风险为低。
+流动性风险高：JTO ($3.09M), AAVE ($3.64M), BNB ($4.72M), GRAM ($1.53M), LDO ($2.54M), MON ($1.93M), TAO ($4.15M), WLD ($3.40M)。
+KAITO资金费率对偏空明显不利 (-0.0945%)，风险高。
 
-【下一轮重点检查】
-- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
+整体资金流向：
+本轮未提供整体市场的净流入、OI、多空人数比、主动买卖比等汇总数据，数据不足以进行全面分析。
+
+个别币种资金与杠杆结构：
+*   **ZEC (偏多，只观察)**：30天滚动窗口资金流入$51.15M，低/中杠杆仓位占比65%，平均杠杆5.1x。本轮合约活跃度为-5.8万USDC，加权资金流为-6.59万USDC。24小时价格上涨3.97%。
+*   **SOL (偏空，只观察)**：本轮合约主动变化-$3.56M。30天滚动窗口资金流出-$36.87M。高杠杆仓位占比81%，平均杠杆15.3x，偏短线。
+*   **MAX (偏多，只观察)**：本轮现货主动变化-$9.79M，但钱包质量加权资金流为$13.70M。30天滚动窗口资金流入$14.82M。现货主导100%。
+*   **BASED (偏多，只观察)**：本轮现货主动变化-$109.48M，但钱包质量加权资金流为$123.46M。30天滚动窗口资金流入$149.98M。现货主导100%，钱包集中度过高（Top3占比95%）。
+*   **UXPL (偏空，只观察)**：本轮现货主动变化-$706.49K。滚动窗口未成熟，缺少合约/低杠杆确认。
+*   **PUMP (偏空，只观察)**：30天滚动窗口资金流出-$15.18M。高杠杆仓位占比52%。
+*   **HYPE (偏空，只观察)**：24小时滚动窗口资金流出-$6.30M。钱包集中度过高（Top3占比100%）。高杠杆仓位占比44%。
+*   **MON (偏空，只观察)**：72小时滚动窗口资金流出-$5.08M。流动性高风险（24小时成交额仅$1.93M）。
+*   **KAITO (偏空，只观察)**：24小时滚动窗口资金流出-$3.58M。24小时跌幅过大(-26.3%)，资金费率对偏空不利(-0.0945%)。
+*   **BUDDY (偏空，只观察)**：30天滚动窗口资金流出-$28.47M。现货主导100%。
+*   **UPUMP (偏空，只观察)**：30天滚动窗口资金流出-$52.11M。现货主导100%。
+*   **UANSEM (偏多，只观察)**：30天滚动窗口资金流入$235.17M。现货主导100%。
+*   **NEKO (偏多，只观察)**：30天滚动窗口资金流入$1.75B。现货主导100%。
+*   **BRIDGE (偏多，只观察)**：30天滚动窗口资金流入$471.46M。现货主导100%，持续性不足。
+*   **UBONK (偏多，只观察)**：30天滚动窗口资金流入$51.54M。现货主导100%，钱包集中度过高。
+*   **KNTQ (偏空，只观察)**：30天滚动窗口资金流出-$78.74M。现货主导100%，钱包集中度过高。
+*   **ETH (偏空，只观察)**：30天滚动窗口资金流出-$119.74M。高杠杆仓位占比63%，平均杠杆12.9x，偏短线。
+*   **HWAVE (偏空，只观察)**：30天滚动窗口资金流出-$17.34M。现货主导100%，钱包集中度过高，持续性不足。
+*   **UAVAX (偏空，只观察)**：24小时滚动窗口资金流出-$10.50M。现货主导100%，钱包集中度过高，持续性不足，长窗口未成熟。
+
+【相比上次 AI 分析】
+上次AI分析因服务器错误或资源耗尽而未能成功生成完整报告，因此本轮无法进行有效比较。
+
+【重点观察】
+本轮暂无达到币种专属阈值的短线强信号或做多/做空观察。所有信号均在“只观察”类别。
+*   **ZEC (偏多)**：理由是30天滚动窗口有资金流入，且低/中杠杆仓位占比较高。风险在于历史样本/胜率不足，窗口内含断跑gap，且同方向高杠杆仓位偏多36%。
+*   **SOL (偏空)**：本轮合约主动变化显示流出，但风险在于高杠杆占比过高（81%）和平均杠杆过高（15.3x），且历史样本/胜率不足。
+*   **BASED (偏多)**：虽然有资金流入，但本轮现货主动变化为大额流出，且信号现货主导，钱包集中度过高，可能为单钱包异动或转账/归集。
+*   **ETH (
+
+【本地完整性校验】
+⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
