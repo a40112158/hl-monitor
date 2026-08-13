@@ -1,2 +1,2 @@
 ﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings
-0xd1dd6d99c5fb5d31ff52eacce5046c7158859e85,smart_money,-538920.5675420007,-2.2034e-06,0.0,USDC减少，疑似资金流出/买入,-,-,-,-,-,-,HPL $332.24 数量=93.19K；FEUSD $0.14 数量=0.137076；HYPE $0.00 数量=0.00012055
+0xc6758a779bccee1ef0190dbe8292fdf44076795d,money_printer,-517843.41602899996,0.0,0.0,USDC减少，疑似资金流出/买入,-,-,-,-,-,BTC空 4x $2.56M isolated 强平距=+23.45% 中杠杆趋势型,HYPE $470.65 数量=4.27K；STAR $0.01 数量=6.33194；UETH $0.00 数量=0.214357
