@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-15 06:23:22 | UTC：2026-08-14 22:23:22
+更新时间北京时间：2026-08-15 07:23:15 | UTC：2026-08-14 23:23:15
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -7,15 +7,15 @@
 
 【Top 钱包画像】
 0x049b...5e7d [money_printer] grade=B score=73.4 样本=26 72h胜率=0.6097228065716604 30d胜率=None 主币=MAX,ETH,BTC
-0x7a51...900d [smart_money] grade=C score=66.0 样本=34 72h胜率=0.40461045161812925 30d胜率=None 主币=HYPE
-0x4e23...20c3 [money_printer] grade=C score=61.2 样本=50 72h胜率=0.29315943280089934 30d胜率=None 主币=HYPE,ETH,NEAR,BTC
-0x7fda...17d1 [money_printer] grade=C score=56.2 样本=40 72h胜率=0.18015280908804482 30d胜率=None 主币=HYPE,ETH,BTC,LIT,NEAR
-0x461c...d2f2 [smart_money] grade=C score=50.5 样本=13 72h胜率=0.45148650535474866 30d胜率=None 主币=ZEC,TAO
-0x5238...54e5 [smart_money] grade=N score=50.0 样本=13 72h胜率=0.40865751655398347 30d胜率=None 主币=LIT,HYPE,PUMP,ETHFI,KNTQ
-0x9c2a...f6a8 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.24388300197366874 30d胜率=None 主币=SOL,ETH,BTC
+0x5238...54e5 [smart_money] grade=B score=73.0 样本=13 72h胜率=0.40865751655398336 30d胜率=None 主币=LIT,HYPE,PUMP,ETHFI,KNTQ
+0x7a51...900d [smart_money] grade=C score=62.2 样本=35 72h胜率=0.4046104516181292 30d胜率=None 主币=HYPE
+0x4e23...20c3 [money_printer] grade=C score=61.2 样本=50 72h胜率=0.29315943280089946 30d胜率=None 主币=HYPE,ETH,NEAR,BTC
+0x7fda...17d1 [money_printer] grade=C score=56.2 样本=40 72h胜率=0.1801528090880448 30d胜率=None 主币=HYPE,ETH,BTC,LIT,NEAR
+0x461c...d2f2 [smart_money] grade=C score=50.5 样本=13 72h胜率=0.45148650535474855 30d胜率=None 主币=ZEC,TAO
+0x9c2a...f6a8 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.2438830019736687 30d胜率=None 主币=SOL,ETH,BTC
 0xdbcc...f147 [money_printer] grade=N score=50.0 样本=9 72h胜率=None 30d胜率=None 主币=BTC,NEAR,LIT,UNI,XPL
-0x0911...129a [money_printer] grade=N score=50.0 样本=8 72h胜率=0.2644738486705932 30d胜率=None 主币=ENA,MON,LIT,ZRO,SAGA
-0x2a72...267c [smart_money] grade=N score=50.0 样本=8 72h胜率=0.6189647308589119 30d胜率=None 主币=PUMP
+0x0911...129a [money_printer] grade=N score=50.0 样本=8 72h胜率=0.26447384867059315 30d胜率=None 主币=ENA,MON,LIT,ZRO,SAGA
+0x2a72...267c [smart_money] grade=N score=50.0 样本=8 72h胜率=0.618964730858912 30d胜率=None 主币=PUMP
 
 【Top 币种画像】
 
