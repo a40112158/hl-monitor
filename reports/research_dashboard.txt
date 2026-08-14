@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-14 07:23:22 | UTC：2026-08-13 23:23:22
+更新时间北京时间：2026-08-14 08:23:20 | UTC：2026-08-14 00:23:20
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -7,15 +7,15 @@
 
 【Top 钱包画像】
 0x7a51...900d [smart_money] grade=C score=89.0 样本=33 72h胜率=0.4242915298554501 30d胜率=None 主币=HYPE
-0x7fda...17d1 [money_printer] grade=C score=68.8 样本=44 72h胜率=0.2084178559655352 30d胜率=None 主币=HYPE,ETH,BTC,LIT,NEAR
-0x049b...5e7d [money_printer] grade=B score=61.7 样本=26 72h胜率=0.5431099304146568 30d胜率=None 主币=MAX,ETH,BTC
-0x936c...bb0f [money_printer] grade=C score=53.8 样本=13 72h胜率=0.10294146170106115 30d胜率=None 主币=UAVAX,ETH
+0x7fda...17d1 [money_printer] grade=C score=68.8 样本=44 72h胜率=0.20841785596553514 30d胜率=None 主币=HYPE,ETH,BTC,LIT,NEAR
+0x049b...5e7d [money_printer] grade=B score=64.1 样本=26 72h胜率=0.5431099304146569 30d胜率=None 主币=MAX,ETH,BTC
+0x461c...d2f2 [smart_money] grade=C score=57.5 样本=12 72h胜率=0.4514865053547486 30d胜率=None 主币=ZEC,TAO
+0x936c...bb0f [money_printer] grade=C score=53.8 样本=13 72h胜率=0.10294146170106112 30d胜率=None 主币=UAVAX,ETH
 0x3b88...04a7 [money_printer] grade=C score=52.4 样本=13 72h胜率=0.24320779406196477 30d胜率=None 主币=ETH,ZEC,XRP,HYPE,SUI
-0xd4c1...3d1d [money_printer] grade=C score=50.1 样本=14 72h胜率=0.24130194065750576 30d胜率=None 主币=ZEC,BTC,ETH,HYPE,XRP
-0x5323...b23c [smart_money] grade=C score=50.1 样本=134 72h胜率=0.3652476226760058 30d胜率=None 主币=ZEC,HYPE,SOL,BNB
-0x09bc...410d [money_printer] grade=N score=50.0 样本=10 72h胜率=0.07365942987195596 30d胜率=None 主币=BTC
-0x5238...54e5 [smart_money] grade=N score=50.0 样本=10 72h胜率=0.4086575165539834 30d胜率=None 主币=LIT,HYPE,PUMP,KNTQ,ETHFI
-0x2a72...267c [smart_money] grade=N score=50.0 样本=9 72h胜率=0.5747711132675287 30d胜率=None 主币=PUMP
+0xd4c1...3d1d [money_printer] grade=C score=50.1 样本=14 72h胜率=0.2413019406575058 30d胜率=None 主币=ZEC,BTC,ETH,HYPE,XRP
+0x09bc...410d [money_printer] grade=N score=50.0 样本=10 72h胜率=0.07365942987195598 30d胜率=None 主币=BTC
+0x5238...54e5 [smart_money] grade=N score=50.0 样本=10 72h胜率=0.40865751655398347 30d胜率=None 主币=LIT,HYPE,PUMP,KNTQ,ETHFI
+0x2a72...267c [smart_money] grade=N score=50.0 样本=9 72h胜率=0.5747711132675286 30d胜率=None 主币=PUMP
 
 【Top 币种画像】
 

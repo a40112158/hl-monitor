@@ -1,2 +1,1 @@
-﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings
-0x24fb6523036ebcb3cc51deff138066dccf6bed0f,smart_money,-1799998.9999999998,-4.55222440000125e-06,-0.0003611450080000024,USDC减少，疑似资金流出/买入,-,-,-,-,-,-,LICKO $211.46 数量=707.226；HYPE $0.11 数量=0.996549；USDT0 $0.05 数量=0.380153
+﻿empty
