@@ -1,32 +1,24 @@
 【Gemini 本轮扫描分析】
 
-状态：success
+状态：api_error
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-本轮扫描成功率100%，但现货异常数据比例略有升高（6.22%）。未发现达到币种专属阈值的短线强信号。多数币种处于“只观察”状态，主要受限于历史样本不足、高杠杆集中、现货主导或钱包集中度过高等风险因素。市场整体缺乏明确的高优先级交易信号，需保持谨慎观察。
+Gemini 分析层调用失败。
+
+错误信息：
+developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 12.028445635s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric' | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, h
 
 【数据质量】
-本轮扫描监控钱包2419个，成功率100.00%，无部分成功或失败案例，数据获取完整。现货语义质量方面，可信数据9003行，异常隔离数据597行，异常率为6.22%。存在“⚠️ 异常现货比例升高：6.22%”的告警，但低于10.00%的阻断阈值。部分币种的信号存在历史样本/胜率不足、窗口内含断跑gap等问题。
+unknown
 
 【市场与资金结构】
-*   **大盘环境:** BTC在1小时和4小时内小幅上涨，24小时下跌0.52%，市场状态为中性。ETH在1小时内持平，4小时内小幅上涨，24小时下跌0.10%，市场状态接近高点。
-*   **资金费率与流动性:** DOGE, GRAM, JTO, LDO, MON, NEAR, PAXG, VVV等多个币种资金费率低风险，但24小时成交额较低，流动性风险被评为高。BTC, ETH, HYPE, PUMP, SOL等主要币种流动性风险为低。
-*   **Open Interest (OI) / 成交额:** BTC的OI高达$2.73B，ETH为$1.67B，HYPE为$1.24B，显示这些币种的合约市场规模较大。
-*   **杠杆结构:**
-    *   BTC、SOL、ETH存在同方向高杠杆/爆仓边缘仓位占比过高（分别为80%、80%、61%）的问题，且平均杠杆较高（BTC 21.4x，SOL 15.2x，ETH 12.7x），存在极高杠杆短线风险。
-    *   PUMP同方向高杠杆仓位偏多51%。
-    *   ZEC的低/中杠杆仓位占比相对健康（70%），平均杠杆4.51x，平均强平距离50.8%较安全。
-*   **主动买卖比/净流入:** 数据中未提供整体主动买卖比和净流入的汇总信息。单钱包主动变化显示，LINK有单钱包新开多仓$1.92M（高杠杆短线型），PUMP有单钱包平多仓-$817.64K（中杠杆趋势型）。UPUMP有现货主动买入$332.41K。
+unknown
 
-【相比上次 AI 分析】
-数据不足，无法进行比较。上次AI分析报告内容不完整。
+【风险提示】
+- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
+- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
 
-【重点观察】
-暂无明确高优先级目标。以下币种因存在特定风险或信号特征，仍需继续观察：
-*   **ZEC (偏多):** 资金分相对较高（+2.0），且杠杆结构健康（低/中杠杆占比70%，平均杠杆4.51x）。但其alert_score未达阈值，且存在历史样本/胜率不足和窗口内含断跑gap的风险。
-*   **PUMP (偏空):** 资金分较低（-2.0），但同方向高杠杆仓位占比51%，长期资格被阻断。需观察其高杠杆风险是否进一步累
-
-【本地完整性校验】
-⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
+【下一轮重点检查】
+- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
