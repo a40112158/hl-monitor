@@ -1,1 +1,3 @@
-﻿empty
+﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings,execution_evidence,fill_count,ledger_evidence,ledger_count,evidence_status,evidence_class
+0x93b259140d4e179a35d12313908695c1b3da6bec,smart_money,151.65744600002654,4989997.13976627,0.0,USDC增加，疑似资金回流,-,-,-,现货买入MAX $4.99M 数量Δ=761.56K @ 6.5523,-,-,MAX $4.99M 数量=761.56K；LICKO $106.50 数量=356.198；HYPE $8.39 数量=76.1564,未发现区间内成交,0,未发现充值/转账/提现账本更新,0,ok,balance_change_unconfirmed
+0x082e843a431aef031264dc232693dd710aedca88,money_printer,567598.1596450005,0.0,-397.5490397270081,USDC增加，疑似资金回流,-,-,-,-,-,HYPE多 5x $78.31M cross 强平距=+11.69% 中杠杆趋势型,MAX $109.45K 数量=16.70K；UPUMP $0.13 数量=1.2225；HYPE $0.07 数量=0.678546,,,,,,

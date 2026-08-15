@@ -1,21 +1,21 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-15 23:23:18 | UTC：2026-08-15 15:23:18
+更新时间北京时间：2026-08-16 00:23:26 | UTC：2026-08-15 16:23:26
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0x5238...54e5 [smart_money] grade=B score=76.6 样本=13 72h胜率=0.4086575165539834 30d胜率=None 主币=LIT,HYPE,PUMP,ETHFI,KNTQ
-0x4e23...20c3 [money_printer] grade=C score=66.8 样本=49 72h胜率=0.2854923104657246 30d胜率=1.0 主币=HYPE,ETH,NEAR,BTC
-0x461c...d2f2 [smart_money] grade=B score=58.1 样本=13 72h胜率=0.5271745581895253 30d胜率=None 主币=ZEC,TAO
-0x7fda...17d1 [money_printer] grade=C score=56.2 样本=40 72h胜率=0.1801528090880448 30d胜率=None 主币=HYPE,ETH,BTC,LIT,NEAR
-0x7a51...900d [smart_money] grade=C score=53.9 样本=35 72h胜率=0.3779867080393577 30d胜率=None 主币=HYPE
-0x3b88...04a7 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.1976770000055635 30d胜率=None 主币=XRP,ZEC,ETH,SOL,NEAR
+0x5238...54e5 [smart_money] grade=B score=76.6 样本=13 72h胜率=0.4086575165539835 30d胜率=None 主币=LIT,HYPE,PUMP,ETHFI,KNTQ
+0x4e23...20c3 [money_printer] grade=C score=60.8 样本=48 72h胜率=0.2787580526673198 30d胜率=None 主币=HYPE,ETH,NEAR,BTC
+0x7fda...17d1 [money_printer] grade=C score=56.2 样本=40 72h胜率=0.18015280908804476 30d胜率=None 主币=HYPE,ETH,BTC,LIT,NEAR
+0x7a51...900d [smart_money] grade=C score=53.9 样本=35 72h胜率=0.3607129890553893 30d胜率=None 主币=HYPE
+0x461c...d2f2 [smart_money] grade=C score=52.5 样本=13 72h胜率=0.4623190721955923 30d胜率=None 主币=ZEC,TAO
+0x049b...5e7d [money_printer] grade=C score=50.5 样本=26 72h胜率=0.3696487687348211 30d胜率=None 主币=MAX,ETH,BTC
+0x3b88...04a7 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.19767700000556357 30d胜率=None 主币=XRP,ZEC,ETH,SOL,NEAR
 0xdbcc...f147 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.44444444444444453 30d胜率=None 主币=BTC,NEAR,LIT,UNI,XPL
 0x04cc...4ab5 [smart_money] grade=N score=50.0 样本=8 72h胜率=0.0 30d胜率=None 主币=BRIDGE
-0x0911...129a [money_printer] grade=N score=50.0 样本=8 72h胜率=0.2644738486705932 30d胜率=None 主币=ENA,MON,LIT,ZRO,SAGA
-0x18ee...8195 [smart_money] grade=N score=50.0 样本=8 72h胜率=0.0 30d胜率=None 主币=BRIDGE
+0x0911...129a [money_printer] grade=N score=50.0 样本=8 72h胜率=0.26447384867059315 30d胜率=None 主币=ENA,MON,LIT,ZRO,SAGA
 
 【Top 币种画像】
 
