@@ -1,7 +1,295 @@
 【数据质量 / API异常保护】
-run_id=1238 | 北京时间=2026-08-15 15:00:38 | UTC=2026-08-15 07:16:50 | note=github half-hourly
-监控钱包=2419 | ok=2419 | partial=0 | failed=0 | 成功率=100.00% | 最低要求=85.00%
+run_id=1239 | 北京时间=2026-08-15 16:00:37 | UTC=2026-08-15 08:19:03 | note=github half-hourly
+监控钱包=2419 | ok=2399 | partial=2 | failed=18 | 成功率=99.21% | 最低要求=85.00%
 全局价格：allMids=947 | spot_token=307 | spot_coin=307 | 状态=ok
-现货语义质量：可信行=9008 | 异常行=584 | 异常占比=6.09% | 状态=ok | 原因={"position_value_over_dynamic_limit": 581, "missing_or_invalid_price": 3}
+现货语义质量：可信行=8822 | 异常行=579 | 异常占比=6.16% | 状态=ok | 原因={"position_value_over_dynamic_limit": 576, "missing_or_invalid_price": 3}
 
 本轮数据质量通过，可以正常参考信号。
+
+异常钱包样例：
+  0x3c36...461a status=partial err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x023a...2355 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x019d...e7c4 status=partial err=spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x9dcf...302d status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.30.3</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0xa41f...d50a status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.30.3</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0xa430...4c5f status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x9d73...729f status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x4829...d3b5 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.30.3</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.30.3</center>
+</body>
+</html>
+
+  0x3ca1...37c6 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.30.3</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x481b...f951 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x4838...3d79 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x0320...5362 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x3d46...b96d status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x9dea...3ec0 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.30.3</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0xa432...4e45 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x483e...ce10 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x0394...cdc9 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x3dc9...54b0 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
+  0x9df2...c665 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.30.3</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.30.3</center>
+</body>
+</html>
+
+  0xa448...8250 status=failed err=perp=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+; spot=HTTP 502: <html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>nginx/1.22.1</center>
+</body>
+</html>
+
