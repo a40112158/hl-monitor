@@ -1,7 +1,7 @@
 {
-  "status": "api_error",
+  "status": "incomplete_output",
   "urgency": "normal",
-  "executive_summary": "developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 12.028445635s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric' | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, h",
+  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
   "data_quality": "unknown",
   "market_structure": "unknown",
   "changes_since_previous": [],
@@ -10,8 +10,8 @@
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：api_error\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\nGemini 分析层调用失败。\n\n错误信息：\ndeveloper:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 12.028445635s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric' | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, h\n\n【数据质量】\nunknown\n\n【市场与资金结构】\nunknown\n\n【风险提示】\n- 本轮 AI 分析失败，不代表扫描数据本身一定失败。\n- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。\n\n【下一轮重点检查】\n- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。\n",
-  "generated_at": "2026-08-15T05:25:08Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动信号。多数观察币种因历史样本不足、现货主导、高杠杆占比过高或钱包集中度过高等原因被标记为“只观察”或被风控否决。现货异常比例略有升高，需持续关注。整体市场缺乏明确的高优先级信号。\n\n【数据质量】\n本轮扫描成功率为100%，监控钱包2419个，全部成功。现货语义质量可信度较高，但异常隔离现货比例升高至6.07%，接近阻断阈值（10.00%），需警惕。部分信号存在“历史样本/胜率不足”和“窗口内含断跑gap”的问题，影响信号的可靠性。\n\n【市场与资金结构】\n*   **大盘环境**: BTC在1小时和4小时内小幅下跌，24小时微涨，市场状态接近高位（near_high）。ETH在1小时内持平，4小时内小幅下跌，24小时微涨，市场状态中性（neutral）。\n*   **资金费率 / 流动性过滤**:\n    *   KAITO、DOGE、GRAM、LDO、MON、NEAR、PAXG、VVV等币种的资金费率风险均为低，但24小时成交额较低，存在高流动性风险。JTO、WLD、XLM也存在类似的高流动性风险。\n    *   PUMP、SOL、TAO、AAVE、LINK、LIT、HYPE、BTC、ETH等币种的24小时成交额相对较高，流动性风险较低或中等。\n*   **OI、多空人数比、主动买卖比、价格涨跌幅**: 数据不足。\n\n【相比上次 AI 分析】\n上次 AI 分析报告因资源配额耗尽未能完整生成，因此无法进行比较。\n\n【重点观察】\n*   **ZEC 偏多**: alert=+0.7。理由：30天内资金流入$57.20M，低/中杠杆仓位占比70%，平均杠杆4.8x，平均强平距离50.2%较安全。风险：历史样本/胜率不足；窗口内含断跑gap。\n*   **UPUMP 偏空**: alert=-1.8。理由：本轮现货主动变化-$849.72K，30天内资金流出-$54.55M。风险：历史样本/胜率不足；滚动信号现货主导，可能是转账/归集/划转，不等于合约方向；窗口内含断跑gap；长期资格未通过：现货主导，缺少合约/低杠杆确认；长期空单缺少明确short确认。\n*   **PUMP 偏空**: alert=-0.1。理由：30天内资金流出-$16.71M。风险：历史样本/胜率不足；窗口内含断跑gap；同方向高杠杆仓位偏多51%；长期多空硬门槛未通过：高杠杆占比过高(51%)。\n*   **HYPE 偏空**: alert=+0.0。理由：72小时内资金流出-$23.73M。风险：历史样本/胜率不足；同方向高杠杆仓位偏多42%。\n*   **BTC 偏空**: alert=+0.0。理由：72小时内资金流出-$83.76M。风险：历史样本/胜率不足；长期资格未通过：高杠杆占比过高；同方向高杠杆/爆仓边缘仓位占比80%；同方向平均杠杆21.4x，极高杠杆短线风险。\n*   **ETH 偏空**: alert=+0.0。理由：30天内资金流出-$98.58M。风险：历史样本/胜率不足；窗口内含断跑gap；长期资格未通过：高杠杆占比过高；同方向高杠杆/爆仓边缘仓位占比61%；同方向平均杠杆12.7x，偏短线。\n*   **其他只观察信号**: BUDDY、MAX、BASED、NEKO、KNTQ、UBONK、UANSEM、BRIDGE\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
+  "generated_at": "2026-08-15T06:25:31Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
@@ -26,5 +26,5 @@
   "force_analysis": true,
   "force_reason": "manual",
   "tg_sent": false,
-  "error_tg_sent": true
+  "error_tg_sent": false
 }
