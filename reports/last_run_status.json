@@ -1,8 +1,8 @@
 {
   "signal_model_version": 2,
-  "last_run_cn": "2026-08-16 06:23:25",
-  "last_run_utc": "2026-08-15 22:23:25",
-  "run_id": 1253,
+  "last_run_cn": "2026-08-16 07:23:29",
+  "last_run_utc": "2026-08-15 23:23:29",
+  "run_id": 1254,
   "trigger_note": "github half-hourly",
   "wallet_count": 2419,
   "ok": 2419,
@@ -12,10 +12,10 @@
   "perp_rows": 9550,
   "spot_rows": 11663,
   "tg_sent": true,
-  "duration_minutes": 22.733333333333334,
+  "duration_minutes": 22.816666666666666,
   "spot_semantic_ok": true,
-  "trusted_spot_rows": 9012,
-  "anomalous_spot_rows": 588,
-  "spot_anomaly_ratio": 0.06125,
+  "trusted_spot_rows": 9013,
+  "anomalous_spot_rows": 587,
+  "spot_anomaly_ratio": 0.06114583333333334,
   "health_stale_hours_threshold": 2.0
 }

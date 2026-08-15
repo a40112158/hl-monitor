@@ -1,1 +1,2 @@
-﻿empty
+﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings,execution_evidence,fill_count,ledger_evidence,ledger_count,evidence_status,evidence_class
+0x049bdc370620beab340b01072fa580fd57745e7d,money_printer,0.0,4989542.436786728,0.0,现货变化,-,-,-,现货买入MAX $4.99M 数量Δ=790.00K @ 6.3159,-,-,MAX $4.99M 数量=790.00K；HYPE $0.00 数量=0.00640979,未发现区间内成交,0,未发现充值/转账/提现账本更新,0,ok,balance_change_unconfirmed
