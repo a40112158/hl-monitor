@@ -1,2 +1,1 @@
-﻿address,groups,coin,market,direction,action_type,active_delta,price_effect,qty_delta,entry_px,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings,execution_evidence,fill_count,ledger_evidence,ledger_count,evidence_status,evidence_class,cluster_id
-0x3ab77725ac1ae06aff19d90a33c2a0fe126b7789,smart_money,MAX,spot,bullish,buy_spot,4964117.8370849425,0.0,768082.598961,6.463,-,-,-,现货买入MAX $4.96M 数量Δ=768.08K @ 6.463,-,-,MAX $4.96M 数量=768.08K；HYPE $253.58 数量=2.30K；SEDA $59.28 数量=395.20K,未发现区间内成交,0,未发现充值/转账/提现账本更新,0,ok,balance_change_unconfirmed,0x3ab77725ac1ae06aff19d90a33c2a0fe126b7789
+﻿empty
