@@ -1,22 +1,24 @@
 【Gemini 本轮扫描分析】
 
-状态：success
+状态：api_error
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-本轮扫描未发现达到币种专属阈值的短线强信号或适合低杠杆的长期候选。扫描健康度良好，但异常现货比例略有升高，需持续关注。多数观察中的币种存在历史样本不足、现货主导、钱包集中度过高或高杠杆占比过高等风险，因此被标记为“只观察”或被风控否决。
+Gemini 分析层调用失败。
+
+错误信息：
+developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 47.75932638s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googlea
 
 【数据质量】
-本轮扫描成功率为100%，共监控2419个钱包，无部分成功或失败的记录。现货语义质量方面，可信数据9013条，异常隔离587条，异常率为6.11%。该异常率已触发告警，但仍低于10.00%的阻断阈值。自动优化分析层显示暂无可分析的成熟信号样本，且多数“只观察”信号存在历史样本/胜率不足的风险，表明数据成熟度有待提高。
+unknown
 
 【市场与资金结构】
-*   **大盘环境：** BTC和ETH在1小时、4小时和24小时内波动极小，整体处于“near_high”状态。
-*   **资金费率与流动性：**
-    *   KAITO、AAVE、DOGE、GRAM、JTO、MON、PAXG、TAO等币种的24小时成交额较低（低于$4M），流动性风险被评估为“高”。
-    *   PUMP、HYPE、ETH、SOL、BTC等币种的24小时成交额相对较高，流动性风险为“低”。
-    *   所有列出的币种资金费率风险均为“低”，表明市场情绪相对中性，未出现极端多空倾向。
-*   **Open Interest (OI)：** BTC ($2.79B)、ETH ($1.68B)、HYPE ($1.26B)、SOL ($382.52M)、ZEC ($199.01M)、PUMP ($91.11M)、LIT ($81.74M
+unknown
 
-【本地完整性校验】
-⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
+【风险提示】
+- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
+- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
+
+【下一轮重点检查】
+- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
