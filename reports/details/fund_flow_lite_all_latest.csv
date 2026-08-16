@@ -1,2 +1,1 @@
-﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings,execution_evidence,fill_count,ledger_evidence,ledger_count,evidence_status,evidence_class
-0x77375a8c9d13bf79afb2a87f1b0ac1dfd5f5bf66,money_printer,5004.489207999781,-18919013.968956698,764.6200663906257,USDC增加 + 现货减少，疑似卖出/转现金,-,-,-,现货卖出BUDDY -$18.92M 数量Δ=-250.95K @ 75.389,-,AAVE空 10x $9.20M cross 强平距=+145.78% 高杠杆短线型；TAO多 5x $38.67 cross 中杠杆趋势型；ZEC多 10x $4.88 cross 高杠杆短线型,KNTQ $116.09M 数量=3.23M；BRIDGE $58.03M 数量=13.38K；WOW $422.08K 数量=7.34K,未发现区间内成交,0,未发现充值/转账/提现账本更新,0,ok,balance_change_unconfirmed
+﻿empty
