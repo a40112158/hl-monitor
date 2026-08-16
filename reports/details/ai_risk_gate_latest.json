@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-16T07:23:26Z",
+  "generated_at": "2026-08-16T08:23:24Z",
   "items": [
     {
       "coin": "ZEC",
@@ -62,8 +62,8 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "NEKO",
-      "direction": "bullish",
+      "coin": "BUDDY",
+      "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
@@ -72,8 +72,8 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "BUDDY",
-      "direction": "bearish",
+      "coin": "NEKO",
+      "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
@@ -92,7 +92,7 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "UPUMP",
+      "coin": "UANSEM",
       "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
@@ -102,7 +102,7 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "UANSEM",
+      "coin": "UPUMP",
       "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
