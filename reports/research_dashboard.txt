@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-16 20:23:21 | UTC：2026-08-16 12:23:21
+更新时间北京时间：2026-08-16 21:23:19 | UTC：2026-08-16 13:23:19
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -7,14 +7,14 @@
 
 【Top 钱包画像】
 0x5238...54e5 [smart_money] grade=B score=77.6 样本=12 72h胜率=0.3578037271096139 30d胜率=None 主币=LIT,HYPE,PUMP,ETHFI,KNTQ
-0x461c...d2f2 [smart_money] grade=C score=60.6 样本=12 72h胜率=0.47775898278717466 30d胜率=None 主币=ZEC,TAO
-0x7fda...17d1 [money_printer] grade=C score=58.3 样本=37 72h胜率=0.1881867349937647 30d胜率=0.0 主币=HYPE,ETH,BTC,LIT,NEAR
-0x049b...5e7d [money_printer] grade=C score=52.6 样本=30 72h胜率=0.3579053773081177 30d胜率=None 主币=MAX,ETH,BTC
+0x461c...d2f2 [smart_money] grade=C score=60.6 样本=12 72h胜率=0.4777589827871746 30d胜率=None 主币=ZEC,TAO
+0x7fda...17d1 [money_printer] grade=C score=54.9 样本=36 72h胜率=0.1910701822975879 30d胜率=None 主币=HYPE,ETH,BTC,LIT,NEAR
+0x049b...5e7d [money_printer] grade=C score=52.6 样本=30 72h胜率=0.35790537730811767 30d胜率=None 主币=MAX,ETH,BTC
 0x7a51...900d [smart_money] grade=C score=51.3 样本=34 72h胜率=0.3367942002978596 30d胜率=None 主币=HYPE
-0x5b5d...c060 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.0 30d胜率=None 主币=ETH,BTC
-0x7808...6e70 [smart_money] grade=N score=50.0 样本=9 72h胜率=0.09824530957544117 30d胜率=None 主币=HYPE,PUMP
-0x9321...d75a [money_printer] grade=N score=50.0 样本=9 72h胜率=0.3912511611330885 30d胜率=None 主币=BNB,XRP,ZEC,HYPE,ETH
-0xbf73...5d58 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.22736406406011475 30d胜率=None 主币=PUMP,ETH,HYPE,LIT
+0x5b5d...c060 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.0 30d胜率=0.0 主币=ETH,BTC
+0x7808...6e70 [smart_money] grade=N score=50.0 样本=9 72h胜率=0.09824530957544116 30d胜率=None 主币=HYPE,PUMP
+0x9321...d75a [money_printer] grade=N score=50.0 样本=9 72h胜率=0.3912511611330886 30d胜率=None 主币=BNB,XRP,ZEC,HYPE,ETH
+0xbf73...5d58 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.22736406406011467 30d胜率=None 主币=PUMP,ETH,HYPE,LIT
 0xdbcc...f147 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.44444444444444436 30d胜率=None 主币=BTC,NEAR,LIT,UNI,XPL
 
 【Top 币种画像】
