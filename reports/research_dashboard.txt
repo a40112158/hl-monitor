@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-16 13:23:22 | UTC：2026-08-16 05:23:22
+更新时间北京时间：2026-08-16 14:23:22 | UTC：2026-08-16 06:23:22
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -7,15 +7,15 @@
 
 【Top 钱包画像】
 0x5238...54e5 [smart_money] grade=B score=77.6 样本=12 72h胜率=0.35780372710961394 30d胜率=None 主币=LIT,HYPE,PUMP,ETHFI,KNTQ
-0x461c...d2f2 [smart_money] grade=C score=60.6 样本=12 72h胜率=0.4777589827871747 30d胜率=None 主币=ZEC,TAO
-0x7fda...17d1 [money_printer] grade=C score=58.9 样本=39 72h胜率=0.18272271919258865 30d胜率=None 主币=HYPE,ETH,BTC,LIT,NEAR
-0x049b...5e7d [money_printer] grade=C score=52.3 样本=28 72h胜率=0.35790537730811783 30d胜率=None 主币=MAX,ETH,BTC
-0x7a51...900d [smart_money] grade=C score=51.3 样本=34 72h胜率=0.3529290297550284 30d胜率=None 主币=HYPE
-0x350e...fcfb [money_printer] grade=N score=50.0 样本=9 72h胜率=0.13102224177558802 30d胜率=None 主币=ETH,BTC
+0x461c...d2f2 [smart_money] grade=C score=60.6 样本=12 72h胜率=0.47775898278717455 30d胜率=None 主币=ZEC,TAO
+0x7fda...17d1 [money_printer] grade=C score=58.9 样本=39 72h胜率=0.18272271919258867 30d胜率=0.0 主币=HYPE,ETH,BTC,LIT,NEAR
+0x049b...5e7d [money_printer] grade=C score=52.3 样本=28 72h胜率=0.3579053773081179 30d胜率=None 主币=MAX,ETH,BTC
+0x7a51...900d [smart_money] grade=C score=51.3 样本=34 72h胜率=0.3529290297550283 30d胜率=None 主币=HYPE
+0x350e...fcfb [money_printer] grade=N score=50.0 样本=9 72h胜率=0.13102224177558805 30d胜率=None 主币=ETH,BTC
 0x7808...6e70 [smart_money] grade=N score=50.0 样本=9 72h胜率=0.09824530957544117 30d胜率=None 主币=HYPE,PUMP
+0x9321...d75a [money_printer] grade=N score=50.0 样本=9 72h胜率=0.39125116113308855 30d胜率=None 主币=BNB,XRP,ZEC,HYPE,ETH
 0xbf73...5d58 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.22736406406011472 30d胜率=None 主币=PUMP,ETH,HYPE,LIT
-0xd4c1...3d1d [money_printer] grade=N score=50.0 样本=9 72h胜率=0.1214844129965951 30d胜率=None 主币=BTC,ETH,HYPE,XRP,ZEC
-0xdbcc...f147 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.4444444444444444 30d胜率=None 主币=BTC,NEAR,LIT,UNI,XPL
+0xd4c1...3d1d [money_printer] grade=N score=50.0 样本=9 72h胜率=0.1214844129965951 30d胜率=0.0 主币=BTC,ETH,HYPE,XRP,ZEC
 
 【Top 币种画像】
 
