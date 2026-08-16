@@ -1,2 +1,1 @@
-﻿address,groups,coin,market,direction,action_type,active_delta,price_effect,qty_delta,entry_px,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings,execution_evidence,fill_count,ledger_evidence,ledger_count,evidence_status,evidence_class,cluster_id
-0xf7b5461d0007ce4b52eaea2f6d2a30cef0fbefff,smart_money,NEKO,spot,bearish,sell_spot,-62515521.796633735,0.0,-990.75297226,63099.0,-,-,-,现货卖出NEKO -$62.52M 数量Δ=-990.753 @ 63.10K,-,-,HYPE $0.00 数量=0.004,未发现区间内成交,0,未发现充值/转账/提现账本更新,0,ok,balance_change_unconfirmed,0xf7b5461d0007ce4b52eaea2f6d2a30cef0fbefff
+﻿empty
