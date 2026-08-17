@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-18 00:24:02 | UTC：2026-08-17 16:24:02
+更新时间北京时间：2026-08-18 01:23:57 | UTC：2026-08-17 17:23:57
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -8,14 +8,14 @@
 【Top 钱包画像】
 0x5238...54e5 [smart_money] grade=C score=73.7 样本=12 72h胜率=0.46843074555533915 30d胜率=None 主币=HYPE,PUMP,KNTQ,ETHFI,LIT
 0x7a51...900d [smart_money] grade=C score=57.1 样本=36 72h胜率=0.3372512516808857 30d胜率=None 主币=HYPE
-0x461c...d2f2 [smart_money] grade=C score=56.6 样本=13 72h胜率=0.4202168443308918 30d胜率=None 主币=ZEC,TAO
+0x461c...d2f2 [smart_money] grade=C score=56.6 样本=13 72h胜率=0.4202168443308919 30d胜率=None 主币=ZEC,TAO
+0xbf73...5d58 [money_printer] grade=B score=56.4 样本=10 72h胜率=0.22736406406011472 30d胜率=None 主币=PUMP,ETH,HYPE,LIT,ZEC
 0x9321...d75a [money_printer] grade=N score=50.0 样本=10 72h胜率=0.3912511611330885 30d胜率=None 主币=XRP,BNB,ZEC,HYPE,ETH
-0xbf73...5d58 [money_printer] grade=N score=50.0 样本=10 72h胜率=0.22736406406011472 30d胜率=None 主币=PUMP,ETH,HYPE,LIT,ZEC
 0x09bc...410d [money_printer] grade=N score=50.0 样本=9 72h胜率=0.0 30d胜率=None 主币=BTC
-0x350e...fcfb [money_printer] grade=N score=50.0 样本=9 72h胜率=0.1542807722931344 30d胜率=None 主币=ETH,BTC,HYPE
-0xd67c...53ff [money_printer] grade=N score=50.0 样本=9 72h胜率=0.34370699233066987 30d胜率=None 主币=HYPE,BTC
-0xdbcc...f147 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.4444444444444445 30d胜率=None 主币=BTC,NEAR,LIT,UNI,XPL
-0xf27e...8f3c [money_printer] grade=N score=50.0 样本=9 72h胜率=0.0 30d胜率=None 主币=UXPL
+0x350e...fcfb [money_printer] grade=N score=50.0 样本=9 72h胜率=0.15428077229313436 30d胜率=None 主币=ETH,BTC,HYPE
+0x5b5d...c060 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.0 30d胜率=None 主币=ETH,BTC,HYPE
+0xd67c...53ff [money_printer] grade=N score=50.0 样本=9 72h胜率=0.3437069923306698 30d胜率=None 主币=HYPE,BTC
+0xdbcc...f147 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.44444444444444436 30d胜率=None 主币=BTC,NEAR,LIT,UNI,XPL
 
 【Top 币种画像】
 
