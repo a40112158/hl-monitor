@@ -1,2 +1,1 @@
-﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings
-0x5b5d51203a0f9079f8aeb098a6523a13f298c060,money_printer,541387.4809083864,-356.97503739999695,-0.004799664005999915,USDC增加 + 现货减少，疑似卖出/转现金,-,-,-,-,-,ETH空 5x $64.60M cross 强平距=+69.28% 中杠杆趋势型；BTC空 5x $57.59M cross 强平距=+78.45% 中杠杆趋势型；HYPE空 5x $28.74M cross 强平距=+144.44% 中杠杆趋势型,LATINA $45.66K 数量=45.66K；HYPE $42.50K 数量=385.78K；LICKO $10.55K 数量=35.59K
+﻿empty
