@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-18 21:22:50 | UTC：2026-08-18 13:22:50
+更新时间北京时间：2026-08-18 22:23:19 | UTC：2026-08-18 14:23:19
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -7,15 +7,15 @@
 
 【Top 钱包画像】
 0x5238...54e5 [smart_money] grade=C score=73.7 样本=12 72h胜率=0.4684307455553391 30d胜率=None 主币=HYPE,PUMP,KNTQ,ETHFI,LIT
-0x7a51...900d [smart_money] grade=C score=65.9 样本=38 72h胜率=0.36468101121073687 30d胜率=None 主币=HYPE
-0xbf73...5d58 [money_printer] grade=B score=57.3 样本=12 72h胜率=0.2273640640601147 30d胜率=None 主币=PUMP,ZEC,ETH,HYPE,LIT
+0x7a51...900d [smart_money] grade=C score=61.8 样本=39 72h胜率=0.39069156571333746 30d胜率=None 主币=HYPE
+0xbf73...5d58 [money_printer] grade=B score=57.3 样本=12 72h胜率=0.22736406406011472 30d胜率=None 主币=PUMP,ZEC,ETH,HYPE,LIT
 0x5323...b23c [smart_money] grade=C score=53.1 样本=82 72h胜率=0.40439115070021714 30d胜率=None 主币=HYPE,ZEC,SOL
-0x2306...a9f1 [smart_money] grade=N score=50.0 样本=12 72h胜率=0.24106058496751073 30d胜率=None 主币=NEKO,UANSEM
-0x350e...fcfb [money_printer] grade=N score=50.0 样本=10 72h胜率=0.1542807722931344 30d胜率=None 主币=ETH,BTC,HYPE
+0x2306...a9f1 [smart_money] grade=N score=50.0 样本=12 72h胜率=0.24106058496751065 30d胜率=None 主币=NEKO,UANSEM
+0x350e...fcfb [money_printer] grade=N score=50.0 样本=11 72h胜率=0.1542807722931344 30d胜率=None 主币=ETH,BTC,HYPE
 0x09bc...410d [money_printer] grade=N score=50.0 样本=9 72h胜率=0.0 30d胜率=None 主币=BTC
 0x3286...92e1 [smart_money] grade=N score=50.0 样本=9 72h胜率=None 30d胜率=None 主币=UANSEM
 0x5b5d...c060 [money_printer] grade=N score=50.0 样本=9 72h胜率=0.0 30d胜率=None 主币=ETH,BTC,HYPE
-0xd67c...53ff [money_printer] grade=N score=50.0 样本=9 72h胜率=0.3437069923306698 30d胜率=None 主币=HYPE,BTC
+0xd67c...53ff [money_printer] grade=N score=50.0 样本=9 72h胜率=0.34370699233066987 30d胜率=None 主币=HYPE,BTC
 
 【Top 币种画像】
 
