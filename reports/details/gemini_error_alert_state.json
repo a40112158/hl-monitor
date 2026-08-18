@@ -2,7 +2,7 @@
   "last_quota_or_budget_date": "2026-08-16",
   "last_quota_or_budget_at": "2026-08-16T00:25:12Z",
   "last_quota_or_budget_reason": "api_error developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metr",
-  "last_service_unavailable_date": "2026-08-17",
-  "last_service_unavailable_at": "2026-08-17T00:23:34Z",
-  "last_service_unavailable_reason": "incomplete_output Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【下一轮重点检查】、报告结尾 unknown unknown"
+  "last_service_unavailable_date": "2026-08-18",
+  "last_service_unavailable_at": "2026-08-18T00:23:53Z",
+  "last_service_unavailable_reason": "incomplete_output Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾 unknown unknown"
 }
