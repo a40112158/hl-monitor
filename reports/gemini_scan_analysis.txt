@@ -1,77 +1,24 @@
 【Gemini 本轮扫描分析】
 
-状态：success
+状态：api_error
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-本轮扫描未发现达到币种专属阈值的短线强异动信号。多数观察币种因历史样本不足、现货主导、高杠杆占比或钱包集中度过高而被列为“只观察”。系统健康方面，异常现货比例有所升高，但仍在阻断阈值以下。当前市场大盘环境保持中性。
+Gemini 分析层调用失败。
+
+错误信息：
+developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 36.470078727s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric' | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, h
 
 【数据质量】
-本轮扫描成功率为100%，共监控2419个钱包，无部分成功或失败的扫描。现货语义质量方面，可信数据9021条，异常隔离592条，异常率为6.16%。系统发出警告，指出异常现货比例升高，但仍低于10.00%的阻断阈值。整体数据完整性良好，但异常现货比例需持续关注。
+unknown
 
 【市场与资金结构】
-大盘环境：
-BTC：1小时、4小时涨跌幅均接近0，24小时上涨1.09%，市场情绪为中性。
-ETH：1小时、4小时、24小时涨跌幅均接近0或微跌，市场情绪为中性。
-
-资金费率 / 流动性过滤：
-KAITO：资金费率-0.01%，风险低；24小时成交额$4.43M，流动性风险高。
-AAVE：资金费率+0.00%，风险低；24小时成交额$4.01M，流动性风险高。
-GRAM：资金费率+0.00%，风险低；24小时成交额$537.10K，流动性风险高。
-JTO：资金费率+0.00%，风险低；24小时成交额$789.86K，流动性风险高。
-PAXG：资金费率+0.00%，风险低；24小时成交额$3.23M，流动性风险高。
-WLFI：资金费率+0.00%，风险低；24小时成交额$709.95K，流动性风险高。
-LTC：资金费率+0.00%，风险低；24小时成交额$982.00K，流动性风险高。
-WLD：资金费率-0.00%，风险低；24小时成交额$8.23M，流动性风险中。
-
-净流入、OI、多空人数比、主动买卖比、价格涨跌幅等字段未提供汇总数据，但部分币种的资金流向和杠杆情况在“只观察”部分有详细说明：
-BUDDY：本轮现货主动变化流出-$17.09M，钱包质量加权资金流出-$8.55M。
-BTC：有钱包主动开多BTC，金额$12.84M，杠杆40x，强平距离+29.45%，属于极高杠杆短线型。
-ETH：本轮合约主动变化流出-$6.36M，主滚动窗口30天资金流出-$68.36M。同方向高杠杆仓位偏多59%，平均杠杆12.4x。
-ZEC：主滚动窗口30天资金流入$24.84M。同方向低/中杠杆仓位占比66%，平均杠杆4.97x。
-LIT：主滚动窗口30天资金流入$10.81M。同方向低/中杠杆仓位占比100%，平均杠杆4.66x。
-XMR：主滚动窗口15天资金流出-$10.25M。钱包集中度过高，Top1贡献100%。
-PUMP：主滚动窗口30天资金流出-$14.05M。同方向高杠杆仓位偏多52%。
-SOL：主滚动窗口30天资金流出-$35.36M。同方向高杠杆/爆仓边缘仓位占比79%，平均杠杆15.1x。
-
-【相比上次 AI 分析】
-上次AI分析报告返回内容不完整，缺失了【参数观察】和【下一轮重点检查】等章节，因此无法进行全面的比较。本轮报告结构完整。
-
-【重点观察】
-暂无明确高优先级目标。本轮所有信号均未达到币种专属阈值，且多数存在风险因素。以下币种值得继续观察：
-
-*   **BUDDY (偏空)**：本轮现货主动变化流出显著，但信号现货主导，可能是转账/归集/划转，不等于合约方向。长期资格未通过，AI风控结论为VETO。
-*   **ETH (偏空)**：合约主导的偏空信号，但同方向高杠杆仓位占比59%，平均杠杆12.4x，偏短线，存在较高风险。AI风控结论为VETO。
-*   **ZEC (偏多)**：有资金滚动建仓迹象，杠杆结构相对健康，但历史样本不足，且存在反向滚动窗口冲突。AI风控结论为WATCH。
-*   **LIT (偏多)**：有资金滚动建仓迹象，杠杆结构健康，但流动性偏低（24h成交额$7.27M），历史样本不足。AI风控结论为WATCH。
-*   **XMR (偏空)**：滚动信号钱包集中度过高（Top1贡献100%），流动性偏低（24h成交额$5.52M），历史样本不足。AI风控结论为VETO。
-*   **PUMP (偏空)**：同方向高杠杆仓位偏多52%，历史样本不足。AI风控结论为VETO。
-*   **SOL (偏空)**：同方向高杠杆/爆仓边缘仓位占比79%，平均杠杆15.1x，偏短线。AI风控结论为VETO。
-
-【AI 风控结论】
-*   BUDDY (偏空)：VETO (现货估值异常、单钱包高度集中、长期资格未通过)
-*   ZEC (偏多)：WATCH (长窗口未成熟)
-*   LIT (偏多)：WATCH (长窗口未成熟)
-*   ETH (偏空)：VETO (高杠杆占比过高、长期资格未通过)
-*   PUMP (偏空)：VETO (高杠杆占比过高、长期资格未通过)
-*   XMR (偏空)：VETO (单钱包高度集中、长期资格未通过)
-*   KNTQ (偏空)：VETO (现货估值异常、长期资格未通过)
-*   UANSEM (偏多)：VETO (现货估值异常、长期资格未通过)
-*   NEKO (偏多)：VETO (现货估值异常、长期资格未通过)
-*   BASED (偏多)：VETO (现货估值异常、单钱包高度集中、长期资格未通过)
-*   MAX (偏空)：VETO (现货估值异常、单钱包高度集中、长期资格未通过)
-*   BRIDGE (偏多)：VETO (现货估值异常、单钱包高度集中、长期资格未通过)
-*   SOL (偏空)：VETO (高杠杆占比过高、长期资格未通过)
-*   UAVAX (偏空)：VETO (现货估值异常、单钱包高度集中、长期资格未通过)
-*   HWAVE (偏空)：VETO (现货估值异常、单钱包高度集中、长期资格未通过)
-*   UPUMP (偏空)：VETO (现货估值异常、单钱包高度集中、长期资格未通过)
-*   UBONK (偏空)：VETO (现货估值异常、单钱包高度集中、长期资格未通过)
+unknown
 
 【风险提示】
-1.  **数据不足风险**：多数“只观察”币种存在历史样本/胜率不足的问题，信号可靠性有待提高。
-2.  **现货主导信号风险**：部分币种的信号由现货主导，可能为转账、归集或划转行为，不代表明确的合约方向。
-3.  **高杠杆风险**：ETH、PUMP、SOL等币种存在同方向高杠杆仓位占比过高的情况，平均杠杆偏高，可能导致短线波动加剧或面临爆仓风险。
-4.  **流动性不足风险**：KAITO、AAVE、GRAM、JTO、PAXG、WLFI、LTC等币种24小时成交额较低，存在流动性风险，可能导致价格剧烈波动或难以平仓。LIT和XMR也存在流动性偏低的问题。
-5.  **钱包集中度风险**：XMR、BASED、MAX、BRIDGE、UAVAX、HWAVE、UPUMP、UBONK等币种的滚动信号钱包集中度过高，可能为单钱包异动，不代表普遍市场情绪。
-6.  **数据异常告警**：异常现货比例升高，虽然未
+- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
+- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
+
+【下一轮重点检查】
+- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
