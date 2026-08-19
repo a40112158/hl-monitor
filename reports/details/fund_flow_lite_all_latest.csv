@@ -1,1 +1,4 @@
-﻿empty
+﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings,execution_evidence,fill_count,ledger_evidence,ledger_count,evidence_status,evidence_class
+0x049bdc370620beab340b01072fa580fd57745e7d,money_printer,0.0,4985197.45295191,0.0,现货变化,-,-,-,现货买入MAX $4.99M 数量Δ=790.00K @ 6.3104,-,ETH多 20x $7.81M isolated 强平距=+3.33% 爆仓边缘型；BTC多 20x $7.34M isolated 强平距=+3.88% 爆仓边缘型,MAX $4.99M 数量=790.00K；HYPE $0.00 数量=0.00640979,未发现区间内成交,0,未发现充值/转账/提现账本更新,0,ok,balance_change_unconfirmed
+0x807a2e2e469df84b299da5f90f15dda4380daca1,money_printer,-1469028.0528660002,-2.2034007459296847e-06,-2.182005000000053e-08,USDC减少，疑似资金流出/买入,-,-,-,-,-,-,LATINA $55.57K 数量=55.57K；HYPE $7.67K 数量=69.60K；LICKO $1.91K 数量=6.42K,,,,,,
+0xdb095d5a4f412fc6b14e6204c1db78bd14becbc1,smart_money,-724164.004067,0.0,-3110.6657726544286,USDC减少，疑似资金流出/买入,-,-,-,-,-,-,MAX $263.84K 数量=41.81K,,,,,,
