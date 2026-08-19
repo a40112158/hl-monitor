@@ -1,13 +1,13 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-19 12:22:52 | UTC：2026-08-19 04:22:52
+更新时间北京时间：2026-08-19 13:22:58 | UTC：2026-08-19 05:22:58
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0x5238...54e5 [smart_money] grade=C score=74.1 样本=13 72h胜率=0.46843074555533915 30d胜率=None 主币=HYPE,PUMP,KNTQ,ETHFI,LIT
-0x7a51...900d [smart_money] grade=C score=63.6 样本=41 72h胜率=0.3906915657133373 30d胜率=None 主币=HYPE
+0x5238...54e5 [smart_money] grade=C score=74.5 样本=14 72h胜率=0.4684307455553392 30d胜率=None 主币=HYPE,PUMP,KNTQ,ETHFI,LIT
+0x7a51...900d [smart_money] grade=C score=63.6 样本=41 72h胜率=0.39069156571333724 30d胜率=None 主币=HYPE
 0x5323...b23c [smart_money] grade=C score=55.0 样本=80 72h胜率=0.4061316205146541 30d胜率=None 主币=ZEC,HYPE,SOL
 0xbf73...5d58 [money_printer] grade=C score=54.3 样本=10 72h胜率=0.2617967332209928 30d胜率=None 主币=ZEC,ETH,HYPE,LIT,PUMP
 0xf17d...dab2 [money_printer] grade=N score=50.0 样本=14 72h胜率=0.0 30d胜率=None 主币=BTC,HYPE
