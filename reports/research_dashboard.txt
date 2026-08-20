@@ -1,21 +1,21 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-21 00:24:30 | UTC：2026-08-20 16:24:30
+更新时间北京时间：2026-08-21 01:24:34 | UTC：2026-08-20 17:24:34
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
+0x350e...fcfb [money_printer] grade=B score=80.8 样本=18 72h胜率=0.5963153065587095 30d胜率=None 主币=ETH,HYPE,BTC,ZEC
 0x5b5d...c060 [money_printer] grade=C score=64.5 样本=11 72h胜率=0.0 30d胜率=None 主币=ETH,BTC,HYPE
-0x5238...54e5 [smart_money] grade=C score=63.8 样本=19 72h胜率=0.4128660004242674 30d胜率=None 主币=HYPE,PUMP,KNTQ,ETHFI,LIT
+0x5238...54e5 [smart_money] grade=C score=63.8 样本=19 72h胜率=0.41286600042426763 30d胜率=None 主币=HYPE,PUMP,KNTQ,ETHFI,LIT
+0x4537...8732 [smart_money] grade=C score=58.0 样本=12 72h胜率=0.3091206027924951 30d胜率=None 主币=XRP
 0xd4c1...3d1d [money_printer] grade=N score=50.0 样本=16 72h胜率=0.1843391473002722 30d胜率=None 主币=HYPE,ETH,ZEC,BTC,XRP
-0x3947...f3b1 [money_printer] grade=N score=50.0 样本=13 72h胜率=0.0 30d胜率=None 主币=ETH,BTC
-0xfb94...0ddf [money_printer] grade=N score=50.0 样本=12 72h胜率=0.5077326823190333 30d胜率=None 主币=SWAP,PUMP,HYPE,SOL,ETH
-0xbcd4...0dd2 [money_printer] grade=N score=50.0 样本=11 72h胜率=0.531086513818737 30d胜率=None 主币=XRP,BTC,LDO,ZRO,ADA
+0x3947...f3b1 [money_printer] grade=N score=50.0 样本=15 72h胜率=0.0 30d胜率=None 主币=ETH,BTC
+0xbcd4...0dd2 [money_printer] grade=N score=50.0 样本=12 72h胜率=0.5310865138187371 30d胜率=None 主币=XRP,BTC,HYPE,LDO,ZRO
+0xfb94...0ddf [money_printer] grade=N score=50.0 样本=12 72h胜率=0.4090964340837923 30d胜率=None 主币=SWAP,PUMP,HYPE,SOL,ETH
+0x09bc...410d [money_printer] grade=N score=50.0 样本=11 72h胜率=0.2136516938041515 30d胜率=None 主币=BTC
 0xc675...795d [money_printer] grade=N score=50.0 样本=11 72h胜率=0.7037635086267202 30d胜率=None 主币=BTC,HYPE,ETH
-0x09bc...410d [money_printer] grade=N score=50.0 样本=10 72h胜率=0.21365169380415147 30d胜率=None 主币=BTC
-0x720a...43e1 [money_printer] grade=N score=50.0 样本=10 72h胜率=0.3620063336222782 30d胜率=None 主币=BTC,LINK,BNB,ONDO,UNI
-0x0c4a...1b19 [smart_money] grade=N score=50.0 样本=9 72h胜率=0.11191178159514538 30d胜率=None 主币=ETH,BTC
 
 【Top 币种画像】
 
