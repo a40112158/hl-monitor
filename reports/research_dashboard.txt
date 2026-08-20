@@ -1,21 +1,21 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-20 17:24:29 | UTC：2026-08-20 09:24:29
+更新时间北京时间：2026-08-20 18:24:33 | UTC：2026-08-20 10:24:33
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0x5238...54e5 [smart_money] grade=C score=63.8 样本=19 72h胜率=0.4128660004242674 30d胜率=None 主币=HYPE,PUMP,KNTQ,ETHFI,LIT
-0x7a51...900d [smart_money] grade=C score=57.2 样本=42 72h胜率=0.4406858803468813 30d胜率=None 主币=HYPE
-0x5323...b23c [smart_money] grade=C score=50.3 样本=79 72h胜率=0.3643588091419294 30d胜率=None 主币=HYPE,ZEC,SOL
-0x2577...4897 [money_printer] grade=N score=50.0 样本=24 72h胜率=0.0 30d胜率=None 主币=ZEC,PUMP,ETH,BTC,XMR
-0x9c2a...f6a8 [money_printer] grade=N score=50.0 样本=16 72h胜率=0.25799614560604023 30d胜率=None 主币=ETH,SOL,BTC
-0xd4c1...3d1d [money_printer] grade=N score=50.0 样本=13 72h胜率=0.18433914730027223 30d胜率=None 主币=ETH,HYPE,ZEC,BTC,XRP
-0x3947...f3b1 [money_printer] grade=N score=50.0 样本=12 72h胜率=0.0 30d胜率=None 主币=ETH,BTC
-0xfb94...0ddf [money_printer] grade=N score=50.0 样本=12 72h胜率=0.35218277575234014 30d胜率=None 主币=SWAP,PUMP,HYPE,SOL,ETH
+0x5238...54e5 [smart_money] grade=C score=63.8 样本=19 72h胜率=0.4128660004242676 30d胜率=None 主币=HYPE,PUMP,KNTQ,ETHFI,LIT
+0x5323...b23c [smart_money] grade=C score=50.3 样本=81 72h胜率=0.3643588091419297 30d胜率=None 主币=HYPE,ZEC,SOL
+0x2577...4897 [money_printer] grade=N score=50.0 样本=25 72h胜率=0.0 30d胜率=None 主币=ZEC,ETH,PUMP,BTC,XMR
+0x9c2a...f6a8 [money_printer] grade=N score=50.0 样本=16 72h胜率=0.2579961456060402 30d胜率=None 主币=ETH,SOL,BTC
+0xd4c1...3d1d [money_printer] grade=N score=50.0 样本=14 72h胜率=0.1843391473002722 30d胜率=None 主币=HYPE,ETH,ZEC,BTC,XRP
+0x3947...f3b1 [money_printer] grade=N score=50.0 样本=13 72h胜率=0.0 30d胜率=None 主币=ETH,BTC
+0xfb94...0ddf [money_printer] grade=N score=50.0 样本=12 72h胜率=0.3521827757523402 30d胜率=None 主币=SWAP,PUMP,HYPE,SOL,ETH
 0x5b5d...c060 [money_printer] grade=N score=50.0 样本=11 72h胜率=0.0 30d胜率=None 主币=ETH,BTC,HYPE
-0x09bc...410d [money_printer] grade=N score=50.0 样本=9 72h胜率=0.21365169380415147 30d胜率=None 主币=BTC
+0x720a...43e1 [money_printer] grade=N score=50.0 样本=10 72h胜率=0.3620063336222782 30d胜率=None 主币=BTC,LINK,BNB,ONDO,UNI
+0xc675...795d [money_printer] grade=N score=50.0 样本=10 72h胜率=1.0 30d胜率=None 主币=BTC,HYPE
 
 【Top 币种画像】
 
