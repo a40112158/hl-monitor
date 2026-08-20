@@ -1,7 +1,7 @@
 {
-  "status": "incomplete_output",
+  "status": "api_error",
   "urgency": "normal",
-  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
+  "executive_summary": "developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 55.628857725s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/g",
   "data_quality": "unknown",
   "market_structure": "unknown",
   "changes_since_previous": [],
@@ -10,8 +10,8 @@
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：watch\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强信号或适合低杠杆长期单的候选。多数被识别的异动信号均因高杠杆、历史样本不足、钱包集中度过高或现货主导等风险因素被降级为“只观察”或直接否决。BTC和ETH虽处于“near_high”市场状态并出现偏多信号，但因高杠杆风险被否决。市场整体缺乏明确的低风险交易机会，需保持谨慎观察。\n\n【数据质量】\n本轮扫描成功率100%，共监控2419个钱包，处理9549条永续合约数据和11683条现货数据。现货语义质量可信度较高，但存在5.61%的异常现货比例，虽然低于10.00%的阻断阈值，但仍需持续关注。未发现空数据或极端值导致扫描失败的情况。\n\n【市场与资金结构】\n*   **BTC:** 1小时跌幅-0.02%，4小时跌幅-0.32%，24小时涨幅+7.61%。市场状态为“near_high”。24小时成交额$5.76B，资金费率中性，流动性风险低。\n*   **ETH:** 1小时涨幅+0.03%，4小时跌幅-0.47%，24小时涨幅+17.93%。市场状态为“near_high”。24小时成交额$4.12B，资金费率中性，流动性风险低。\n*   **资金费率/流动性过滤:**\n    *   GRAM, JTO, KAITO, LTC的24小时成交额较低（均低于$5M），流动性风险为高。\n    *   XMR, TAO, VVV, MON的24小时成交额处于中等水平（$6M-$16M），流动性风险为中。\n    *   PUMP资金费率为-0.0072%，略偏空。其他主要币种资金费率中性。\n*   **成交量/成交额:** BTC和ETH的成交额巨大，显示市场活跃度高。其他币种成交额差异较大，部分币种流动性不足。\n*   **净流入/OI/多空人数比/主动买卖比:** 报告中未提供这些指标的汇总数据，仅在具体币种的信号解释中提及部分主动变化和杠杆情况。数据不足以进行全面\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
-  "generated_at": "2026-08-20T04:25:02Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：api_error\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\nGemini 分析层调用失败。\n\n错误信息：\ndeveloper:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 55.628857725s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/g\n\n【数据质量】\nunknown\n\n【市场与资金结构】\nunknown\n\n【风险提示】\n- 本轮 AI 分析失败，不代表扫描数据本身一定失败。\n- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。\n\n【下一轮重点检查】\n- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。\n",
+  "generated_at": "2026-08-20T05:28:04Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
