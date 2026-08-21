@@ -2,85 +2,61 @@
 
 状态：success
 模型：gemini-2.5-flash
-紧急度：normal
+紧急度：watch
 
 【执行摘要】
-本轮扫描未发现达到币种专属阈值的短线强异动信号。多数观察币种因历史样本不足、钱包集中度过高或高杠杆占比过高等风险因素，被风控系统标记为“只观察”或直接否决。整体数据质量良好，但现货异常比例略有升高，需持续关注。
+本轮扫描未发现达到币种专属阈值的短线强异动信号。多数观察币种因历史样本不足、钱包集中度过高或高杠杆占比过高等风险因素，被风控系统标记为“只观察”或直接否决。BTC和ETH市场处于“near_high”状态，并有大额钱包主动变化，但信号强度不足以触发强信号。
 
 【数据质量】
-本轮扫描成功率为100%，覆盖2419个钱包，数据完整性较高。然而，现货语义质量中异常隔离行数达到591，异常率为6.12%，虽然低于10.00%的阻断阈值，但仍需警惕异常现货比例升高的趋势。多数币种信号存在“历史样本/胜率不足”的风险提示，表明部分币种的信号成熟度仍有待提高。
+本轮扫描成功率100.00%，共监控2419个钱包，全部成功。永续合约数据9520行，现货数据11690行。现货语义质量可信9037行，异常隔离592行，异常率为6.15%，略高于上次扫描，但仍在阻断阈值10.00%以下，数据质量整体良好。
 
 【市场与资金结构】
-大盘环境显示，BTC在过去24小时上涨4.80%，处于“near_high”状态；ETH在过去24小时上涨2.75%，处于“neutral”状态。整体市场情绪偏暖。
-
-资金费率方面，多数币种资金费率处于低风险水平，显示市场情绪相对稳定，未出现普遍性的过度多头或空头挤压。
-
-流动性方面，KAITO、GRAM、JTO、PENDLE的24小时成交额较低，流动性风险被评估为“高”。ASTER、CASHCAT、MON、NEAR、XMR的流动性风险为“中”。流动性不足可能导致价格波动加剧，并影响大额资金进出。
-
-资金流向方面，本轮扫描中，ETH出现多空双向的大额主动变化：钱包0x469e...58a5对ETH进行偏多操作，主动变化达$9.00M，杠杆25x，为极高杠杆短线型；同时，钱包0xecb6...2b00对ETH进行偏空操作，主动变化达-$6.61M，杠杆15x，为高杠杆短线型。HYPE也出现多个钱包的偏空主动变化。MAX和KNTQ出现现货主导的偏多主动变化，但被标记为可能是转账/归集/划转行为。
-
-多空人数比和主动买卖比数据在本次扫描结果中未直接提供。
+BTC在1小时、4小时和24小时内均录得正涨幅，24小时涨幅达+5.26%，市场状态为“near_high”。ETH同样在各时间段录得正涨幅，24小时涨幅+2.94%，市场状态也为“near_high”。
+资金费率方面，KAITO为负，其余观察币种如GRAM、JTO、PENDLE、XMR、ASTER、WLD、TAO均显示为正但风险等级为低。
+流动性方面，KAITO、GRAM、JTO、PENDLE的24小时成交额较低，流动性风险被评估为高。XMR、ASTER、WLD、TAO的流动性风险为中。
+大额钱包主动变化显示，有智能资金钱包对BTC永续合约进行大额平多操作（-$12.90M和-$6.00M），另有资金打印机钱包对ETH永续合约进行大额开多操作（+$5.96M）。这些大额资金变动值得关注。
 
 【相比上次 AI 分析】
-上次AI分析报告不完整，缺失了关键章节，因此无法进行有效的比较。本轮报告提供了更全面的市场结构、资金结构和风险观察。
+本轮扫描与上次报告相比，在“暂无达到币种专属阈值的短线强异动”这一结论上无变化。上次报告的紧急度为“high”，本轮为“watch”，表明整体市场或信号的紧迫性有所下降，但仍需持续关注。
 
 【重点观察】
-本轮值得继续观察的币种、方向、理由和风险如下：
-
-*   **HYPE (偏空)**
-    *   **理由：** 连续4轮偏空信号，本轮合约主动变化-$8.93M，钱包质量加权资金流-$4.81M。主滚动窗口30天内资金流出-$38.36M。
-    *   **风险：** 历史样本/胜率不足；窗口内含断跑gap；同方向高杠杆仓位偏多42%；信号最终得分-4.79，未达到7.0的阈值。
-    *   **AI 风控结论：** WATCH (原因：maturity_or_concentration_warning)
-
-*   **LIT (偏多)**
-    *   **理由：** 连续4轮偏多信号，主滚动窗口30天内资金流入$13.50M，低/中杠杆仓位占比98%，平均杠杆4.8x。
-    *   **风险：** 历史样本/胜率不足；窗口内含断跑gap；信号最终得分0.7，未达到8.0的阈值。
-    *   **AI 风控结论：** WATCH (原因：maturity_or_concentration_warning)
-
-*   **ZEC (偏多)**
-    *   **理由：** 连续3轮偏多信号，主滚动窗口30天内资金流入$21.88M，低/中杠杆仓位占比70%，平均杠杆4.6x。
-    *   **风险：** 历史样本/胜率不足；窗口内含断跑gap；同方向高杠杆仓位偏多38%；信号最终得分0.0，未达到8.0的阈值。
-    *   **AI 风控结论：** WATCH (原因：maturity_or_concentration_warning)
+*   **HYPE (偏空)**：信号分-4.79，未达阈值。风险提示历史样本/胜率不足，窗口内含断跑gap，同方向高杠杆仓位偏多42%。AI风控结论为WATCH。
+*   **PUMP (偏空)**：信号分-4.66，未达阈值。风险提示高杠杆占比过高(52%)，历史样本/胜率不足。AI风控结论为VETO。
+*   **LIT (偏多)**：信号分+0.88，未达阈值。风险提示历史样本/胜率不足，窗口内含断跑gap。AI风控结论为WATCH。
+*   **MAX (偏空)**：信号分-3.76，未达阈值。风险提示现货主导，可能是转账/归集/划转，缺少合约/低杠杆确认。AI风控结论为VETO。
+*   **DOGE (偏空)**：信号分-3.60，未达阈值。风险提示高杠杆占比过高(93%)，滚动窗口未成熟。AI风控结论为VETO。
+*   **BTC (偏空)**：信号分-0.91，未达阈值。风险提示高杠杆占比过高(73%)，平均杠杆21.5x，本轮异动与滚动方向冲突。AI风控结论为VETO。
+*   **ZEC (偏多)**：信号分+0.00，未达阈值。风险提示历史样本/胜率不足，窗口内含断跑gap，同方向高杠杆仓位偏多38%。AI风控结论为WATCH。
+*   **XMR (偏空)**：信号分-0.62，未达阈值。风险提示钱包集中度过高(Top1贡献100%)，流动性偏低。AI风控结论为VETO。
+*   **SOL (偏空)**：信号分+0.00，未达阈值。风险提示高杠杆占比过高(80%)，平均杠杆15.0x。AI风控结论为VETO。
+*   **ETH (偏多)**：信号分+0.00，未达阈值。风险提示高杠杆占比过高(91%)，平均杠杆17.7x。AI风控结论为VETO。
 
 暂无明确高优先级目标。
 
 【AI 风控结论】
-*   HYPE (偏空): WATCH (原因：maturity_or_concentration_warning)
-*   LIT (偏多): WATCH (原因：maturity_or_concentration_warning)
-*   DOGE (偏多): VETO (原因：local_candidate_gate_failed, high_leverage_concentration, maturity_or_concentration_warning)
-*   PUMP (偏空): VETO (原因：local_candidate_gate_failed, maturity_or_concentration_warning)
-*   MAX (偏多): VETO (原因：local_candidate_gate_failed, maturity_or_concentration_warning)
-*   ZEC (偏多): WATCH (原因：maturity_or_concentration_warning)
-*   XMR (偏空): VETO (原因：local_candidate_gate_failed, maturity_or_concentration_warning)
-*   KNTQ (偏多): VETO (原因：local_candidate_gate_failed, maturity_or_concentration_warning)
-*   ETH (偏空): VETO (原因：local_candidate_gate_failed, high_leverage_concentration)
-*   UPUMP (偏空): VETO (原因：local_candidate_gate_failed, maturity_or_concentration_warning)
-*   SOL (偏空): VETO (原因：local_candidate_gate_failed, high_leverage_concentration, maturity_or_concentration_warning)
-*   NEKO (偏空): VETO (原因：local_candidate_gate_failed, maturity_or_concentration_warning)
-*   BUDDY (偏空): VETO (原因：local_candidate_gate_failed, maturity_or_concentration_warning)
-*   UANSEM (偏多): VETO (原因：local_candidate_gate_failed, maturity_or_concentration_warning)
-*   UBONK (偏多): VETO (原因：local_candidate_gate_failed, maturity_or_concentration_warning)
-*   UAVAX (偏空): VETO (原因：local_candidate_gate_failed, maturity_or_concentration_warning)
-*   BRIDGE (偏空): VETO (原因：local_candidate_gate_failed, maturity_or_concentration_warning)
-*   HWAVE (偏多): VETO (原因：local_candidate_gate_failed, maturity_or_concentration_warning)
-*   HREKT (偏多): VETO (原因：local_candidate_gate_failed, maturity_or_concentration_warning)
-*   BASED (偏多): VETO (原因：local_candidate_gate_failed, maturity_or_concentration_warning)
+*   HYPE (bearish): WATCH (原因: maturity_or_concentration_warning)
+*   PUMP (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
+*   LIT (bullish): WATCH (原因: maturity_or_concentration_warning)
+*   MAX (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
+*   DOGE (bearish): VETO (原因: local_candidate_gate_failed, high_leverage_concentration)
+*   ZEC (bullish): WATCH (原因: maturity_or_concentration_warning)
+*   XMR (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
+*   SOL (bearish): VETO (原因: local_candidate_gate_failed, high_leverage_concentration, maturity_or_concentration_warning)
+*   BTC (bearish): VETO (原因: local_candidate_gate_failed, high_leverage_concentration)
+*   NEKO (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
+*   BUDDY (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
+*   UANSEM (bullish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
+*   KNTQ (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
+*   UBONK (bullish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
+*   UAVAX (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
+*   BRIDGE (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
+*   HWAVE (bullish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
+*   HREKT (bullish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
+*   ETH (bullish): VETO (原因: local_candidate_gate_failed, high_leverage_concentration)
+*   UPUMP (bearish): VETO (原因: local_candidate_gate_failed, maturity_or_concentration_warning)
 
 【风险提示】
-1.  **历史样本/胜率不足：** 大部分观察币种的信号均存在历史样本不足或胜率数据缺失的风险，信号可靠性有待进一步验证。
-2.  **高杠杆占比：** DOGE、PUMP、ETH、SOL等币种同方向高杠杆仓位占比较高（62%-80%），且平均杠杆偏高，存在爆仓风险，不适合长期低杠杆策略。
-3.  **钱包集中度过高：** DOGE、XMR、UPUMP、UBONK等币种的滚动信号钱包集中度过高，可能为单钱包异动，信号代表性不足。
-4.  **现货主导信号：** MAX、KNTQ、UPUMP、NEKO、BUDDY、UANSEM、UBONK、UAVAX、BRIDGE、HWAVE、HREKT、BASED等币种的信号由现货主导，可能为转账/归集/划转行为，不代表合约方向。
-5.  **流动性不足：** KAITO、GRAM、JTO、PENDLE等币种的24小时成交额较低，流动性风险高，可能导致交易滑点和难以平仓。
-6.  **窗口内含断跑gap：** 多个币种的信号窗口内含断跑gap，可能影响信号的连续性和有效性。
-7.  **信号与滚动方向冲突：** MAX、KNTQ、ETH、UPUMP等币种的本轮异动与滚动方向冲突，增加了信号的不确定性。
+本轮扫描中，多数观察币种存在历史样本/胜率不足、滚动窗口内含断跑gap、同方向高杠杆仓位偏多、现货主导（可能为转账/归集/划转而非合约方向）、钱包集中度过高（单钱包异动）、滚动窗口未成熟或持续性不足等风险。部分币种如XMR存在流动性偏低风险。BTC和ETH虽有大额钱包主动变化，但其高杠杆占比和平均杠杆过高，
 
-【参数观察】
-自动优化分析层显示“暂无可分析的成熟信号样本”，表明当前筛选参数的严苛程度无法通过历史回测数据进行有效判断。需要更多轮次的扫描数据积累，以形成成熟的信号样本进行分析。
-
-【下一轮重点检查】
-1.  持续追踪HYPE、LIT、ZEC的资金流向和杠杆结构，观察其信号是否能持续增强并达到阈值。
-2.  重点关注现货异常比例（6.12%）的变化趋势，分析异常现货数据来源，评估其对整体数据质量的影响。
-3.  对于被VETO的币种，特别是那些因高杠杆占比或钱包集中度过高而被否决的，继续观察其结构性风险是否有所改善。
-4.  积累更多信号样本，以便自动优化分析层能够对筛选参数进行有效评估。
-5.  尝试获取或推导多空人数比和主动买卖比数据，以更全面地分析市场结构。
+【本地完整性校验】
+⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
