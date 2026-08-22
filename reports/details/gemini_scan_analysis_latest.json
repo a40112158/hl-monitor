@@ -1,7 +1,7 @@
 {
   "status": "incomplete_output",
   "urgency": "normal",
-  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
+  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【市场与资金结构】、【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
   "data_quality": "unknown",
   "market_structure": "unknown",
   "changes_since_previous": [],
@@ -10,8 +10,8 @@
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动信号。多数观察币种因历史样本不足、高杠杆集中度、钱包集中度过高或现货主导等风险因素，被标记为“只观察”或直接否决。BTC和ETH市场整体处于中性/接近高点状态，但个别币种存在流动性风险。本轮无明确高优先级交易目标，建议继续保持观察。\n\n【数据质量】\n本轮扫描成功率为100.00%，覆盖2419个钱包，数据完整性良好。现货语义质量方面，可信数据9067条，异常隔离580条，异常率为6.01%，虽然低于10.00%的阻断阈值，但异常比例有所升高，需持续关注。整体数据质量可接受。\n\n【市场与资金结构】\n*   **大盘环境：** BTC 1小时跌幅-0.01%，4小时跌幅-0.76%，24小时涨幅+3.78%，市场状态为中性（neutral）。ETH 1小时跌幅-0.11%，4小时涨幅+0.33%，24小时涨幅+6.97%，市场状态为接近高点（near_high）。\n*   **资金费率与流动性：**\n    *   KAITO、JTO、PAXG的资金费率均为低风险，但24小时成交额分别为$3.28M、$4.23M、$3.79M，流动性风险被评估为高。\n    *   GRAM、CASHCAT、MON、VVV的资金费率均为低风险，24小时成交额在$11.47M至$19.86M之间，流动性风险为中。\n    *   多数主要币种（如BTC、ETH、DOGE、XRP、HYPE、AAVE、NEAR、SOL、PUMP、LIT、XMR、ZEC）的资金费率均处于低风险水平，流动性可接受。\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
-  "generated_at": "2026-08-22T01:24:03Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描成功率达100%，但未检测到达到币种专属阈值的短线强信号。多个币种处于“只观察”状态，主要风险集中在历史样本不足、高杠杆仓位占比过高、钱包集中度高或信号现货主导。ETH显示出显著的合约多头主动变化，但伴随高杠杆风险。BASED则有大额现货主动变化，但钱包集中度过高。整体市场存在活跃资金流动，但缺乏明确、低风险的高优先级交易信号。\n\n【数据质量】\n本轮扫描数据完整且\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
+  "generated_at": "2026-08-22T02:24:08Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
@@ -26,5 +26,5 @@
   "force_analysis": true,
   "force_reason": "manual",
   "tg_sent": false,
-  "error_tg_sent": true
+  "error_tg_sent": false
 }
