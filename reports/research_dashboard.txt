@@ -1,21 +1,21 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-22 18:24:24 | UTC：2026-08-22 10:24:24
+更新时间北京时间：2026-08-22 19:24:46 | UTC：2026-08-22 11:24:46
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0x7a51...900d [smart_money] grade=B score=93.6 样本=42 72h胜率=0.42268009579267285 30d胜率=None 主币=HYPE
-0xbcd4...0dd2 [money_printer] grade=B score=86.5 样本=31 72h胜率=0.5310865138187371 30d胜率=None 主币=HYPE,XRP,SUI,DOGE,BTC
-0xfb94...0ddf [money_printer] grade=B score=85.9 样本=15 72h胜率=0.4090964340837922 30d胜率=None 主币=SWAP,PUMP,HYPE,ONDO,SOL
+0x7a51...900d [smart_money] grade=B score=93.6 样本=42 72h胜率=0.42268009579267307 30d胜率=None 主币=HYPE
+0xbcd4...0dd2 [money_printer] grade=B score=88.2 样本=31 72h胜率=0.5310865138187372 30d胜率=None 主币=HYPE,XRP,SUI,DOGE,BTC
+0x9bd2...0c88 [smart_money] grade=B score=86.0 样本=20 72h胜率=None 30d胜率=None 主币=HYPE,ZEC
+0xfb94...0ddf [money_printer] grade=B score=85.9 样本=15 72h胜率=0.40909643408379215 30d胜率=None 主币=SWAP,PUMP,HYPE,ONDO,SOL
 0x2577...4897 [money_printer] grade=C score=84.4 样本=48 72h胜率=0.194934432574147 30d胜率=None 主币=ZEC,PUMP,ETH,BTC,SOL
-0x4e23...20c3 [money_printer] grade=C score=83.6 样本=85 72h胜率=0.3431709282667152 30d胜率=None 主币=HYPE,ETH,BTC
 0x5238...54e5 [smart_money] grade=C score=82.3 样本=20 72h胜率=0.3276546201768918 30d胜率=None 主币=HYPE,PUMP,KNTQ,ETHFI,LIT
-0x7737...bf66 [money_printer] grade=C score=79.9 样本=90 72h胜率=0.2624498169989678 30d胜率=None 主币=BUDDY,ZEC,BRIDGE,BNB,ETH
+0x7737...bf66 [money_printer] grade=C score=79.9 样本=90 72h胜率=0.2624498169989677 30d胜率=None 主币=BUDDY,ZEC,BRIDGE,BNB,ETH
+0x4e23...20c3 [money_printer] grade=C score=79.2 样本=85 72h胜率=0.34317092826671525 30d胜率=None 主币=HYPE,ETH,BTC
 0xc675...795d [money_printer] grade=C score=76.1 样本=25 72h胜率=0.7037635086267202 30d胜率=None 主币=BTC,HYPE,SOL,ETH,ADA
-0x3b88...04a7 [money_printer] grade=B score=73.6 样本=11 72h胜率=0.20767431189532337 30d胜率=None 主币=XRP,ETH,SOL,HYPE,NEAR
-0x4537...8732 [smart_money] grade=C score=60.7 样本=20 72h胜率=0.30912060279249515 30d胜率=None 主币=XRP
+0x3b88...04a7 [money_printer] grade=B score=73.6 样本=11 72h胜率=0.20767431189532334 30d胜率=None 主币=XRP,ETH,SOL,HYPE,NEAR
 
 【Top 币种画像】
 
