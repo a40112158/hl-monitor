@@ -1,7 +1,7 @@
 {
   "status": "incomplete_output",
   "urgency": "normal",
-  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【市场与资金结构】、【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
+  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
   "data_quality": "unknown",
   "market_structure": "unknown",
   "changes_since_previous": [],
@@ -10,8 +10,8 @@
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强信号或明确的长期交易候选。多数观察币种因历史样本不足、高杠杆占比过高、现货主导或钱包集中度过高等风险因素被风控否决或标记为观察。市场整体波动不大，BTC处于near_high区间，ETH中性。异常现货比例略有升高，但仍在可接受范围内。\n\n【数据质量】\n本轮扫描成功率为100%，共监控2419个钱包，无失败或部分成功。现货语义质量方面，可信数据\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
-  "generated_at": "2026-08-23T21:26:24Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描数据质量良好，但现货异常比例略有升高，需持续关注。市场整体处于“near_high”状态，但缺乏明确的短线强信号。多数观察币种存在历史样本不足、现货主导、钱包集中度过高或高杠杆占比过高等风险，不适合作为高优先级目标。BRIDGE和USDHL出现大额现货偏空异动，但信号质量存疑。\n\n【数据质量】\n本轮扫描监控钱包2419个，成功率100%，无partial或failed情况，数据完整。现货语义质量方面，可信数据9097条，异常隔离596条，异常率6.15%。存在“异常现货比例升高：6.15%”的运行健康告警，但仍低于阻断阈值10.00%。个别币种存在历史样本不足的问题。\n\n【市场与资金结构】\n大盘环境显示，BTC在1小时内下跌-0.07%，4小时内上涨+0.61%，24小时内上涨+1.04%，市场状态为“near_high”。ETH在1小时内下跌-0.10%，4小时内上涨+0.80%，24小时内上涨+2.26%，市场状态同样为“near_high”。\n\n资金费率方面，XLM、JTO、KAITO、PAXG、CASHCAT、VVV、WLD等币种的资金费率风险均为低或中。然而，XLM、JTO、KAITO、PAXG的24小时成交额较低，流动性风险被评估为高。CASHCAT、VVV、WLD的流动性风险为中。\n\n成交额和OI方面：\n- BTC：24h\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
+  "generated_at": "2026-08-23T22:26:26Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
