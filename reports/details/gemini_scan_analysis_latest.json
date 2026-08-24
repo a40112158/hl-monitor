@@ -1,7 +1,7 @@
 {
   "status": "incomplete_output",
   "urgency": "normal",
-  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【市场与资金结构】、【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
+  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
   "data_quality": "unknown",
   "market_structure": "unknown",
   "changes_since_previous": [],
@@ -10,8 +10,8 @@
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动信号。多数偏多或偏空信号因历史样本不足、高杠杆占比过高、现货主导或钱包集中度过高等风险因素，被列为“只观察”或被AI风控否决。BTC和ETH市场目前处于“near_high”状态。现货异常数据比例略有升高，但仍在可接受范围内。整体市场缺乏明确的、低风险的交易机会，需持续观察资金流向和杠杆结构。\n\n【数据质量】\n本轮扫描成功率为10\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
-  "generated_at": "2026-08-24T00:26:39Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动信号。多数观察信号因高杠杆、钱包集中度过高、现货主导或历史样本不足等原因被风控阻断。市场整体处于“near_high”状态，但现货异常比例有所升高，需持续关注数据质量和潜在风险。\n\n【数据质量】\n本轮扫描成功率100.00%，监控钱包2419个，无partial或failed。现货语义质量可信度高，但异常现货比例升高至6.20%，虽低于10.00%的阻断阈值，但仍需警惕。多数信号因“历史样本/胜率不足”而被标记为低置信度。部分币种的滚动窗口存在断跑gap，可能影响数据连续性。\n\n【市场与资金结构】\n大盘环境：\nBTC：1小时下跌0.09%，4小时下跌0.30%，24小时上涨0.54%，市场状态为“near_high”。\nETH：1小时下跌0.13%，4小时下跌0.30%，24小时上涨1.64%，市场状态为“near_high”。\n\n成交量与持仓量（OI）：\nLIT：24h成交额$65.08M，OI $172.66M。\nDEPIN：数据不足。\nNEAR：24h成交额数据不足，OI数据不足。\nXMR：24h成交额$21.95M，OI $70.51M。\nXRP：24h成交额$339.42M，OI $254.81M。\nSOL：24h成交额$363.97M，OI $450.81M。\nASTER：24h成交额数据不足，OI数据不足。\nZEC：24h成交额$461.46M，OI $519.67M。\nHYPE：24h成交额$734.47M，OI $2.01B。\nTAO：24h成交额$25.75M\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
+  "generated_at": "2026-08-24T01:26:32Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
@@ -26,5 +26,5 @@
   "force_analysis": true,
   "force_reason": "manual",
   "tg_sent": false,
-  "error_tg_sent": true
+  "error_tg_sent": false
 }
