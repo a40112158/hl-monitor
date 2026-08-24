@@ -1,36 +1,36 @@
 🧠 Hyperliquid 钱包监控 FINAL
 币种阈值 + 钱包主动变化 + 主导钱包 + 信号解释 + 回测 + 生命周期 + API异常保护 + TG 推送
-扫描开始北京时间：2026-08-24 07:01:27
-报告生成北京时间：2026-08-24 07:26:20 | UTC：2026-08-23 23:26:20
-run_id：1444
+扫描开始北京时间：2026-08-24 08:01:37
+报告生成北京时间：2026-08-24 08:26:01 | UTC：2026-08-24 00:26:01
+run_id：1445
 信号模型：V2（短期强信号与正式长期候选分开统计）
 【扫描健康】
 监控钱包：2419 | 成功：2419 | partial：0 | failed：0 | 成功率：100.00%
-新信号追踪：0 | 更新动作收益：60 | 更新信号收益：0
-现货语义质量：可信9097 | 异常隔离597 | 异常率=6.16%
+新信号追踪：0 | 更新动作收益：94 | 更新信号收益：0
+现货语义质量：可信9069 | 异常隔离597 | 异常率=6.18%
 【运行健康告警】
-⚠️ 异常现货比例升高：6.16%（阻断阈值10.00%）
+⚠️ 异常现货比例升高：6.18%（阻断阈值10.00%）
 【钱包质量】
-统计窗口：最近30天 | 总钱包：2419 | S:0 A:1 B:9 C:38 R:39 N:2332
+统计窗口：最近30天 | 总钱包：2419 | S:0 A:1 B:9 C:37 R:40 N:2332
 优质钱包Top：0xbcd4...0dd2 A 分86
 反向钱包提醒：0x0c4a...1b19 R 反向40；0x24fb...ed0f R 反向74；0x8c96...ca57 R 反向75
 【仓位生命周期收益】
-统计窗口：最近30天 | P-S:9 P-A:60 P-B:204 P-C:257 P-R:54 P-G:462 P-N:476
-仓位收益优质Top：0x031f...b220 P-A 收益+25.04%；0x08c1...1135 P-A 收益+29.59%；0x0911...129a P-A 收益+13.31%；0x0ad9...4cbf P-A 收益+6.99%；0x183c...d0f9 P-A 收益+8.69%
+统计窗口：最近30天 | P-S:10 P-A:56 P-B:207 P-C:256 P-R:56 P-G:462 P-N:476
+仓位收益优质Top：0x031f...b220 P-A 收益+25.04%；0x08c1...1135 P-A 收益+29.31%；0x0911...129a P-A 收益+13.15%；0x0ad9...4cbf P-A 收益+6.98%；0x183c...d0f9 P-A 收益+8.69%
 
 【大盘环境】
-BTC: 1h -0.01% | 4h +0.36% | 24h +0.67% | regime=near_high
-ETH: 1h -0.07% | 4h +0.38% | 24h +1.30% | regime=near_high
+BTC: 1h -0.06% | 4h +0.42% | 24h +0.51% | regime=near_high
+ETH: 1h -0.02% | 4h +0.56% | 24h +1.32% | regime=near_high
 
 【资金费率 / 流动性过滤】
-XLM | funding=+0.00% 风险=低 | 24h成交额=$3.34M 流动性风险=高
+XLM | funding=+0.00% 风险=低 | 24h成交额=$3.35M 流动性风险=高
+KAITO | funding=+0.00% 风险=低 | 24h成交额=$2.63M 流动性风险=高
 JTO | funding=+0.00% 风险=低 | 24h成交额=$1.73M 流动性风险=高
-KAITO | funding=+0.00% 风险=低 | 24h成交额=$2.61M 流动性风险=高
-PAXG | funding=+0.00% 风险=低 | 24h成交额=$1.53M 流动性风险=高
-CASHCAT | funding=+0.06% 风险=中 | 24h成交额=$11.69M 流动性风险=中
-VVV | funding=+0.01% 风险=低 | 24h成交额=$11.28M 流动性风险=中
-PURR | funding=+0.00% 风险=低 | 24h成交额=$17.52M 流动性风险=中
-WLD | funding=+0.00% 风险=低 | 24h成交额=$8.31M 流动性风险=中
+PAXG | funding=+0.00% 风险=低 | 24h成交额=$1.56M 流动性风险=高
+CASHCAT | funding=+0.06% 风险=中 | 24h成交额=$13.94M 流动性风险=中
+VVV | funding=+0.01% 风险=低 | 24h成交额=$11.46M 流动性风险=中
+WLD | funding=+0.00% 风险=低 | 24h成交额=$8.87M 流动性风险=中
+PURR | funding=+0.00% 风险=低 | 24h成交额=$18.88M 流动性风险=中
 
 【短线强信号 / 异动雷达】
 暂无达到币种专属阈值的短线强异动。
@@ -42,21 +42,21 @@ WLD | funding=+0.00% 风险=低 | 24h成交额=$8.31M 流动性风险=中
 暂无。
 
 【只观察 / 信号不足】
-ETH 偏多 时间=2026-08-24 07:01:27 | alert=+2.7 long=+0.6 | 只观察 | 合约主导 | 连续2轮 | 增强+2.7 | 近8轮峰值2.7 | 风险：历史样本/胜率不足；窗口内含断跑gap；长期资格未通过：高杠杆占比过高；同方向高杠杆/爆仓边缘仓位占比85%；同方向平均杠杆16.0x，偏短线；长期多空硬门槛未通过：高杠杆占比过高(85%)、平均杠杆过高(16.0x)
-DEPIN 偏空 时间=2026-08-24 07:01:27 | alert=-2.3 long=-0.1 | 只观察 | 现货主导 | 首次/反转出现 | 连续1轮 | 风险：历史样本/胜率不足；滚动信号现货主导，可能是转账/归集/划转，不等于合约方向；本轮异动与滚动方向冲突；长期资格未通过：现货主导，可能是转账/归集/划转、缺少合约/低杠杆确认、本轮异动与滚动方向冲突；长期多空硬门槛未通过：spot-only/现货主导、缺少合约/低杠杆确认、长期空单缺少明确short确认
-SOL 偏空 时间=2026-08-24 07:01:27 | alert=-2.3 long=+0.0 | 只观察 | 合约主导 | 首次/反转出现 | 连续1轮 | 风险：历史样本/胜率不足；长期资格未通过：滚动窗口未成熟；同方向高杠杆/爆仓边缘仓位占比83%；同方向平均杠杆14.2x，偏短线；长期多空硬门槛未通过：高杠杆占比过高(83%)、平均杠杆过高(14.2x)
-HYPE 偏空 时间=2026-08-24 07:01:27 | alert=-2.0 long=-1.2 | 只观察 | 合约主导 | 连续2轮 | 衰减-0.6 | 近8轮峰值2.6 | 风险：历史样本/胜率不足；窗口内含断跑gap；本轮异动与滚动方向冲突；长期资格未通过：高杠杆占比过高、本轮异动与滚动方向冲突；同方向高杠杆仓位偏多45%
-UPUMP 偏空 时间=2026-08-24 07:01:27 | alert=-1.0 long=-0.1 | 只观察 | 现货主导 | 首次/反转出现 | 连续1轮 | 风险：历史样本/胜率不足；滚动信号现货主导，可能是转账/归集/划转，不等于合约方向；本轮异动与滚动方向冲突；长期资格未通过：现货主导，可能是转账/归集/划转、缺少合约/低杠杆确认、本轮异动与滚动方向冲突；长期多空硬门槛未通过：spot-only/现货主导、缺少合约/低杠杆确认、长期空单缺少明确short确认
-LIT 偏多 时间=2026-08-24 07:01:27 | alert=+1.0 long=+4.3 | 只观察 | 滚动建仓/减仓 | 连续4轮 | 稳定+0.0 | 近8轮峰值1.0 | 风险：历史样本/胜率不足；窗口内含断跑gap
-ZEC 偏空 时间=2026-08-24 07:01:27 | alert=-0.9 long=-1.1 | 只观察 | 滚动建仓/减仓 | 连续3轮 | 增强+0.9 | 近8轮峰值4.0 | 风险：历史样本/胜率不足；窗口内含断跑gap；长期资格未通过：高杠杆占比过高；同方向高杠杆/爆仓边缘仓位占比71%；长期多空硬门槛未通过：高杠杆占比过高(71%)
-XMR 偏空 时间=2026-08-24 07:01:27 | alert=-0.7 long=-2.2 | 只观察 | 滚动建仓/减仓 | 连续4轮 | 稳定-0.2 | 近8轮峰值0.9 | 风险：历史样本/胜率不足；滚动信号钱包集中度过高，可能是单钱包异动；长期资格未通过：钱包集中度过高；长期多空硬门槛未通过：钱包集中度过高、Top1贡献过高(100%)
-PUMP 偏空 时间=2026-08-24 07:01:27 | alert=-0.7 long=-1.5 | 只观察 | 滚动建仓/减仓 | 连续4轮 | 衰减-2.9 | 近8轮峰值3.6 | 风险：历史样本/胜率不足；窗口内含断跑gap；本轮异动与滚动方向冲突；长期资格未通过：本轮异动与滚动方向冲突；同方向高杠杆仓位偏多44%
-BTC 偏多 时间=2026-08-24 07:01:27 | alert=+0.2 long=+0.0 | 只观察 | 滚动建仓/减仓 | 首次/反转出现 | 连续1轮 | 风险：历史样本/胜率不足；长期资格未通过：高杠杆占比过高；同方向高杠杆/爆仓边缘仓位占比93%；同方向平均杠杆26.4x，极高杠杆短线风险；长期多空硬门槛未通过：高杠杆占比过高(93%)、平均杠杆过高(26.4x)
-PURR 偏多 时间=2026-08-24 07:01:27 | alert=+0.2 long=+1.5 | 只观察 | 滚动建仓/减仓 | 连续4轮 | 稳定-0.3 | 近8轮峰值0.5 | 风险：历史样本/胜率不足；流动性偏低：24h成交额$17.52M
-AAVE 偏空 时间=2026-08-24 07:01:27 | alert=+0.0 long=-1.0 | 只观察 | 滚动建仓/减仓 | 连续4轮 | 稳定+0.0 | 近8轮峰值0.0 | 风险：历史样本/胜率不足；长期资格未通过：高杠杆占比过高；同方向高杠杆/爆仓边缘仓位占比94%；长期多空硬门槛未通过：高杠杆占比过高(94%)
-NEKO 偏空 时间=2026-08-24 07:01:27 | alert=+0.0 long=-0.8 | 只观察 | 滚动建仓/减仓 | 连续4轮 | 稳定+0.0 | 近8轮峰值0.0 | 风险：历史样本/胜率不足；滚动信号现货主导，可能是转账/归集/划转，不等于合约方向；窗口内含断跑gap；长期资格未通过：现货主导，可能是转账/归集/划转、缺少合约/低杠杆确认；长期多空硬门槛未通过：spot-only/现货主导、缺少合约/低杠杆确认
-MAX 偏空 时间=2026-08-24 07:01:27 | alert=+0.0 long=-0.8 | 只观察 | 滚动建仓/减仓 | 连续4轮 | 稳定+0.0 | 近8轮峰值0.0 | 风险：历史样本/胜率不足；滚动信号现货主导，可能是转账/归集/划转，不等于合约方向；窗口内含断跑gap；长期资格未通过：现货主导，可能是转账/归集/划转、缺少合约/低杠杆确认；长期多空硬门槛未通过：spot-only/现货主导、缺少合约/低杠杆确认
-BUDDY 偏空 时间=2026-08-24 07:01:27 | alert=+0.0 long=-0.5 | 只观察 | 滚动建仓/减仓 | 连续4轮 | 稳定+0.0 | 近8轮峰值0.0 | 风险：历史样本/胜率不足；滚动信号现货主导，可能是转账/归集/划转，不等于合约方向；窗口内含断跑gap；长期资格未通过：现货主导，可能是转账/归集/划转、缺少合约/低杠杆确认；长期多空硬门槛未通过：spot-only/现货主导、缺少合约/低杠杆确认
+ASTER 偏多 时间=2026-08-24 08:01:37 | alert=+3.7 long=+1.3 | 只观察 | 合约主导 | 首次/反转出现 | 连续1轮 | 风险：历史样本/胜率不足；长期资格未通过：滚动窗口未成熟
+TAO 偏多 时间=2026-08-24 08:01:37 | alert=+3.6 long=+2.0 | 只观察 | 合约主导 | 首次/反转出现 | 连续1轮 | 风险：历史样本/胜率不足
+BTC 偏多 时间=2026-08-24 08:01:37 | alert=+2.2 long=+0.0 | 只观察 | 合约主导 | 连续2轮 | 增强+2.0 | 近8轮峰值2.2 | 风险：历史样本/胜率不足；长期资格未通过：高杠杆占比过高；同方向高杠杆/爆仓边缘仓位占比92%；同方向平均杠杆27.2x，极高杠杆短线风险；长期多空硬门槛未通过：高杠杆占比过高(92%)、平均杠杆过高(27.2x)
+UPUMP 偏空 时间=2026-08-24 08:01:37 | alert=-1.0 long=-0.1 | 只观察 | 现货主导 | 连续2轮 | 稳定+0.0 | 近8轮峰值1.0 | 风险：历史样本/胜率不足；滚动信号现货主导，可能是转账/归集/划转，不等于合约方向；本轮异动与滚动方向冲突；长期资格未通过：现货主导，可能是转账/归集/划转、缺少合约/低杠杆确认、本轮异动与滚动方向冲突；长期多空硬门槛未通过：spot-only/现货主导、缺少合约/低杠杆确认、长期空单缺少明确short确认
+XMR 偏空 时间=2026-08-24 08:01:37 | alert=-1.0 long=-2.6 | 只观察 | 滚动建仓/减仓 | 连续4轮 | 稳定+0.3 | 近8轮峰值1.0 | 风险：历史样本/胜率不足；滚动信号钱包集中度过高，可能是单钱包异动；长期资格未通过：钱包集中度过高；长期多空硬门槛未通过：钱包集中度过高、Top1贡献过高(100%)
+ZEC 偏空 时间=2026-08-24 08:01:37 | alert=-1.0 long=-0.8 | 只观察 | 滚动建仓/减仓 | 连续4轮 | 稳定+0.0 | 近8轮峰值4.0 | 风险：历史样本/胜率不足；窗口内含断跑gap；本轮异动与滚动方向冲突；长期资格未通过：高杠杆占比过高、本轮异动与滚动方向冲突；同方向高杠杆/爆仓边缘仓位占比70%；长期多空硬门槛未通过：高杠杆占比过高(70%)
+LIT 偏多 时间=2026-08-24 08:01:37 | alert=+0.6 long=+3.7 | 只观察 | 追涨杀跌风险 | 连续4轮 | 稳定-0.3 | 近8轮峰值1.0 | 风险：历史样本/胜率不足；窗口内含断跑gap；价格位置有追涨杀跌风险；长期多空硬门槛未通过：高位追多
+HYPE 偏多 时间=2026-08-24 08:01:37 | alert=+0.0 long=+1.9 | 只观察 | 滚动建仓/减仓 | 首次/反转出现 | 连续1轮 | 风险：历史样本/胜率不足；窗口内含断跑gap；长期资格未通过：高杠杆占比过高；同方向高杠杆仓位偏多51%；长期多空硬门槛未通过：高杠杆占比过高(51%)
+AAVE 偏空 时间=2026-08-24 08:01:37 | alert=+0.0 long=-1.0 | 只观察 | 滚动建仓/减仓 | 连续4轮 | 稳定+0.0 | 近8轮峰值0.0 | 风险：历史样本/胜率不足；长期资格未通过：高杠杆占比过高；同方向高杠杆/爆仓边缘仓位占比94%；长期多空硬门槛未通过：高杠杆占比过高(94%)
+PUMP 偏空 时间=2026-08-24 08:01:37 | alert=+0.0 long=-1.0 | 只观察 | 滚动建仓/减仓 | 连续4轮 | 衰减-0.7 | 近8轮峰值3.6 | 风险：历史样本/胜率不足；窗口内含断跑gap；同方向高杠杆仓位偏多44%
+SOL 偏空 时间=2026-08-24 08:01:37 | alert=+0.0 long=-0.8 | 只观察 | 滚动建仓/减仓 | 连续2轮 | 衰减-2.3 | 近8轮峰值2.3 | 风险：历史样本/胜率不足；窗口内含断跑gap；长期资格未通过：高杠杆占比过高；同方向高杠杆/爆仓边缘仓位占比83%；同方向平均杠杆14.2x，偏短线；长期多空硬门槛未通过：高杠杆占比过高(83%)、平均杠杆过高(14.2x)
+NEKO 偏空 时间=2026-08-24 08:01:37 | alert=+0.0 long=-0.8 | 只观察 | 滚动建仓/减仓 | 连续4轮 | 稳定+0.0 | 近8轮峰值0.0 | 风险：历史样本/胜率不足；滚动信号现货主导，可能是转账/归集/划转，不等于合约方向；窗口内含断跑gap；长期资格未通过：现货主导，可能是转账/归集/划转、缺少合约/低杠杆确认；长期多空硬门槛未通过：spot-only/现货主导、缺少合约/低杠杆确认
+MAX 偏空 时间=2026-08-24 08:01:37 | alert=+0.0 long=-0.8 | 只观察 | 滚动建仓/减仓 | 连续4轮 | 稳定+0.0 | 近8轮峰值0.0 | 风险：历史样本/胜率不足；滚动信号现货主导，可能是转账/归集/划转，不等于合约方向；窗口内含断跑gap；长期资格未通过：现货主导，可能是转账/归集/划转、缺少合约/低杠杆确认；长期多空硬门槛未通过：spot-only/现货主导、缺少合约/低杠杆确认
+BUDDY 偏空 时间=2026-08-24 08:01:37 | alert=+0.0 long=-0.5 | 只观察 | 滚动建仓/减仓 | 连续4轮 | 稳定+0.0 | 近8轮峰值0.0 | 风险：历史样本/胜率不足；滚动信号现货主导，可能是转账/归集/划转，不等于合约方向；窗口内含断跑gap；长期资格未通过：现货主导，可能是转账/归集/划转、缺少合约/低杠杆确认；长期多空硬门槛未通过：spot-only/现货主导、缺少合约/低杠杆确认
+BRIDGE 偏空 时间=2026-08-24 08:01:37 | alert=+0.0 long=-0.4 | 只观察 | 滚动建仓/减仓 | 连续3轮 | 稳定+0.0 | 近8轮峰值3.7 | 风险：历史样本/胜率不足；滚动信号现货主导，可能是转账/归集/划转，不等于合约方向；滚动信号钱包集中度过高，可能是单钱包异动；滚动信号持续性不足，不能按长期建仓处理；长期资格未通过：持续性不足、钱包集中度过高、现货主导，可能是转账/归集/划转、缺少合约/低杠杆确认；长期多空硬门槛未通过：spot-only/现货主导、钱包集中度过高、持续性不足、Top1贡献过高(100%)、缺少合约/低杠杆确认
 
 【低杠杆长期单过滤】
 暂无适合低杠杆长期单的候选。
@@ -66,24 +66,23 @@ BUDDY 偏空 时间=2026-08-24 07:01:27 | alert=+0.0 long=-0.5 | 只观察 | 滚
 详见 reports/details/signal_lifecycle_report.txt
 
 【单钱包主动变化 Top】
-ETH perp 偏多 0x3bca...66f3 [money_printer] | 主动=$8.61M | 价格影响=$57.76K | 杠杆=25x | 极高杠杆短线型 | 强平距=+474.40% | 合约操作=合约空单变化ETH 25x $8.61M 强平距=+474.40% | 当前合约=BTC空 40x $16.19M cross 强平距=+51.24% 极高杠杆短线型；HYPE空 10x $2.24M cross 强平距=+357.09% 高杠杆短线型；ETH空 25x $1.74M cross 强平距=+474.40% 极高杠杆短线型 | 当前现货Top=WOW $266.00K 数量=3.22K；LUCKY $64.01K 数量=410.48K；OMNIX $7.01K 数量=119.71K | 证据分类=trade_confirmed | 成交证据=BTC Close Short sz=0.01058 px=77822.0；ETH Close Short sz=3.3295 px=2467.6；ETH Close Short sz=47.4632 px=2467.6；BTC Close Short sz=1.16774 px=77822.0；BTC Close Short sz=1.04304 px=77822.0；ETH Close Short sz=50.7927 px=2466.9；BTC Close Short sz=1.27423 px=77805.0；ETH Close Short sz=50.7927 px=2466.2；BTC Close Short sz=0.94713 px=77805.0；BTC Close Short sz=0.51549 px=77789.0；BTC Close Short sz=0.00382 px=77789.0；BTC Close Short sz=1.70205 px=77789.0 | 账本=未发现充值/转账/提现账本更新
-BTC perp 偏多 0xcf3f...f95f [smart_money] | 主动=$8.43M | 价格影响=$49.35K | 杠杆=5x | 中杠杆趋势型 | 强平距=+49.79% | 合约操作=合约空单变化BTC 5x $8.43M 强平距=+49.79% | 当前合约=BTC空 5x $10.72M cross 强平距=+49.79% 中杠杆趋势型 | 当前现货Top=- | 证据分类=trade_confirmed | 成交证据=BTC Open Short sz=0.69282 px=77822.0；BTC Open Short sz=0.81225 px=77822.0；BTC Open Short sz=0.54826 px=77772.0；BTC Open Short sz=1.11979 px=77771.9991069754；BTC Open Short sz=0.00035 px=77685.0；BTC Open Short sz=0.01412 px=77685.0；BTC Close Short sz=0.16351 px=77837.0990765091；BTC Open Short sz=1.76385 px=77884.0；BTC Close Short sz=0.02707 px=77756.4170668637；BTC Close Short sz=0.43769 px=77755.0；BTC Close Short sz=0.0019 px=77742.0；BTC Close Short sz=0.47787 px=77749.0 | 账本=未发现充值/转账/提现账本更新
-DEPIN spot 偏空 0x7a35...3803 [smart_money] | 主动=-$3.54M | 价格影响=$0.00 | 减持现货=- | 当前合约=- | 当前现货Top=TILT $31.27M 数量=31.27M；UPHL $4.17M 数量=4.17M；FI $3.40M 数量=53.93K | 证据分类=balance_change_unconfirmed | 成交证据=@126 Sell sz=335.58 px=1.43；@126 Sell sz=2.82 px=1.43 | 账本=未发现充值/转账/提现账本更新
-HYPE perp 偏空 0x936c...bb0f [money_printer] | 主动=-$1.25M | 价格影响=-$127.47K | 杠杆=10x | 高杠杆短线型 | 强平距=+77.88% | 合约操作=合约空单变化HYPE 10x -$1.25M 强平距=+77.88%；合约空单变化PUMP 10x -$667.00K 强平距=+469.07% | 当前合约=HYPE空 10x $18.89M cross 强平距=+77.88% 高杠杆短线型；ZEC空 10x $15.35M cross 强平距=+96.46% 高杠杆短线型；ETH空 20x $7.69M cross 强平距=+206.27% 极高杠杆短线型 | 当前现货Top=UAVAX $6.25M 数量=12.99K；USDH $3.74 数量=59.9952；UBTC $0.00 数量=0.0019997 | 证据分类=trade_confirmed | 成交证据=GRASS Open Short sz=38.3 px=0.36146；GRASS Open Short sz=113.0 px=0.36147；GRASS Open Short sz=74.7 px=0.36146；NEAR Close Short sz=657.0 px=2.0019；NEAR Close Short sz=657.0 px=2.002；CC Close Short sz=2381.0 px=0.12042；CC Close Short sz=2381.0 px=0.12041；LIT Open Short sz=139.0 px=3.336642446；LIT Open Short sz=139.0 px=3.3363848921；NEAR Close Short sz=656.0 px=1.996；CC Close Short sz=2382.0 px=0.12032；CC Close Short sz=2382.0 px=0.12031 | 账本=未发现充值/转账/提现账本更新
-HYPE perp 偏空 0x577a...0568 [smart_money] | 主动=-$1.18M | 价格影响=$14.91K | 杠杆=10x | 高杠杆短线型 | 强平距=+52.70% | 合约操作=合约多单变化HYPE 10x -$1.18M 强平距=+52.70% | 当前合约=HYPE多 10x $891.47K cross 强平距=+52.70% 高杠杆短线型 | 当前现货Top=HYPE $376.78 数量=3.69K；LICKO $365.87 数量=1.27K；MAX $0.79 数量=0.1042 | 证据分类=trade_confirmed | 成交证据=HYPE Close Long sz=1000.0 px=82.02292268；HYPE Close Long sz=1000.0 px=82.01311425；HYPE Open Long sz=140.96 px=81.849；HYPE Open Long sz=20.31 px=81.852；HYPE Open Long sz=31.01 px=81.852；HYPE Open Long sz=676.42 px=81.852；HYPE Open Long sz=131.1 px=81.852；HYPE Open Long sz=0.2 px=81.852；HYPE Open Long sz=33.34 px=81.852；HYPE Open Long sz=859.04 px=81.8618696335；HYPE Open Long sz=5.15 px=81.852；HYPE Open Long sz=5.0 px=81.852 | 账本=未发现充值/转账/提现账本更新
-ZEC perp 偏多 0x2e30...4cb5 [smart_money] | 主动=$693.99K | 价格影响=$3.40K | 杠杆=2x | 低杠杆长期型 | 强平距=+907.02% | 合约操作=合约空单变化ZEC 2x $693.99K 强平距=+907.02% | 当前合约=BTC空 2x $690.04K cross 强平距=+288.88% 低杠杆长期型；ZEC空 2x $209.90K cross 强平距=+907.02% 低杠杆长期型；ETH空 2x $153.49K cross 强平距=+1289.15% 低杠杆长期型 | 当前现货Top=- | 证据分类=trade_confirmed | 成交证据=ETH Open Short sz=1.1759 px=2460.7；ETH Open Short sz=0.0501 px=2464.0；ETH Open Short sz=1.1294 px=2462.1；SOL Open Short sz=0.56 px=95.265；ETH Open Short sz=0.1622 px=2465.3；ETH Open Short sz=0.341 px=2464.6；ETH Open Short sz=0.0409 px=2460.9；ETH Open Short sz=0.0383 px=2464.7；ETH Open Short sz=0.1237 px=2464.8；ETH Open Short sz=0.0231 px=2465.8；XRP Close Short sz=37.0 px=1.5144；SOL Close Short sz=0.79 px=95.621 | 账本=send:1
-UPUMP spot 偏空 0x2025...840e [money_printer] | 主动=-$692.42K | 价格影响=$0.00 | 减持现货=UPUMP -$692.42K 数量Δ=-4.58M @ 0.15122 | 当前合约=HYPE空 10x $311.21K cross 强平距=+334.73% 高杠杆短线型；ZRO空 5x $107.49K cross 强平距=+926.72% 中杠杆趋势型；SPX多 5x $67.83K cross 中杠杆趋势型 | 当前现货Top=UPUMP $1.79M 数量=11.84M；PUP $134.64K 数量=1.31M；UXPL $35.61K 数量=20.77K | 证据分类=balance_change_unconfirmed | 成交证据=@188 Sell sz=361243.0 px=0.0053685；@188 Sell sz=1698048.0 px=0.0053726；@188 Sell sz=44102.0 px=0.0053726；@188 Sell sz=228331.0 px=0.0053726；@188 Sell sz=129170.0 px=0.0053726；@188 Sell sz=28238.0 px=0.0053726；@188 Sell sz=47021.0 px=0.0053726；ENA Open Long sz=9826.0 px=0.16264；ENA Open Long sz=51659.0 px=0.16264；ENA Open Long sz=61847.0 px=0.16169；@188 Sell sz=77392.0 px=0.0053726；@188 Sell sz=475753.0 px=0.0053726 | 账本=未发现充值/转账/提现账本更新
-PUMP perp 偏空 0x936c...bb0f [money_printer] | 主动=-$667.00K | 价格影响=-$20.19K | 杠杆=10x | 高杠杆短线型 | 强平距=+469.07% | 合约操作=合约空单变化HYPE 10x -$1.25M 强平距=+77.88%；合约空单变化PUMP 10x -$667.00K 强平距=+469.07% | 当前合约=HYPE空 10x $18.89M cross 强平距=+77.88% 高杠杆短线型；ZEC空 10x $15.35M cross 强平距=+96.46% 高杠杆短线型；ETH空 20x $7.69M cross 强平距=+206.27% 极高杠杆短线型 | 当前现货Top=UAVAX $6.25M 数量=12.99K；USDH $3.74 数量=59.9952；UBTC $0.00 数量=0.0019997 | 证据分类=trade_confirmed | 成交证据=GRASS Open Short sz=38.3 px=0.36146；GRASS Open Short sz=113.0 px=0.36147；GRASS Open Short sz=74.7 px=0.36146；NEAR Close Short sz=657.0 px=2.0019；NEAR Close Short sz=657.0 px=2.002；CC Close Short sz=2381.0 px=0.12042；CC Close Short sz=2381.0 px=0.12041；LIT Open Short sz=139.0 px=3.336642446；LIT Open Short sz=139.0 px=3.3363848921；NEAR Close Short sz=656.0 px=1.996；CC Close Short sz=2382.0 px=0.12032；CC Close Short sz=2382.0 px=0.12031 | 账本=未发现充值/转账/提现账本更新
-PUMP perp 偏多 0x2a72...267c [smart_money] | 主动=$571.72K | 价格影响=-$4.86K | 杠杆=5x | 中杠杆趋势型 | 强平距=+1043.06% | 合约操作=合约空单变化PUMP 5x $571.72K 强平距=+1043.06% | 当前合约=PUMP空 5x $60.35K cross 强平距=+1043.06% 中杠杆趋势型；UNI空 5x $35.39K cross 强平距=+1779.51% 中杠杆趋势型；APEX空 3x $33.41K cross 强平距=+1615.15% 低杠杆长期型 | 当前现货Top=- | 证据分类=trade_confirmed | 成交证据=WLD Open Long sz=30.4 px=0.40741；WIF Open Short sz=404.0 px=0.20193；WIF Open Short sz=157.0 px=0.20191；APEX Open Short sz=22.0 px=0.29777；WIF Open Short sz=172.0 px=0.20193；CC Open Short sz=2381.0 px=0.12041；VVV Open Short sz=6.82 px=17.001；ARB Close Long sz=425.8 px=0.10224；ARB Close Long sz=503.8 px=0.10224；UNI Open Short sz=438.6 px=4.6437012084；UNI Open Short sz=208.7 px=4.6444；ARB Close Long sz=139.9 px=0.10224 | 账本=未发现充值/转账/提现账本更新
+BTC perp 偏多 0x007d...67a0 [money_printer] | 主动=$24.06M | 价格影响=-$5.42K | 杠杆=40x | 极高杠杆短线型 | 强平距=+16.35% | 合约操作=新开多BTC 40x $24.06M 强平距=+16.35% | 当前合约=BTC多 40x $24.06M cross 强平距=+16.35% 极高杠杆短线型；HYPE多 10x $4.90M cross 强平距=+83.55% 高杠杆短线型；TRUMP空 10x $611.78K cross 强平距=+594.07% 高杠杆短线型 | 当前现货Top=LATINA $107.36K 数量=107.36K；FEUSD $23.63K 数量=23.64K；STAR $9.42 数量=2.95K | 证据分类=trade_confirmed | 成交证据=BTC Open Long sz=22.0 px=77636.3794163636；BTC Open Long sz=22.0 px=77651.6852686364；BTC Open Long sz=22.0 px=77658.9270581818；BTC Open Long sz=22.0 px=77685.1317018182；BTC Open Long sz=22.0 px=77690.5258118183；BTC Open Long sz=22.0 px=77745.9500913636；BTC Open Long sz=22.0 px=77762.8198122727；BTC Open Long sz=22.0 px=77789.4430577273；BTC Open Long sz=22.0 px=77797.5611868182；BTC Open Long sz=22.0 px=77761.5004154546；BTC Open Long sz=22.0 px=77758.8283659091 | 账本=未发现充值/转账/提现账本更新
+ZEC perp 偏空 0x2d99...a351 [money_printer] | 主动=-$2.45M | 价格影响=$12.36K | 杠杆=1x | 低杠杆长期型 | 强平距=+90.35% | 合约操作=新开空ZEC 1x -$2.45M 强平距=+90.35% | 当前合约=ZEC空 1x $2.43M isolated 强平距=+90.35% 低杠杆长期型；BTC多 2x $2.41M isolated 强平距=+49.35% 低杠杆长期型；ETH空 1x $968.84K isolated 强平距=+101.62% 低杠杆长期型 | 当前现货Top=- | 证据分类=balance_change_unconfirmed | 成交证据=未发现区间内成交 | 账本=未发现充值/转账/提现账本更新
+HYPE perp 偏多 0x577a...0568 [smart_money] | 主动=$1.17M | 价格影响=-$4.58K | 杠杆=10x | 高杠杆短线型 | 强平距=+19.36% | 合约操作=合约多单变化HYPE 10x $1.17M 强平距=+19.36% | 当前合约=HYPE多 10x $2.06M cross 强平距=+19.36% 高杠杆短线型 | 当前现货Top=HYPE $376.78 数量=3.69K；LICKO $365.87 数量=1.27K；MAX $0.79 数量=0.1042 | 证据分类=trade_confirmed | 成交证据=HYPE Close Long sz=2000.0 px=82.456737895；HYPE Open Long sz=0.08 px=82.467；HYPE Open Long sz=207.78 px=82.475919434；HYPE Open Long sz=0.3 px=82.487；HYPE Open Long sz=1000.0 px=82.50888171；HYPE Open Long sz=40.69 px=82.487；HYPE Open Long sz=751.23 px=82.487；HYPE Open Long sz=15.0 px=82.467；HYPE Open Long sz=643.72 px=82.467；HYPE Open Long sz=5.0 px=82.467；HYPE Open Long sz=92.59 px=82.467；HYPE Open Long sz=65.89 px=82.467 | 账本=未发现充值/转账/提现账本更新
+ZEC perp 偏多 0x5323...b23c [smart_money] | 主动=$1.08M | 价格影响=-$3.34K | 杠杆=5x | 中杠杆趋势型 | 强平距=N/A | 合约操作=合约多单变化ZEC 5x $1.08M | 当前合约=ZEC多 5x $1.83M cross 中杠杆趋势型；SOL空 5x $1.42M cross 强平距=+293.92% 中杠杆趋势型；HYPE空 5x $803.36K cross 强平距=+508.62% 中杠杆趋势型 | 当前现货Top=- | 证据分类=trade_confirmed | 成交证据=SOL Open Short sz=14.19 px=95.593；SOL Open Short sz=12.36 px=95.593；ZEC Close Long sz=23.27 px=855.39；ZEC Close Long sz=3.27 px=855.62；ZEC Close Long sz=12.29 px=855.75；HYPE Close Short sz=67.12 px=82.539；HYPE Open Short sz=51.39 px=82.534；HYPE Open Short sz=149.34 px=82.5339866077；SOL Close Short sz=2.36 px=95.454；HYPE Open Short sz=175.7 px=82.534；ZEC Open Long sz=3.27 px=851.97；ZEC Open Long sz=3.27 px=851.71 | 账本=未发现充值/转账/提现账本更新
+ZEC perp 偏多 0xecb6...2b00 [money_printer] | 主动=$997.75K | 价格影响=$10.08K | 杠杆=5x | 中杠杆趋势型 | 强平距=+4384.18% | 合约操作=合约空单变化LIT 3x -$516.30K 强平距=+4031.69%；合约空单变化ZEC 5x $997.75K 强平距=+4384.18% | 当前合约=ETH空 15x $53.87M cross 强平距=+108.29% 高杠杆短线型；BTC空 20x $32.76M cross 强平距=+180.32% 极高杠杆短线型；SOL空 20x $23.25M cross 强平距=+249.11% 极高杠杆短线型 | 当前现货Top=UBONK $12.83M 数量=18321.85M；UPUMP $2.00M 数量=13.29M；UXPL $1.49M 数量=869.48K | 证据分类=trade_confirmed | 成交证据=BTC Open Short sz=0.01287 px=77650.0；xyz:SKHY Open Long sz=51.35 px=167.68；xyz:SKHY Open Long sz=43.7 px=167.67；xyz:CRCL Close Long sz=10.181 px=88.691；xyz:COIN Open Short sz=4.8 px=187.08；xyz:SKHY Open Long sz=20.34 px=167.67；xyz:COIN Open Short sz=3.692 px=187.08；xyz:CRCL Close Long sz=14.386 px=88.691；xyz:BRENTOIL Close Short sz=4.17 px=91.769；xyz:EWY Close Short sz=10.165 px=180.39；xyz:EWY Close Short sz=14.226 px=180.39；TRUMP Close Short sz=96.5 px=2.6929 | 账本=spotTransfer:3；withdraw:2
+LIT perp 偏多 0x2ba5...1036 [money_printer] | 主动=$713.66K | 价格影响=-$5.72K | 杠杆=5x | 中杠杆趋势型 | 强平距=+42.98% | 合约操作=新开多LIT 5x $713.66K 强平距=+42.98% | 当前合约=LIT多 5x $707.94K cross 强平距=+42.98% 中杠杆趋势型 | 当前现货Top=MAX $2.40M 数量=317.22K；LICKO $2.68K 数量=9.28K；CAT $202.83 数量=19.74K | 证据分类=trade_confirmed | 成交证据=LIT Open Long sz=50000.0 px=3.563508554；LIT Open Long sz=50000.0 px=3.569321006；LIT Open Long sz=50000.0 px=3.584846092；LIT Open Long sz=50000.0 px=3.59933259 | 账本=send:1
+XRP perp 偏空 0x9a31...6525 [smart_money] | 主动=-$638.94K | 价格影响=$3.05K | 杠杆=5x | 中杠杆趋势型 | 强平距=N/A | 合约操作=合约多单变化XRP 5x -$638.94K | 当前合约=DOGE多 5x $99.87K cross 中杠杆趋势型；PAXG空 5x $78.68K cross 强平距=+1226.24% 中杠杆趋势型；XRP多 5x $74.91K cross 中杠杆趋势型 | 当前现货Top=- | 证据分类=trade_confirmed | 成交证据=XRP Open Long sz=714.0 px=1.515；XRP Open Long sz=12895.0 px=1.5146；XRP Open Long sz=10827.0 px=1.5139；XRP Open Long sz=12.0 px=1.5131；PAXG Close Long sz=0.125 px=4599.5；XRP Open Long sz=27350.0 px=1.5128；XRP Open Long sz=4940.0 px=1.5127；XRP Open Long sz=6543.0 px=1.5122；XRP Close Long sz=5455.0 px=1.5124；XRP Close Long sz=6613.0 px=1.5126；XRP Close Long sz=27350.0 px=1.5127；XRP Close Long sz=5455.0 px=1.5129 | 账本=未发现充值/转账/提现账本更新
+LIT perp 偏空 0xecb6...2b00 [money_printer] | 主动=-$516.30K | 价格影响=-$32.23K | 杠杆=3x | 低杠杆长期型 | 强平距=+4031.69% | 合约操作=合约空单变化LIT 3x -$516.30K 强平距=+4031.69%；合约空单变化ZEC 5x $997.75K 强平距=+4384.18% | 当前合约=ETH空 15x $53.87M cross 强平距=+108.29% 高杠杆短线型；BTC空 20x $32.76M cross 强平距=+180.32% 极高杠杆短线型；SOL空 20x $23.25M cross 强平距=+249.11% 极高杠杆短线型 | 当前现货Top=UBONK $12.83M 数量=18321.85M；UPUMP $2.00M 数量=13.29M；UXPL $1.49M 数量=869.48K | 证据分类=trade_confirmed | 成交证据=BTC Open Short sz=0.01287 px=77650.0；xyz:SKHY Open Long sz=51.35 px=167.68；xyz:SKHY Open Long sz=43.7 px=167.67；xyz:CRCL Close Long sz=10.181 px=88.691；xyz:COIN Open Short sz=4.8 px=187.08；xyz:SKHY Open Long sz=20.34 px=167.67；xyz:COIN Open Short sz=3.692 px=187.08；xyz:CRCL Close Long sz=14.386 px=88.691；xyz:BRENTOIL Close Short sz=4.17 px=91.769；xyz:EWY Close Short sz=10.165 px=180.39；xyz:EWY Close Short sz=14.226 px=180.39；TRUMP Close Short sz=96.5 px=2.6929 | 账本=spotTransfer:3；withdraw:2
+ZEC perp 偏多 0xd4c1...3d1d [money_printer] | 主动=$503.30K | 价格影响=$16.77K | 杠杆=10x | 高杠杆短线型 | 强平距=+183.26% | 合约操作=合约空单变化ZEC 10x $503.30K 强平距=+183.26% | 当前合约=BTC空 12x $28.31M cross 强平距=+21.87% 高杠杆短线型；ETH空 12x $20.93M cross 强平距=+29.23% 高杠杆短线型；HYPE空 10x $7.46M cross 强平距=+78.77% 高杠杆短线型 | 当前现货Top=LATINA $10.43K 数量=10.43K；LICKO $63.39 数量=219.346；HYPE $0.02 数量=0.185914 | 证据分类=trade_confirmed | 成交证据=BTC Open Short sz=0.07736 px=77650.0；BTC Open Short sz=0.00027 px=77631.0；BTC Open Short sz=0.0285 px=77631.0；FARTCOIN Open Short sz=266.3 px=0.1802774765；BTC Open Short sz=0.0774 px=77615.0；BTC Open Short sz=0.03263 px=77612.0；BTC Open Short sz=0.0774 px=77612.0；BTC Open Short sz=0.02993 px=77612.0；BTC Open Short sz=0.00039 px=77612.0；BTC Open Short sz=0.0774 px=77595.0；BTC Open Short sz=0.00143 px=77577.4475524476；BTC Open Short sz=0.07742 px=77588.0 | 账本=未发现充值/转账/提现账本更新
+UPUMP spot 偏空 0xecb6...2b00 [money_printer] | 主动=-$381.34K | 价格影响=-$7.12K | 减持现货=UPUMP -$381.34K 数量Δ=-2.53M @ 0.15077 | 当前合约=ETH空 15x $53.87M cross 强平距=+108.29% 高杠杆短线型；BTC空 20x $32.76M cross 强平距=+180.32% 极高杠杆短线型；SOL空 20x $23.25M cross 强平距=+249.11% 极高杠杆短线型 | 当前现货Top=UBONK $12.83M 数量=18321.85M；UPUMP $2.00M 数量=13.29M；UXPL $1.49M 数量=869.48K | 证据分类=ledger_change_detected | 成交证据=BTC Open Short sz=0.01287 px=77650.0；xyz:SKHY Open Long sz=51.35 px=167.68；xyz:SKHY Open Long sz=43.7 px=167.67；xyz:CRCL Close Long sz=10.181 px=88.691；xyz:COIN Open Short sz=4.8 px=187.08；xyz:SKHY Open Long sz=20.34 px=167.67；xyz:COIN Open Short sz=3.692 px=187.08；xyz:CRCL Close Long sz=14.386 px=88.691；xyz:BRENTOIL Close Short sz=4.17 px=91.769；xyz:EWY Close Short sz=10.165 px=180.39；xyz:EWY Close Short sz=14.226 px=180.39；TRUMP Close Short sz=96.5 px=2.6929 | 账本=spotTransfer:3；withdraw:2
+UPUMP spot 偏空 0x023a...2355 [money_printer] | 主动=-$296.55K | 价格影响=-$13.89K | 减持现货=UPUMP -$296.55K 数量Δ=-1.97M @ 0.15077 | 当前合约=BTC空 40x $18.70M cross 强平距=+54.96% 极高杠杆短线型；XRP空 20x $4.01M cross 强平距=+251.51% 极高杠杆短线型；TAO空 5x $3.36M cross 强平距=+285.55% 中杠杆趋势型 | 当前现货Top=UPUMP $4.36M 数量=28.90M；HREKT $3.86M 数量=275551.79M；WOW $265.29K 数量=3.23K | 证据分类=ledger_change_detected | 成交证据=XRP Close Short sz=171.0 px=1.5148；ZEC Close Long sz=0.88 px=855.34；ZEC Close Long sz=1.57 px=855.34；ZEC Close Long sz=1.58 px=855.7；HYPE Open Short sz=1.9 px=82.666；BTC Close Short sz=0.20724 px=77595.0；BTC Close Short sz=0.27681 px=77594.0；BTC Close Short sz=0.21419 px=77593.0；BTC Close Short sz=0.45056 px=77593.0；BTC Close Short sz=0.28156 px=77592.0；BTC Close Short sz=0.46865 px=77589.0；BTC Close Short sz=0.45882 px=77585.0 | 账本=deposit:1；send:3；subAccountTransfer:1
 
 【资金流 Lite】
 说明：现货主动金额按数量变化×价格计算；价格涨跌影响单列，不是充值提现路径标签。
-0x7a35...3803 [smart_money] | USDC=$483.72 | 现货主动=-$3.54M | 价格影响=-$33.91K | USDC增加 + 现货减少，疑似卖出/转现金 | 证据分类=balance_change_unconfirmed | 增持现货=- | 减持现货=- | 账本=未发现充值/转账/提现账本更新 | 当前合约=-
-0x45d2...4029 [money_printer] | USDC=$3.54M | 现货主动=$0.00 | 价格影响=$6.92K | USDC增加，疑似资金回流 | 证据分类=未补查 | 增持现货=- | 减持现货=- | 账本=未补查 | 当前合约=HYPE空 10x $35.77M cross 强平距=+79.77% 高杠杆短线型；BTC空 20x $33.15M cross 强平距=+93.51% 极高杠杆短线型；ETH空 20x $32.11M cross 强平距=+95.80% 极高杠杆短线型
-0xb83d...6e36 [money_printer] | USDC=$1.06M | 现货主动=$0.00 | 价格影响=$0.00 | USDC增加，疑似资金回流 | 证据分类=未补查 | 增持现货=- | 减持现货=- | 账本=未补查 | 当前合约=ETH空 5x $99.64M cross 强平距=+59.54% 中杠杆趋势型；BTC空 5x $95.19M cross 强平距=+63.57% 中杠杆趋势型；HYPE空 5x $85.41M cross 强平距=+64.98% 中杠杆趋势型
-0x5b5d...c060 [money_printer] | USDC=$805.87K | 现货主动=$253.76 | 价格影响=-$0.00 | USDC增加，疑似资金回流 | 证据分类=未补查 | 增持现货=- | 减持现货=- | 账本=未补查 | 当前合约=ETH空 5x $114.85M cross 强平距=+57.22% 中杠杆趋势型；BTC空 5x $91.81M cross 强平距=+72.96% 中杠杆趋势型；HYPE空 5x $71.57M cross 强平距=+86.19% 中杠杆趋势型
-0x2025...840e [money_printer] | USDC=$19.19K | 现货主动=-$689.65K | 价格影响=-$605.95 | USDC增加 + 现货减少，疑似卖出/转现金 | 证据分类=balance_change_unconfirmed | 增持现货=JEFF $2.75K 数量Δ=716.713 @ 3.8378 | 减持现货=UPUMP -$692.42K 数量Δ=-4.58M @ 0.15122 | 账本=未发现充值/转账/提现账本更新 | 当前合约=HYPE空 10x $311.21K cross 强平距=+334.73% 高杠杆短线型；ZRO空 5x $107.49K cross 强平距=+926.72% 中杠杆趋势型；SPX多 5x $67.83K cross 中杠杆趋势型
-0x9321...d75a [money_printer] | USDC=$616.03K | 现货主动=$0.00 | 价格影响=$239.50 | USDC增加，疑似资金回流 | 证据分类=未补查 | 增持现货=- | 减持现货=- | 账本=未补查 | 当前合约=BTC空 40x $15.50M cross 强平距=+41.65% 极高杠杆短线型；LIT多 5x $15.46M cross 强平距=+47.20% 中杠杆趋势型；HYPE多 10x $14.85M cross 强平距=+46.79% 高杠杆短线型
+0x5b5d...c060 [money_printer] | USDC=$3.73M | 现货主动=$612.21 | 价格影响=-$1.81 | USDC增加，疑似资金回流 | 证据分类=未补查 | 增持现货=- | 减持现货=- | 账本=未补查 | 当前合约=ETH空 5x $115.39M cross 强平距=+60.22% 中杠杆趋势型；BTC空 5x $92.14M cross 强平距=+77.00% 中杠杆趋势型；HYPE空 5x $71.60M cross 强平距=+90.59% 中杠杆趋势型
+0xad59...ba81 [smart_money] | USDC=$977.88K | 现货主动=$0.00 | 价格影响=$0.00 | USDC增加，疑似资金回流 | 证据分类=未补查 | 增持现货=- | 减持现货=- | 账本=未补查 | 当前合约=ZEC空 10x $7.19M cross 强平距=+30.59% 高杠杆短线型；HYPE空 10x $756.32K cross 强平距=+286.87% 高杠杆短线型；XMR空 5x $126.42K cross 强平距=+1638.99% 中杠杆趋势型
+0x082e...ca88 [money_printer] | USDC=-$972.61K | 现货主动=$0.00 | 价格影响=-$599.66 | USDC减少，疑似资金流出/买入 | 证据分类=未补查 | 增持现货=- | 减持现货=- | 账本=未补查 | 当前合约=HYPE多 5x $112.78M cross 强平距=+22.94% 中杠杆趋势型
 
 【收益面板 V3｜信号模型V2】
 短期看1h/4h/24h；正式长期看72h/7d/15d/30d；净收益已逐事件扣成本0.12%。
@@ -106,12 +105,12 @@ V1短期基线（仅参考）：1h 13次 普胜54% 净均+0.37%；4h 13次 普�
 NEKO spot 偏空 | 次数=167 | 主动变化=-$35.76B
 NEKO spot 偏多 | 次数=124 | 主动变化=$25.52B
 BTC perp 偏空 | 次数=326 | 主动变化=-$3.12B
-BTC perp 偏多 | 次数=291 | 主动变化=$3.01B
+BTC perp 偏多 | 次数=292 | 主动变化=$3.03B
 BRIDGE spot 偏空 | 次数=57 | 主动变化=-$2.30B
 ETH perp 偏多 | 次数=333 | 主动变化=$2.08B
 ETH perp 偏空 | 次数=335 | 主动变化=-$1.95B
 BRIDGE spot 偏多 | 次数=45 | 主动变化=$1.83B
-UPUMP spot 偏空 | 次数=308 | 主动变化=-$1.29B
+UPUMP spot 偏空 | 次数=310 | 主动变化=-$1.29B
 BASED spot 偏多 | 次数=26 | 主动变化=$1.26B
 BASED spot 偏空 | 次数=27 | 主动变化=-$1.26B
 UPUMP spot 偏多 | 次数=278 | 主动变化=$1.17B
