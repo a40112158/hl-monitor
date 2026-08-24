@@ -2,84 +2,64 @@
 
 状态：success
 模型：gemini-2.5-flash
-紧急度：normal
+紧急度：watch
 
 【执行摘要】
-本轮扫描未发现达到币种专属阈值的短线强异动信号。多数观察币种因历史样本不足、高杠杆占比过高或滚动窗口未成熟等原因，未能通过长期资格硬门槛。市场整体处于“near_high”状态，但现货异常比例略有升高，需持续关注。
+本轮扫描未发现达到币种专属阈值的短线强异动信号，亦无明确的做多或做空观察目标。多数币种信号仍处于“只观察”状态，且普遍存在历史样本不足、高杠杆占比过高、现货主导或钱包集中度过高等风险，未能通过长期资格硬门槛。现货异常比例略有升高，市场整体仍处于“near_high”状态。建议持续观察，暂无高优先级交易目标。
 
 【数据质量】
-本轮扫描成功率为100.00%，共监控2419个钱包，无partial或failed情况，数据完整性良好。现货语义质量方面，可信数据9087条，异常隔离599条，异常率为6.18%，略高于正常水平，但仍在阻断阈值10.00%以下。未发现空数据或极端值。
+本轮扫描成功率为100%，监控钱包2419个，无部分成功或失败的钱包，数据采集完整。然而，现货语义质量的异常隔离比例为6.18%，略高于正常水平，需持续关注。多数“只观察”信号的风险提示中明确指出“历史样本/胜率不足”，表明部分币种或信号类型的数据积累尚不充分。
 
 【市场与资金结构】
-BTC：1小时涨幅+0.38%，4小时涨幅+1.65%，24小时涨幅+2.24%。市场状态为near_high。
-ETH：1小时涨幅+0.25%，4小时涨幅+1.45%，24小时涨幅+2.52%。市场状态为near_high。
-
-资金费率与流动性：
-JTO：资金费率+0.00%，24小时成交额$2.53M，流动性风险高。
-KAITO：资金费率+0.00%，24小时成交额$895.41K，流动性风险高。
-PAXG：资金费率+0.00%，24小时成交额$2.91M，流动性风险高。
-VVV：资金费率+0.00%，24小时成交额$9.38M，流动性风险中。
-BNB：资金费率+0.00%，24小时成交额$10.70M，流动性风险中。
-LINK：资金费率+0.00%，24小时成交额$16.90M，流动性风险中。
-WLD：资金费率+0.00%，24小时成交额$8.43M，流动性风险中。
-XMR：资金费率+0.00%，24小时成交额$17.22M，流动性风险中。
-其他主要币种如BTC、ETH、HYPE、LIT、NEAR、PUMP、SOL、TAO、XRP、ZEC的资金费率均为低风险，24小时成交额和开放利率（OI）数据充足，流动性风险均为低。
-
-净流入、OI、多空人数比、主动买卖比等市场结构数据未提供汇总信息，数据不足以进行全面分析。
+BTC和ETH的市场状态均处于“near_high”区间。
+资金费率方面，JTO、KAITO、PAXG、VVV、BNB、XMR、WLD、kPEPE等币种的资金费率风险均为“低”。
+流动性方面，JTO、KAITO、PAXG的24小时成交额较低，流动性风险为“高”；VVV、BNB、XMR、WLD、kPEPE的流动性风险为“中”。
+本轮扫描数据中未直接提供所有币种的净流入、OI、多空人数比、主动买卖比等详细市场结构数据。
+价格涨跌幅方面，BTC和ETH在1小时内略有下跌，4小时和24小时内均有上涨，其中BTC 24小时涨幅+2.96%，ETH 24小时涨幅+3.01%。
 
 【相比上次 AI 分析】
-上次AI分析报告因服务器错误（ServerError: 503 UNAVAILABLE / 504 DEADLINE_EXCEEDED）未能成功生成，因此本轮无法与上次报告进行比较。
+本轮扫描结果与上次报告相比，市场环境（BTC/ETH regime=near_high）和信号结构（暂无短线强信号，大量“只观察”信号伴随风险）基本保持一致。现货异常比例从上次的“略有升高”到本轮的6.18%，仍需警惕。整体而言，信号质量和市场结构未见明显改善或恶化，仍处于需要持续观察的状态。
 
 【重点观察】
-本轮暂无达到币种专属阈值的短线强异动信号，所有有信号的币种均处于“只观察”状态。
-
-*   **HYPE (偏多)**：alert=+5.57，long=+2.93。连续2轮偏多，信号增强。风险：历史样本/胜率不足，窗口内含断跑gap，高杠杆占比过高（50%），长期资格未通过。
-*   **DOGE (偏多)**：alert=+3.15，long=+0.17。首次/反转出现。风险：历史样本/胜率不足，滚动窗口未成熟，同方向高杠杆仓位偏多40%。
-*   **ETH (偏多)**：alert=+3.02，long=+1.28。连续2轮偏多，信号增强。风险：历史样本/胜率不足，高杠杆占比过高（89%），平均杠杆15.6x偏短线，长期资格未通过。
-*   **ZEC (偏多)**：alert=+2.62，long=+1.06。首次/反转出现。风险：历史样本/胜率不足，窗口内含断跑gap，本轮异动与滚动方向冲突，高杠杆占比过高（58%），长期资格未通过。
-*   **LIT (偏多)**：alert=+2.55，long=+4.17。连续4轮偏多，信号增强。风险：历史样本/胜率不足，窗口内含断跑gap。
-*   **KNTQ (偏多)**：alert=+1.85，long=+0.41。首次/反转出现。风险：历史样本/胜率不足，滚动信号现货主导，窗口内含断跑gap，本轮异动与滚动方向冲突，长期资格未通过。
-*   **BTC (偏空)**：alert=-1.53，long=+0.0。连续3轮偏空，信号稳定。风险：历史样本/胜率不足，本轮异动与滚动方向冲突，高杠杆占比过高（75%），平均杠杆18.5x偏短线，长期资格未通过。
-*   **PUMP (偏空)**：alert=-1.20，long=-0.77。连续4轮偏空，信号衰减。风险：历史样本/胜率不足，本轮异动与滚动方向冲突，长期资格未通过，同方向高杠杆仓位偏多46%。
-*   **XMR (偏空)**：alert=-0.10，long=-1.32。风险：历史样本/胜率不足，滚动信号钱包集中度过高，流动性偏低，长期资格未通过。
+暂无明确高优先级目标。
 
 【AI 风控结论】
-*   HYPE (bullish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   LIT (bullish): WATCH (maturity_or_concentration_warning)
-*   DOGE (bullish): WATCH (insufficient_evidence_for_pass)
-*   ETH (bullish): VETO (local_candidate_gate_failed, high_leverage_concentration)
-*   ZEC (bullish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   KNTQ (bullish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   BTC (bearish): VETO (local_candidate_gate_failed, high_leverage_concentration)
-*   XMR (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   PUMP (bearish): WATCH (insufficient_evidence_for_pass)
-*   DEPIN (bullish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   BASED (bullish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   UANSEM (bullish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   UBONK (bullish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   UPUMP (bullish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   HWAVE (bullish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   NEKO (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   MAX (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   SWAP (bullish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   BUDDY (bearish): VETO (local_candidate_gate_failed, maturity_or_concentration_warning)
-*   SOL (bullish): VETO (local_candidate_gate_failed, high_leverage_concentration)
+*   LIT: WATCH (历史样本/胜率不足；窗口内含断跑gap)
+*   ETH: VETO (高杠杆占比过高；平均杠杆过高)
+*   UXPL: VETO (现货主导；钱包集中度过高；Top1贡献过高；缺少合约/低杠杆确认)
+*   ZEC: VETO (高杠杆占比过高)
+*   KNTQ: VETO (现货主导；缺少合约/低杠杆确认)
+*   PUMP: WATCH (历史样本/胜率不足；本轮异动与滚动方向冲突；长期资格未通过：本轮异动与滚动方向冲突；同方向高杠杆仓位偏多46%)
+*   HYPE: VETO (高杠杆占比过高)
+*   SOL: VETO (高杠杆占比过高；平均杠杆过高)
+*   XMR: VETO (钱包集中度过高；Top1贡献过高)
+*   BTC: VETO (钱包集中度过高；高杠杆占比过高；平均杠杆过高)
+*   NEKO: VETO (现货主导；缺少合约/低杠杆确认)
+*   MAX: VETO (现货主导；缺少合约/低杠杆确认)
+*   BUDDY: VETO (现货主导；缺少合约/低杠杆确认)
+*   DEPIN: VETO (现货主导；钱包集中度过高；缺少合约/低杠杆确认)
+*   BASED: VETO (现货主导；持续性不足；缺少合约/低杠杆确认)
+*   UANSEM: VETO (现货主导；持续性不足；缺少合约/低杠杆确认)
+*   UBONK: VETO (现货主导；钱包集中度过高；Top1贡献过高；缺少合约/低杠杆确认)
+*   BRIDGE: VETO (现货主导；钱包集中度过高；持续性不足；Top1贡献过高；缺少合约/低杠杆确认)
+*   UPUMP: VETO (现货主导；缺少合约/低杠杆确认)
+*   UAVAX: VETO (现货主导；钱包集中度过高；Top1贡献过高；缺少合约/低杠杆确认)
 
 【风险提示】
-1.  **数据缺失风险**：部分市场结构数据（如多空人数比、主动买卖比）未提供，可能影响全面判断。
-2.  **流动性不足风险**：JTO、KAITO、PAXG等币种24小时成交额较低，存在高流动性风险。
-3.  **高杠杆风险**：ETH、BTC、SOL等币种存在高杠杆/爆仓边缘仓位占比过高（80%-89%）的情况，平均杠杆偏高，需警惕极端行情下的连锁清算风险。
-4.  **样本不足风险**：多数观察币种的信号均提示“历史样本/胜率不足”，信号可靠性有待验证。
-5.  **信号冲突风险**：部分币种（如ZEC、BTC、PUMP、KNTQ）本轮异动与滚动方向冲突，或存在反向滚动窗口，增加了判断的复杂性。
-6.  **钱包集中度风险**：XMR、DEPIN、UBONK、HWAVE、SWAP等币种的滚动信号存在钱包集中度过高，可能为单钱包异动，非市场普遍行为。
-7.  **现货主导风险**：KNTQ、DEPIN、BASED、UANSEM、UBONK、UPUMP、HWAVE、NEKO、MAX、SWAP、BUDDY等币种的信号现货主导，可能为转账/归集/划转行为，不代表合约方向。
+1.  **现货异常比例升高**：本轮现货异常隔离比例为6.18%，虽然未达到阻断阈值10.00%，但仍需警惕数据质量可能存在的问题。
+2.  **历史样本/胜率不足**：多数“只观察”币种的信号历史样本不足，导致其胜率无法有效评估，增加了不确定性。
+3.  **高杠杆集中风险**：ETH、SOL、BTC、HYPE、ZEC等币种存在高杠杆/爆仓边缘仓位占比过高或平均杠杆过高的情况，市场波动可能导致连锁反应。
+4.  **现货主导信号风险**：UXPL、KNTQ、NEKO、MAX、BUDDY、DEPIN、BASED、UANSEM、UBONK、BRIDGE、UPUMP、UAVAX等币种的滚动信号现货主导，可能为转账/归集/划转行为，不直接等同于合约方向，存在误判风险。
+5.  **钱包集中度风险**：UXPL、BTC、XMR、DEPIN、UBONK、BRIDGE、UAVAX等币种的滚动信号钱包集中度过高，可能由单钱包异动引起，缺乏广泛的市场共识。
+6.  **流动性不足风险**：JTO、KAITO、PAXG流动性风险高，XMR、VVV、BNB、WLD、kPEPE流动性风险中，小额交易可能对价格产生较大影响，大额交易可能面临滑点风险。
+7.  **信号持续性不足/断跑gap**：部分币种信号存在窗口内含断跑gap或持续性不足的问题，影响信号的可靠性。
+8.  **异动与滚动方向冲突**：ZEC、KNTQ、PUMP、SOL、BTC等币种本轮异动与滚动方向冲突，增加了判断的复杂性。
 
 【参数观察】
-本轮扫描结果显示，多数有信号的币种因“历史样本/胜率不足”、“高杠杆占比过高”、“滚动窗口未成熟”或“现货主导”等原因未能通过长期资格硬门槛，且“暂无可分析的成熟信号样本”。这可能表明当前筛选参数较为严格，或市场中尚未形成足够成熟且符合低风险标准的信号。需要更多轮数据来判断参数是否过严或过松。
+鉴于本轮扫描未产生任何达到币种专属阈值的短线强信号，且所有长期观察计划均无适合的候选，同时“自动优化分析层”报告“暂无可分析的成熟信号样本”，这可能表明当前筛选参数（特别是阈值）可能过于严格。然而，考虑到多数“只观察”信号仍存在显著风险（如高杠杆、现货主导、钱包集中），在数据质量和信号成熟度不足的情况下，过早放宽参数可能引入不必要的风险。需要更多轮数据来判断当前筛选参数是否过严或过松。
 
 【下一轮重点检查】
-1.  持续关注现货异常比例的变化趋势。
-2.  重点观察HYPE、LIT、DOGE、PUMP等币种的信号持续性及风险指标（尤其是杠杆率和强平距离）。
-3.  追踪高流动性风险币种（JTO, KAITO, PAXG）的成交额变化。
-4.  关注ETH、BTC、SOL等主要币种的高杠杆仓位占比是否有所改善。
-5.  收集更多轮数据，以评估当前筛选参数的有效性。
+1.  持续监控现货异常比例的变化趋势，评估其对整体数据质量的影响。
+2.  密切关注当前“只观察”币种的风险因素（如高杠杆占比、钱包集中度、现货主导性质）是否有所改善或恶化，以及信号是否能持续发展并满足长期资格硬门槛。
+3.  追踪活跃钱包（特别是Top钱包）的资金流向和具体操作，识别潜在的资金异动。
+4.  观察市场整体情绪和BTC/ETH的价格走势，评估其对其他币种的影响。
