@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-24T01:26:08Z",
+  "generated_at": "2026-08-24T02:25:57Z",
   "items": [
     {
       "coin": "LIT",
@@ -12,7 +12,7 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "DEPIN",
+      "coin": "KNTQ",
       "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
@@ -22,12 +22,13 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "NEAR",
-      "direction": "bearish",
+      "coin": "ETH",
+      "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
-        "high_leverage_concentration"
+        "high_leverage_concentration",
+        "maturity_or_concentration_warning"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
@@ -42,24 +43,12 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "XRP",
+      "coin": "BTC",
       "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
-        "high_leverage_concentration",
-        "maturity_or_concentration_warning"
-      ],
-      "rule": "AI may keep or downgrade this verdict, never upgrade it"
-    },
-    {
-      "coin": "SOL",
-      "direction": "bullish",
-      "verdict": "VETO",
-      "reasons": [
-        "local_candidate_gate_failed",
-        "high_leverage_concentration",
-        "maturity_or_concentration_warning"
+        "high_leverage_concentration"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
@@ -73,8 +62,27 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "ZEC",
+      "coin": "PENGU",
       "direction": "bullish",
+      "verdict": "WATCH",
+      "reasons": [
+        "insufficient_evidence_for_pass"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
+      "coin": "PUMP",
+      "direction": "bullish",
+      "verdict": "VETO",
+      "reasons": [
+        "local_candidate_gate_failed",
+        "maturity_or_concentration_warning"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
+      "coin": "MAX",
+      "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
@@ -93,6 +101,15 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
+      "coin": "UXPL",
+      "direction": "bearish",
+      "verdict": "VETO",
+      "reasons": [
+        "local_candidate_gate_failed"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
       "coin": "TAO",
       "direction": "bullish",
       "verdict": "WATCH",
@@ -102,36 +119,18 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "AAVE",
+      "coin": "ZEC",
       "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
-        "high_leverage_concentration"
-      ],
-      "rule": "AI may keep or downgrade this verdict, never upgrade it"
-    },
-    {
-      "coin": "PUMP",
-      "direction": "bearish",
-      "verdict": "WATCH",
-      "reasons": [
+        "high_leverage_concentration",
         "maturity_or_concentration_warning"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
       "coin": "NEKO",
-      "direction": "bearish",
-      "verdict": "VETO",
-      "reasons": [
-        "local_candidate_gate_failed",
-        "maturity_or_concentration_warning"
-      ],
-      "rule": "AI may keep or downgrade this verdict, never upgrade it"
-    },
-    {
-      "coin": "MAX",
       "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
@@ -161,18 +160,18 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "UANSEM",
-      "direction": "bullish",
+      "coin": "AAVE",
+      "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
-        "maturity_or_concentration_warning"
+        "high_leverage_concentration"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "KNTQ",
-      "direction": "bearish",
+      "coin": "UANSEM",
+      "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
