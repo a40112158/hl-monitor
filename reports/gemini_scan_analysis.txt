@@ -1,33 +1,24 @@
 【Gemini 本轮扫描分析】
 
-状态：success
+状态：api_error
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-本轮扫描未发现达到币种专属阈值的短线强异动信号。主要币种如BTC、ETH、SOL、XRP、HYPE和UPUMP出现偏空信号，但普遍伴随高杠杆集中和与滚动方向冲突的风险，且多数被风控否决。ZEC和LIT的偏多信号有所增强，但仍存在历史样本不足等风险。整体市场信号强度不高，需警惕高杠杆仓位风险和现货异常比例。
+Gemini 分析层调用失败。
+
+错误信息：
+developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}}
 
 【数据质量】
-本轮扫描成功率为100%，覆盖2419个钱包，数据完整性良好。然而，现货语义异常比例为6.17%，虽然低于10.00%的阻断阈值，但仍需关注。多数“只观察”信号存在“历史样本/胜率不足”的风险提示，表明部分币种的信号成熟度不高，数据深度有待积累。
+unknown
 
 【市场与资金结构】
-大盘环境显示BTC和ETH在1小时内略有下跌，但4小时和24小时涨幅为正，整体处于“near_high”区间。
-资金费率方面，所有列出的币种（JTO, KAITO, PAXG, VVV, CASHCAT, XMR, BNB, LINK）资金费率风险均为低。流动性方面，JTO、KAITO、PAXG的24小时成交额较低，流动性风险为高；VVV、CASHCAT、XMR、BNB、LINK流动性风险为中。
-本轮无短线强信号。
-在“只观察”币种中，BTC、ETH、SOL、XRP、HYPE、UPUMP均出现偏空信号，其中BTC本轮合约主动变化高达-$100.41M，ETH为-$25.84M。这些币种的共同风险是同方向高杠杆/爆仓边缘仓位占比过高（71%-83%），平均杠杆偏高（13.7x-18.3x），且本轮异动与滚动方向冲突。ZEC和LIT呈现偏多信号，ZEC本轮合约主动变化$3.16M，但其高杠杆占比也达58%。LIT的杠杆结构相对健康，低/中杠杆占比100%，平均杠杆4.8x。
-多个偏多信号（UANSEM, DEPIN, BASED, UBONK, HWAVE, SWAP）被标记为现货主导，且存在钱包集中度过高、持续性不足、长窗口未成熟等风险，可能并非合约交易信号。
-单钱包主动变化方面，0xecb6...2b00 (money_printer) 大幅减持BTC、ETH、SOL的perp空单，并反转ZEC多单，其仓位多为极高杠杆短线型。
+unknown
 
-【相比上次 AI 分析】
-相比上次分析，本轮市场出现了一些显著变化：
-*   BTC、ETH、HYPE、SOL、XRP、UPUMP的信号方向由上次的偏多或无明确方向转为偏空，且伴随显著的合约主动变化和资金流出。
-*   ZEC的偏多信号强度有所增强，alert_score从1.885提升至2.6975，加权资金流增加1.6M。
-*   LIT的偏多信号也略有增强，alert_score从0.899提升至1.15。
-*   PUMP和XMR的偏空信号有所减弱。
-*   多个现货主导的偏多信号（BASED, DEPIN, HWAVE, SWAP, UANSEM, UBONK）的alert_score从0提升至0.25，但仍处于“只观察”状态且风险提示未变。
+【风险提示】
+- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
+- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
 
-【重点观察】
-*   **BTC (偏空):** 本轮合约主动变化巨大，达-$100.41M，但高杠杆占比73%，平均杠杆18.3x，
-
-【本地完整性校验】
-⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
+【下一轮重点检查】
+- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
