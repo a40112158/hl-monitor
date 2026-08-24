@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-24 19:25:52 | UTC：2026-08-24 11:25:52
+更新时间北京时间：2026-08-24 20:25:53 | UTC：2026-08-24 12:25:53
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -7,15 +7,15 @@
 
 【Top 钱包画像】
 0x2025...840e [money_printer] grade=B score=100.0 样本=24 72h胜率=None 30d胜率=None 主币=UPUMP,PUMP,ZEC
-0xbcd4...0dd2 [money_printer] grade=A score=94.5 样本=42 72h胜率=0.7508451849614557 30d胜率=None 主币=HYPE,XRP,BTC,AAVE,SUI
-0x04cc...38d1 [smart_money] grade=B score=91.5 样本=23 72h胜率=0.24212827371108245 30d胜率=None 主币=XRP,AAVE,ZEC,ENA,VIRTUAL
-0x9bd2...0c88 [smart_money] grade=B score=89.6 样本=21 72h胜率=0.63654372429037 30d胜率=None 主币=HYPE,ZEC
-0x2577...4897 [money_printer] grade=C score=86.0 样本=63 72h胜率=0.49331941903193954 30d胜率=None 主币=ZEC,PUMP,ETH,XRP,BTC
+0xbcd4...0dd2 [money_printer] grade=A score=94.8 样本=44 72h胜率=0.7508451849614559 30d胜率=None 主币=HYPE,XRP,AAVE,BTC,SUI
+0x04cc...38d1 [smart_money] grade=B score=91.5 样本=23 72h胜率=0.24212827371108248 30d胜率=None 主币=XRP,AAVE,ZEC,ENA,VIRTUAL
+0x0911...129a [money_printer] grade=C score=88.1 样本=23 72h胜率=0.4477686035065545 30d胜率=None 主币=ENA,LTC,WIF,TRUMP,HBAR
+0x2577...4897 [money_printer] grade=C score=86.0 样本=63 72h胜率=0.4933194190319397 30d胜率=None 主币=ZEC,PUMP,ETH,XRP,BTC
 0xb83d...6e36 [money_printer] grade=B score=84.0 样本=33 72h胜率=0.06234950270476178 30d胜率=None 主币=ETH,HYPE,BTC,SOL
-0x7737...bf66 [money_printer] grade=C score=82.3 样本=91 72h胜率=0.3959807852229069 30d胜率=None 主币=BUDDY,ZEC,BRIDGE,BNB,ETH
-0xc675...795d [money_printer] grade=B score=81.3 样本=28 72h胜率=0.5923950281982234 30d胜率=None 主币=BTC,HYPE,SOL,ETH,ADA
+0x7737...bf66 [money_printer] grade=C score=82.3 样本=91 72h胜率=0.4062916215849828 30d胜率=None 主币=BUDDY,ZEC,BRIDGE,BNB,ETH
+0xc675...795d [money_printer] grade=B score=81.3 样本=28 72h胜率=0.5923950281982233 30d胜率=None 主币=BTC,HYPE,SOL,ETH,ADA
 0xf822...e01a [money_printer] grade=B score=77.4 样本=11 72h胜率=0.8973304354422633 30d胜率=None 主币=ETH,SOL,HYPE,LINK
-0xfdfb...dbb9 [smart_money] grade=B score=77.1 样本=12 72h胜率=0.49657543567017676 30d胜率=None 主币=XRP,HYPE,DOGE
+0xfdfb...dbb9 [smart_money] grade=B score=77.1 样本=12 72h胜率=0.4965754356701767 30d胜率=None 主币=XRP,HYPE,DOGE
 
 【Top 币种画像】
 
