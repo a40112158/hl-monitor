@@ -1,21 +1,21 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-25 12:25:17 | UTC：2026-08-25 04:25:17
+更新时间北京时间：2026-08-25 13:25:47 | UTC：2026-08-25 05:25:47
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0xbcd4...0dd2 [money_printer] grade=A score=100.0 样本=44 72h胜率=0.805053560807024 30d胜率=None 主币=HYPE,XRP,AAVE,BTC,ETH
-0x04cc...38d1 [smart_money] grade=B score=91.5 样本=23 72h胜率=0.24212827371108242 30d胜率=None 主币=XRP,AAVE,ZEC,ENA,VIRTUAL
-0x1658...f65b [smart_money] grade=C score=86.2 样本=24 72h胜率=0.17694429922436555 30d胜率=None 主币=ETH,SOL
-0xbf73...5d58 [money_printer] grade=B score=86.2 样本=17 72h胜率=0.6064566505880548 30d胜率=None 主币=ZEC,NEAR,HYPE,LIT,XPL
-0x5238...54e5 [smart_money] grade=C score=85.7 样本=24 72h胜率=0.43098872106658104 30d胜率=None 主币=HYPE,ENA,PUMP,KNTQ,ETHFI
+0xbcd4...0dd2 [money_printer] grade=A score=100.0 样本=45 72h胜率=0.8050535608070241 30d胜率=None 主币=HYPE,XRP,AAVE,BTC,ETH
+0x04cc...38d1 [smart_money] grade=B score=91.5 样本=23 72h胜率=0.24212827371108245 30d胜率=None 主币=XRP,AAVE,ZEC,ENA,VIRTUAL
+0x1658...f65b [smart_money] grade=C score=86.2 样本=24 72h胜率=0.1769442992243655 30d胜率=None 主币=ETH,SOL
+0xbf73...5d58 [money_printer] grade=B score=86.2 样本=17 72h胜率=0.6064566505880545 30d胜率=None 主币=ZEC,NEAR,HYPE,LIT,XPL
+0x5238...54e5 [smart_money] grade=C score=85.7 样本=24 72h胜率=0.39877339748388246 30d胜率=None 主币=HYPE,ENA,PUMP,KNTQ,ETHFI
 0xb83d...6e36 [money_printer] grade=B score=85.4 样本=30 72h胜率=0.04758340574996793 30d胜率=None 主币=ETH,HYPE,BTC,SOL
-0xc675...795d [money_printer] grade=A score=84.8 样本=28 72h胜率=0.5939267830136901 30d胜率=None 主币=BTC,HYPE,SOL,ETH,ADA
-0x461c...d2f2 [smart_money] grade=C score=82.3 样本=19 72h胜率=0.4918627452707976 30d胜率=None 主币=ZEC,TAO,BTC
-0x2577...4897 [money_printer] grade=C score=81.9 样本=64 72h胜率=0.45876634271042777 30d胜率=None 主币=ZEC,PUMP,ETH,XRP,BTC
-0x7737...bf66 [money_printer] grade=C score=80.2 样本=93 72h胜率=0.40629162158498294 30d胜率=None 主币=BUDDY,BRIDGE,ZEC,BNB,ETH
+0xc675...795d [money_printer] grade=A score=84.8 样本=28 72h胜率=0.59392678301369 30d胜率=None 主币=BTC,HYPE,SOL,ETH,ADA
+0x461c...d2f2 [smart_money] grade=C score=82.3 样本=19 72h胜率=0.49186274527079765 30d胜率=None 主币=ZEC,TAO,BTC
+0x2577...4897 [money_printer] grade=C score=81.9 样本=64 72h胜率=0.45876634271042804 30d胜率=None 主币=ZEC,PUMP,ETH,XRP,BTC
+0x7737...bf66 [money_printer] grade=C score=80.2 样本=94 72h胜率=0.4062916215849827 30d胜率=None 主币=BUDDY,BRIDGE,ZEC,BNB,ETH
 
 【Top 币种画像】
 
