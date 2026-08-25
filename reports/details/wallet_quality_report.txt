@@ -1,27 +1,27 @@
 【钱包质量分类】
-更新时间北京时间：2026-08-25 23:17:45 | UTC：2026-08-25 15:17:45
+更新时间北京时间：2026-08-26 00:17:52 | UTC：2026-08-25 16:17:52
 统计窗口：最近 30 天
 胜率定义：24h>=+1%算赢；72h>=+2%算赢；7d>=+4%算赢。做空会按方向收益计算。
 
-等级数量：S:0 | A:2 | B:5 | C:46 | R:41 | N:2325
+等级数量：S:0 | A:2 | B:5 | C:47 | R:40 | N:2325
 
 【S/A 钱包 Top】
 0xbcd4...0dd2 [money_printer] A | 分=100.0 | 权重=1.55 | 样本=46 | 72h胜率=77.9% | 72h均值=+7.47% | 主币=HYPE,XRP,AAVE,BTC,ETH
 0xc675...795d [money_printer] A | 分=86.5 | 权重=1.55 | 样本=28 | 72h胜率=61.3% | 72h均值=+1.77% | 主币=BTC,HYPE,SOL,ETH,ADA
 
 【R级反向钱包 Top】
+0x8c96...ca57 [smart_money] R | 反向分=97.1 | 权重=-1.40 | 样本=33 | 72h胜率=40.1% | 72h均值=+3.00% | 主币=BTC
 0xb8eb...1dd5 [money_printer] R | 反向分=95.5 | 权重=-1.20 | 样本=46 | 72h胜率=33.8% | 72h均值=+1.17% | 主币=ETH
 0x9321...d75a [money_printer] R | 反向分=93.4 | 权重=-1.20 | 样本=37 | 72h胜率=55.1% | 72h均值=+4.06% | 主币=XRP,BNB,ZEC,HYPE,ETH
 0x45d2...4029 [money_printer] R | 反向分=93.1 | 权重=-1.20 | 样本=17 | 72h胜率=8.3% | 72h均值=-4.30% | 主币=PUMP,XRP,ZEC,ETH,LINK
 0x68af...c654 [smart_money] R | 反向分=87.8 | 权重=-1.40 | 样本=35 | 72h胜率=21.7% | 72h均值=-8.72% | 主币=PUMP,ZEC,DOGE,HYPE,ASTER
-0x8c96...ca57 [smart_money] R | 反向分=86.3 | 权重=-1.40 | 样本=33 | 72h胜率=40.1% | 72h均值=+3.00% | 主币=BTC
 0x5b5d...c060 [money_printer] R | 反向分=86.2 | 权重=-1.20 | 样本=48 | 72h胜率=12.4% | 72h均值=-4.26% | 主币=HYPE,SOL,XRP,ETH,PUMP
-0xfe7c...b7ae [money_printer] R | 反向分=82.4 | 权重=-1.20 | 样本=24 | 72h胜率=15.4% | 72h均值=-14.32% | 主币=ZEC,NEAR,PUMP,TRUMP,ETH
+0xfe7c...b7ae [money_printer] R | 反向分=82.4 | 权重=-1.20 | 样本=25 | 72h胜率=15.4% | 72h均值=-14.32% | 主币=ZEC,NEAR,PUMP,TRUMP,ETH
 0xad22...4e44 [money_printer] R | 反向分=76.6 | 权重=-1.20 | 样本=14 | 72h胜率=19.0% | 72h均值=-11.22% | 主币=SWAP,BTC,ZEC,HYPE,SOL
 0x8af7...fa05 [money_printer] R | 反向分=76.3 | 权重=-1.20 | 样本=10 | 72h胜率=19.2% | 72h均值=-7.84% | 主币=ZEC
-0x469e...58a5 [money_printer] R | 反向分=74.6 | 权重=-1.20 | 样本=78 | 72h胜率=33.7% | 72h均值=+1.19% | 主币=ETH,BTC,HYPE,XRP,PUMP
+0x469e...58a5 [money_printer] R | 反向分=74.6 | 权重=-1.20 | 样本=79 | 72h胜率=33.7% | 72h均值=+1.19% | 主币=BTC,ETH,HYPE,XRP,PUMP
 0xdcac...9ce2 [smart_money] R | 反向分=74.4 | 权重=-1.40 | 样本=17 | 72h胜率=9.7% | 72h均值=+1.12% | 主币=NEKO,KNTQ,CFX0
-0xd10e...fd9a [smart_money] R | 反向分=74.2 | 权重=-1.40 | 样本=12 | 72h胜率=0.0% | 72h均值=-17.45% | 主币=UPUMP,KNTQ,SWAP
+0xd10e...fd9a [smart_money] R | 反向分=73.9 | 权重=-1.40 | 样本=12 | 72h胜率=0.0% | 72h均值=-17.45% | 主币=UPUMP,KNTQ,SWAP
 0x18ee...8195 [smart_money] R | 反向分=73.9 | 权重=-1.40 | 样本=11 | 72h胜率=18.1% | 72h均值=+0.75% | 主币=BRIDGE,KNTQ
-0x6990...f207 [money_printer,smart_money] R | 反向分=73.1 | 权重=-1.50 | 样本=13 | 72h胜率=19.0% | 72h均值=-3.94% | 主币=KNTQ,HYPE,XRP,ETH
-0x023a...2355 [money_printer] R | 反向分=71.8 | 权重=-1.20 | 样本=223 | 72h胜率=21.4% | 72h均值=+3.52% | 主币=UPUMP,ETH,UXPL,SOL,HYPE
+0xd911...961e [money_printer] R | 反向分=70.9 | 权重=-1.20 | 样本=46 | 72h胜率=27.5% | 72h均值=-0.10% | 主币=ETH
+0x023a...2355 [money_printer] R | 反向分=70.8 | 权重=-1.20 | 样本=223 | 72h胜率=22.5% | 72h均值=+4.12% | 主币=UPUMP,ETH,UXPL,SOL,HYPE
