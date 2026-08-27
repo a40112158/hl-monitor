@@ -1,5 +1,5 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-08-27 10:25:47 | UTC：2026-08-27 02:25:47
+更新时间北京时间：2026-08-27 11:25:50 | UTC：2026-08-27 03:25:50
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
@@ -7,15 +7,15 @@
 
 【Top 钱包画像】
 0xbcd4...0dd2 [money_printer] grade=A score=100.0 样本=50 72h胜率=0.7789892981022187 30d胜率=None 主币=HYPE,XRP,ETH,AAVE,BTC
-0x152e...c9dc [money_printer] grade=C score=100.0 样本=21 72h胜率=0.24819680940966324 30d胜率=None 主币=HYPE,ETH,BTC
-0x7737...bf66 [money_printer] grade=B score=97.2 样本=89 72h胜率=0.38177807968226307 30d胜率=None 主币=BUDDY,BRIDGE,ZEC,BNB,NEAR
-0x04cc...38d1 [smart_money] grade=A score=94.3 样本=14 72h胜率=0.1604573210851623 30d胜率=None 主币=XRP,ZEC,AAVE,MON
-0x350e...fcfb [money_printer] grade=B score=93.4 样本=50 72h胜率=0.540517058314229 30d胜率=None 主币=HYPE,ETH,BTC,ZEC
+0x152e...c9dc [money_printer] grade=C score=100.0 样本=21 72h胜率=0.2481968094096633 30d胜率=None 主币=HYPE,ETH,BTC
+0x7737...bf66 [money_printer] grade=B score=97.2 样本=89 72h胜率=0.3817780796822631 30d胜率=None 主币=BUDDY,BRIDGE,ZEC,BNB,NEAR
+0x04cc...38d1 [smart_money] grade=A score=94.3 样本=14 72h胜率=0.16045732108516236 30d胜率=None 主币=XRP,ZEC,AAVE,MON
+0x350e...fcfb [money_printer] grade=B score=93.4 样本=50 72h胜率=0.5405170583142292 30d胜率=None 主币=HYPE,ETH,BTC,ZEC
 0x75ec...24b8 [money_printer] grade=B score=92.6 样本=11 72h胜率=0.38235354181926434 30d胜率=None 主币=ZEC,KNTQ
-0x7fda...17d1 [money_printer] grade=C score=91.7 样本=111 72h胜率=0.4327879599890252 30d胜率=None 主币=HYPE,ZEC,ETH,BTC,LIT
-0xb83d...6e36 [money_printer] grade=B score=89.7 样本=30 72h胜率=0.04567373396872032 30d胜率=None 主币=ETH,HYPE,BTC,SOL
+0x7fda...17d1 [money_printer] grade=C score=91.7 样本=111 72h胜率=0.4327879599890248 30d胜率=None 主币=HYPE,ZEC,ETH,BTC,LIT
+0xb83d...6e36 [money_printer] grade=B score=89.7 样本=30 72h胜率=0.045673733968720334 30d胜率=None 主币=ETH,HYPE,BTC,SOL
 0xc675...795d [money_printer] grade=A score=86.3 样本=28 72h胜率=0.6196023557048285 30d胜率=None 主币=BTC,HYPE,SOL,ETH,ADA
-0x1658...f65b [smart_money] grade=C score=82.7 样本=20 72h胜率=0.19586950081165372 30d胜率=None 主币=ETH,SOL
+0x1658...f65b [smart_money] grade=C score=82.7 样本=20 72h胜率=0.19586950081165364 30d胜率=None 主币=ETH,SOL
 
 【Top 币种画像】
 
