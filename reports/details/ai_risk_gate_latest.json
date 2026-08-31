@@ -1,21 +1,11 @@
 {
-  "generated_at": "2026-08-31T11:26:12Z",
+  "generated_at": "2026-08-31T12:25:38Z",
   "items": [
     {
       "coin": "LIT",
       "direction": "bullish",
       "verdict": "WATCH",
       "reasons": [
-        "maturity_or_concentration_warning"
-      ],
-      "rule": "AI may keep or downgrade this verdict, never upgrade it"
-    },
-    {
-      "coin": "NEKO",
-      "direction": "bearish",
-      "verdict": "VETO",
-      "reasons": [
-        "local_candidate_gate_failed",
         "maturity_or_concentration_warning"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
@@ -31,17 +21,28 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "HYPE",
-      "direction": "bearish",
-      "verdict": "WATCH",
+      "coin": "KNTQ",
+      "direction": "bullish",
+      "verdict": "VETO",
       "reasons": [
-        "insufficient_evidence_for_pass"
+        "local_candidate_gate_failed",
+        "maturity_or_concentration_warning"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "ETH",
-      "direction": "bearish",
+      "coin": "NEKO",
+      "direction": "bullish",
+      "verdict": "VETO",
+      "reasons": [
+        "local_candidate_gate_failed",
+        "maturity_or_concentration_warning"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
+      "coin": "BTC",
+      "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
@@ -51,12 +52,11 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "BTC",
-      "direction": "bearish",
+      "coin": "UANSEM",
+      "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
-        "high_leverage_concentration",
         "maturity_or_concentration_warning"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
@@ -64,6 +64,15 @@
     {
       "coin": "PUMP",
       "direction": "bullish",
+      "verdict": "WATCH",
+      "reasons": [
+        "insufficient_evidence_for_pass"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
+      "coin": "HYPE",
+      "direction": "bearish",
       "verdict": "WATCH",
       "reasons": [
         "insufficient_evidence_for_pass"
@@ -92,16 +101,6 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "UANSEM",
-      "direction": "bullish",
-      "verdict": "VETO",
-      "reasons": [
-        "local_candidate_gate_failed",
-        "maturity_or_concentration_warning"
-      ],
-      "rule": "AI may keep or downgrade this verdict, never upgrade it"
-    },
-    {
       "coin": "MAX",
       "direction": "bearish",
       "verdict": "VETO",
@@ -112,17 +111,18 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "UPUMP",
-      "direction": "bullish",
+      "coin": "SOL",
+      "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
+        "high_leverage_concentration",
         "maturity_or_concentration_warning"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "KNTQ",
+      "coin": "UPUMP",
       "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
@@ -142,8 +142,8 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "SOL",
-      "direction": "bearish",
+      "coin": "ETH",
+      "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
@@ -193,7 +193,7 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "BNB",
+      "coin": "DOGE",
       "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
