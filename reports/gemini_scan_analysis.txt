@@ -1,99 +1,24 @@
 【Gemini 本轮扫描分析】
 
-状态：success
+状态：api_error
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-本轮扫描未发现达到币种专属阈值的短线强异动或适合低杠杆长期单的候选。多数观察信号因历史样本不足、高杠杆占比过高、现货主导或钱包集中度过高等风险被标记为“只观察”或被风控否决。市场整体环境偏中性或弱势。数据质量存在异常现货比例升高的警告，但整体成功率仍为100%。
+Gemini 分析层调用失败。
+
+错误信息：
+developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 50.406235488s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric' | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, h
 
 【数据质量】
-本轮扫描共监控2419个钱包，成功率100%，无部分成功或失败。永续合约数据10089行，现货数据11749行。现货语义质量中，可信数据9093行，异常隔离601行，异常率为6.20%。存在“异常现货比例升高”的警告，但未达到10.00%的阻断阈值。数据整体完整，无空数据或极端值报告，但部分币种存在“窗口内含断跑gap”的风险提示。
+unknown
 
 【市场与资金结构】
-大盘环境：
-BTC：1小时 -0.04%，4小时 -1.04%，24小时 -0.64%，市场状态为中性（neutral）。
-ETH：1小时 -0.02%，4小时 -2.34%，24小时 -1.70%，市场状态接近低点（near_low）。
+unknown
 
-资金费率 / 流动性：
-KAITO：资金费率-0.02%（低风险），24小时成交额$1.50M（高流动性风险）。
-PENDLE：资金费率+0.00%（低风险），24小时成交额$1.94M（高流动性风险）。
-VVV：资金费率+0.00%（低风险），24小时成交额$4.79M（高流动性风险）。
-ZRO：资金费率+0.00%（低风险），24小时成交额$3.31M（高流动性风险）。
-XMR：资金费率+0.03%（中风险），24小时成交额$63.73M（低流动性风险）。
-AAVE：资金费率+0.00%（低风险），24小时成交额$6.82M（中流动性风险）。
-BNB：资金费率+0.00%（低风险），24小时成交额$8.43M（中流动性风险）。
-DOGE：资金费率+0.00%（低风险），24小时成交额$9.68M（中流动性风险）。
-LIT：24小时成交额$51.55M，流动性风险低。
-XRP：24小时成交额$83.90M，流动性风险低。
-ZEC：24小时成交额$341.12M，流动性风险低。
-HYPE：24小时成交额$402.04M，流动性风险低。
-PUMP：24小时成交额$136.16M，流动性风险低。
-SOL：24小时成交额$526.39M，流动性风险低。
-TAO：24小时成交额$15.11M，流动性风险中。
+【风险提示】
+- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
+- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
 
-OI（未平仓合约量）：
-LIT：$145.28M
-XRP：$208.79M
-XMR：$81.50M
-HYPE：$1.90B
-ETH：$2.09B
-PUMP：$196.21M
-SOL：$641.94M
-TAO：$45.86M
-DOGE：$54.10M
-ZEC：$472.70M
-KAITO：$2.62M
-PENDLE：$7.54M
-VVV：$28.70M
-ZRO：$34.51M
-AAVE：$71.36M
-BNB：$45.62M
-LINK：$64.16M
-MON：$34.25M
-
-净流入、多空人数比、主动买卖比等字段数据不足。
-
-单钱包主动变化：
-*   ETH perp：0x469e...58a5 (money_printer) 偏空，主动变化-$12.55M，杠杆25x，极高杠杆短线型，强平距+72.91%。该钱包同时反转ETH多单为ETH空单，并有HYPE空单变化。
-*   SOL perp：0x362a...1d9f (smart_money) 偏多，主动变化$4.30M，杠杆5x，中杠杆趋势型，强平距+130.46%。该钱包有SOL空单变化。
-*   KNTQ spot：[wallet-redacted] (money_printer) 偏多，现货买入$1.93M。
-*   UPUMP spot：[wallet-redacted] (money_printer) 偏多，现货买入$1.33M。
-*   ZEC perp：[wallet-redacted] (smart_money) 偏多，合约多单变化$1.33M。
-*   HYPE perp：[wallet-redacted] (money_printer) 偏空，合约空单变化-$1.20M。
-*   DOGE perp：[wallet-redacted] (smart_money) 偏多，合约多单变化$998.38K。
-*   CASHCAT perp：[wallet-redacted] (money_printer) 平多，主动变化-$827.06K。
-*   XRP perp：[wallet-redacted] (smart_money) 偏多，合约多单变化$691.54K。
-*   DOGE perp：[wallet-redacted] (smart_money) 偏空，方向反转多单为空单，主动变化-$594.59K。
-*   ZEC perp：[wallet-redacted] (money_printer) 偏多，合约空单变化$510.30K。
-
-【相比上次 AI 分析】
-上次AI分析因资源配额耗尽而未能成功生成完整报告，因此本轮无法进行有效比较。
-
-【重点观察】
-本轮暂无达到币种专属阈值的短线强异动或适合低杠杆长期单的候选。所有信号均处于“只观察”状态，且普遍存在多重风险。
-
-*   **XRP 偏多 (alert=+3.1)**：连续4轮偏多，合约主导。
-    *   理由：本轮合约主动变化$2.02M，30天滚动资金分+2.0，价格靠近24小时低位。
-    *   风险：历史样本/胜率不足；窗口内含断跑gap；高杠杆占比过高(56%)，平均杠杆12.9x偏短线，长期资格未通过。
-*   **KNTQ 偏多 (alert=+2.7)**：连续4轮偏多，现货主导。
-    *   理由：本轮现货主动变化$1.93M，钱包质量加权资金流$1.27M。
-    *   风险：历史样本/胜率不足；滚动信号现货主导，可能是转账/归集/划转，不等于合约方向；缺少合约/低杠杆确认，长期资格未通过。
-*   **kPEPE 偏空 (alert=-2.6)**：首次/反转出现，合约主导。
-    *   理由：本轮合约主动变化-$1.35M。
-    *   风险：历史样本/胜率不足；滚动窗口未成熟；同方向高杠杆/爆仓边缘仓位占比90%，长期资格未通过。
-*   **ZEC 偏多 (alert=+2.4)**：连续3轮偏多，合约主导。
-    *   理由：本轮合约主动变化$2.33M，钱包质量加权资金流$2.00M，价格靠近24小时低位。
-    *   风险：历史样本/胜率不足；窗口内含断跑gap；本轮异动与滚动方向冲突；高杠杆占比过高(61%)，长期资格未通过。
-*   **ETH 偏空 (alert=-1.5)**：连续2轮偏空，合约主导。
-    *   理由：本轮合约主动变化-$5.46M，靠近24小时低位，可能破位延续。
-    *   风险：历史样本/胜率不足；窗口内含断跑gap；本轮异动与滚动方向冲突；高杠杆占比过高(68%)，平均杠杆13.7x偏短线，长期资格未通过。
-*   **LIT 偏多 (alert=+1.0)**：首次/反转出现，滚动建仓/减仓。
-    *   理由：30天滚动资金分+2.0，低/中杠杆仓位占比100%，平均杠杆4.8x，价格靠近24小时低位。
-    *   风险：历史样本/胜率不足；窗口内含断跑gap；存在反向滚动窗口冲突。
-*   **SOL 偏空 (alert=-1.0)**：连续2轮偏空，滚动建仓/减仓。
-    *   理由：本轮钱包质量加权资金流-$7.95M，30天滚动资金分-2.0，该币24小时弱于BTC，靠近24小时低位。
-    *   风险：历史样本/胜率不足；窗口内含断跑gap
-
-【本地完整性校验】
-⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
+【下一轮重点检查】
+- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
