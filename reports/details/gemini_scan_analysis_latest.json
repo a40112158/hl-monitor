@@ -1,17 +1,17 @@
 {
-  "status": "completed",
-  "urgency": "high",
-  "executive_summary": "本轮扫描成功率100%，但现货异常比例略有升高，需持续关注。市场整体情绪中性偏多，但未出现达到币种专属阈值的短线强信号。多数“只观察”币种因历史样本不足、高杠杆集中或现货主导等原因被风控否决，暂无明确高优先级交易目标。",
-  "data_quality": "详见 Markdown 报告【数据质量】部分。",
-  "market_structure": "详见 Markdown 报告【市场与资金结构】部分。",
+  "status": "incomplete_output",
+  "urgency": "normal",
+  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
+  "data_quality": "unknown",
+  "market_structure": "unknown",
   "changes_since_previous": [],
   "focus_items": [],
   "risk_warnings": [],
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描成功率100%，但现货异常比例略有升高，需持续关注。市场整体情绪中性偏多，但未出现达到币种专属阈值的短线强信号。多数“只观察”币种因历史样本不足、高杠杆集中或现货主导等原因被风控否决，暂无明确高优先级交易目标。\n\n【数据质量】\n本轮扫描监控钱包2419个，成功率100%，数据获取完整。现货语义质量方面，可信数据9102条，异常隔离589条，异常率为6.08%，低于10.00%的阻断阈值，但系统已发出“异常现货比例升高”的警告，需持续关注。多数信号因“历史样本/胜率不足”而被标记风险，表明部分币种或信号的成熟度尚待提升。\n\n【市场与资金结构】\nBTC在1小时和4小时内小幅上涨，24小时涨幅1.42%，市场状态为neutral。ETH在1小时和4小时内小幅上涨，24小时涨幅2.31%，市场状态为near_high。\n资金费率方面，VVV、KAITO、JTO、LINK、PENDLE、ZRO、AAVE、DOGE等币种的资金费率均处于低风险水平。\n流动性方面，VVV、KAITO、JTO、LINK、PENDLE、ZRO的24小时成交额较低，流动性风险为高。AAVE和DOGE的流动性风险为中。BTC和ETH的24小时成交额分别为$2.42B和$1.08B，流动性风险为低。\n本轮无达到币种专属阈值的短线强信号。在“只观察”列表中，KNTQ、SOL、BTC、ETH、ZEC、XMR呈现偏空信号，UPUMP、LIT、HYPE、PUMP、NEKO、MAX、UANSEM、BUDDY、UAVAX、BRIDGE、UBONK、BASED、HREKT、HWAVE呈现偏多或偏空但分数较低的信号。其中，KNTQ和UPUMP主要受现货主动变化影响，SOL、BTC、ETH、ZEC的偏空信号伴随高杠杆占比和平均杠杆偏高风险。\n\n【相比上次 AI 分析】\n上次AI分析报告内容不完整，无法进行全面比较。\n本轮与上轮相比，部分币种信号出现变化：\n*   BTC：由偏多转为偏空，信号强度减弱，加权资金流大幅减少。\n*   ETH：由偏多转为偏空，信号强度减弱，加权资金流有所增加。\n*   HYPE：由偏空转为偏多，信号强度增强，但加权资金流减少，且风控结论由PASS降级为VETO。\n*   KNTQ：由偏多转为偏空，信号强度减弱，加权资金流大幅减少。\n*   SOL：偏空信号增强，加权资金流减少。\n*   UPUMP：偏多信号增强，加权资金流减少。\n*   ZEC：偏空信号增强，加权资金流大幅增加。\n*   LIT、PUMP、XMR、NEKO、MAX、UANSEM、BUDDY、UAVAX、BRIDGE、UBONK、BASED、HREKT、HWAVE等币种的信号强度和加权资金流变化不明显或维持在低位。\n\n【重点观察】\n*   **LIT (偏多)**：WATCH。理由：滚动建仓/减仓，连续4轮，低/中杠杆仓位占比100%，平均杠杆4.8x，24h强于BTC。风险：历史样本/胜率不足，窗口内含断跑gap。\n*   **PUMP (偏多)**：WATCH。理由：滚动建仓/减仓，连续4轮，24h强于BTC。风险：历史样本/胜率不足，同方向高杠杆仓位偏多44%。\n\n【AI 风控结论】\n*   LIT (偏多): WATCH\n*   KNTQ (偏空): VETO\n*   SOL (偏空): VETO\n*   XMR (偏空): VETO\n*   BTC (偏空): VETO\n*   UPUMP (偏多): VETO\n*   PUMP (偏多): WATCH\n*   ETH (偏空): VETO\n*   ZEC (偏空): VETO\n*   HYPE (偏多): VETO\n*   NEKO (偏空): VETO\n*   MAX (偏空): VETO\n*   UANSEM (偏多): VETO\n*   BUDDY (偏多): VETO\n*   UAVAX (偏空): VETO\n*   BRIDGE (偏多): VETO\n*   UBONK (偏多): VETO\n*   BASED (偏多): VETO\n*   HREKT (偏多): VETO\n*   HWAVE (偏空): VETO\n\n【风险提示】\n1.  **数据质量风险**：本轮现货异常比例升高至6.08%，虽然未达阻断阈值，但需警惕潜在的数据噪音或异常行为。\n2.  **信号成熟度风险**：多数“只观察”币种存在“历史样本/胜率不足”的风险，其信号可靠性有待进一步验证。\n3.  **现货主导信号风险**：KNTQ、UPUMP、NEKO、MAX、UANSEM、BUDDY、UAVAX、BRIDGE、UBONK、BASED、HREKT、HWAVE等币种的信号现货主导，可能为转账/归集/划转行为，不直接等同于合约方向。\n4.  **高杠杆集中风险**：SOL、BTC、ETH、ZEC的偏空信号中，同方向高杠杆/爆仓边缘仓位占比过高，平均杠杆偏高，存在短线爆仓风险。\n5.  **钱包集中度风险**：XMR、HYPE、BUDDY、UAVAX、BRIDGE、UBONK、BASED、HREKT、HWAVE等币种的信号存在钱包集中度过高的问题，可能为单钱包异动，非市场普遍行为。\n6.  **流动性不足风险**：VVV、KAITO、JTO、LINK、PENDLE、ZRO等币种的24小时成交额较低，流动性风险高，可能导致价格剧烈波动或难以平仓。\n7.  **信号冲突风险**：BTC和ETH的本轮异动与滚动方向冲突，增加了判断的复杂性。\n\n【参数观察】\n当前自动优化分析层显示“暂无可分析的成熟信号样本”，且护栏设置了“最少样本=24，验证集=8”等严格条件。结合本轮大量信号因“历史样本/胜率不足”、“长期资格未通过”等原因被否决，表明当前筛选参数可能偏严，导致缺乏符合长期低杠杆策略的成熟信号。需要更多轮数据来评估当前参数设置的长期有效性。\n\n【下一轮重点检查】\n1.  持续关注现货异常比例的变化趋势，评估其对整体数据质量的影响。\n2.  密切观察LIT和PUMP的信号持续性、资金流向和杠杆结构，以判断其是否能转化为更明确的交易机会。\n3.  对SOL、BTC、ETH、ZEC等高杠杆集中币种的偏空信号进行跟踪，关注其杠杆结构是否有所改善或风险是否进一步加剧。\n4.  对流动性风险高的币种，继续评估其成交量和市场深度，警惕潜在的流动性枯竭风险。\n5.  关注“只观察”列表中现货主导信号的币种，尝试区分真实交易意图与链上操作。",
-  "generated_at": "2026-09-01T04:26:28Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描成功率100%，现货异常比例略有升高但仍在阈值内。市场整体情绪中性，未出现达到币种专属阈值的短线强信号。多数“只观察”币种因历史样本不足、高杠杆集中或现货主导等原因被风控否决。当前市场缺乏明确的高优先级交易目标，建议继续保持观察。\n\n【数据质量】\n本轮扫描成功率为100.00%（2419个钱包全部成功），无部分成功或失败的扫描。现货语义质量方面，可信数据9101条，异常隔离589条，异常率为6.08%。虽然异常现货比例有所升高，但仍低于10.00%的阻断阈值，数据质量整体可接受。自动优化分析层显示暂无可分析的成熟信号样本，可能反映了当前市场缺乏明确的、可回测的强信号。\n\n【市场与资金结构】\nBTC: 1小时涨幅+0.03%，4小时涨幅+0.46%，24小时涨幅+0.94%，市场情绪为中性。\nETH: 1小时跌幅-0.03%，4小时涨幅+0.28%，24小时涨幅+1.38%，市场情绪为中性。\n\n资金费率方面，多数币种（如KAITO, JTO, LINK, PENDLE, VVV, ZRO, AAVE, DOGE, LIT, PUMP, HYPE, NEKO, MAX, UANSEM, UPUMP, BUDDY, SOL, UAVAX, BASED, BRIDGE, UBONK, HWAVE, HREKT, TAO）资金费率风险均为低，XMR资金费率略高但风险仍为低。\n\n流动性方面，部分币种24小时成交额较低，存在高流动性风险：KAITO ($350.63K), JTO ($1.53M), LINK ($4.78M), PENDLE ($966.28K), VVV ($3.67M), ZRO ($2.28M)。AAVE ($6.30M), DOGE ($6.59M), TAO ($6.74M) 流动性风险为中。其他主要币种如BTC ($2.40B), ETH ($1.04B), HYPE ($520.58M), SOL ($277.88M), PUMP ($73.34M), LIT ($41.70M), XMR ($53.08M), ZEC ($257.03M) 流动性风险较低。\n\nOpen Interest (OI) 方面，BTC OI为$2.98B，ETH OI为$2.13B，SOL OI为$663.95M，HYPE OI为$2.01B，PUMP OI为$211.94M，LIT OI为$158.77M，XMR OI为$99.93M，ZEC OI为$481.48M。\n\n主动买卖比、多空人数比等数据不足。\n\n【相比上次 AI 分析】\n上轮报告紧急度为 `high`，本轮为 `normal`，显示市场整体异动程度有所下降。上轮报告已指出“未出现达到币种专属阈值的短线强信号”，本轮情况相同，无明显短线强信号。现货异常比例本轮为6.08%，上轮报告中未明确给出具体数值，但提到了“现货异常比例略有升高，需持续关注”，本轮仍在阈值内。\n\n【重点观察】\n本轮暂无达到币种专属阈值的短线强异动。以下币种被列为“只观察”，但均存在显著风险：\n\n*   **LIT (偏多):** Alert score +0.70。理由：滚动窗口资金流入，低/中杠杆仓位占比100%，平均杠杆4.8x。风险：历史样本/胜率不足；窗口内含断跑gap。\n*   **PUMP (偏多):** Alert score +0.10。理由：滚动窗口资金流入，24h表现强于BTC。风险：历史样本/胜率不足；窗口内含断跑gap；同方向高杠杆仓位偏多45%。\n*   **KNTQ (偏空):** Alert score -3.76\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
+  "generated_at": "2026-09-01T05:26:36Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
@@ -25,6 +25,6 @@
   ],
   "force_analysis": true,
   "force_reason": "manual",
-  "tg_sent": true,
+  "tg_sent": false,
   "error_tg_sent": false
 }
