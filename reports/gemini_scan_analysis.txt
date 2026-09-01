@@ -1,24 +1,87 @@
 【Gemini 本轮扫描分析】
 
-状态：api_error
+状态：success
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-Gemini 分析层调用失败。
-
-错误信息：
-developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}
+本轮扫描未发现达到币种专属阈值的短线强异动信号。多数观察币种因历史样本不足、高杠杆占比过高或现货主导等原因，仍处于“只观察”状态。系统健康告警显示异常现货比例略有升高，但仍在阻断阈值以下。整体市场环境保持中性，无明显异常或高优先级交易信号，建议继续保持观察。
 
 【数据质量】
-unknown
+本轮扫描成功率为100%，覆盖2419个钱包，数据完整性良好。现货语义质量可信度高，但异常现货比例升高至6.17%，接近10.00%的阻断阈值，需持续关注。多个币种的信号因“历史样本/胜率不足”而被标记风险，表明部分币种的数据积累尚不充分。
 
 【市场与资金结构】
-unknown
+大盘环境方面，BTC和ETH在1小时、4小时和24小时内均呈现小幅涨跌，整体处于中性区间。
+
+资金费率普遍为低风险（+0.00%），表明市场情绪相对平稳，未出现极端的多空倾向。然而，部分币种的24小时成交额较低，存在流动性风险：JTO和PENDLE的流动性风险为高，AAVE、DOGE、LINK、TAO、VVV和ZRO的流动性风险为中。
+
+本轮暂无达到币种专属阈值的短线强异动信号，也无明确的做多或做空观察目标。
+
+在“只观察”列表中，多个币种存在显著风险：
+- UAVAX（偏多）主要由现货主导，且钱包集中度过高（Top1贡献100%），可能为转账或归集行为，而非合约方向。
+- SOL（偏空）、TRX（偏空）、ETH（偏空）、ZEC（偏空）、NEAR（偏多）、PUMP（偏多）均存在高杠杆仓位占比过高的问题，其中SOL、ETH平均杠杆偏高（13.7x），TRX高杠杆占比高达92%。ETH的本轮异动与滚动方向冲突。
+- UPUMP（偏空）、UANSEM（偏空）、MAX（偏空）、NEKO（偏空）、BUDDY（偏多）等币种的信号也主要由现货主导，且缺少合约/低杠杆确认，或钱包集中度过高。
+- LIT（偏多）和XMR（偏空）的杠杆健康度较好（低/中杠杆占比100%，平均杠杆分别为4.8x和4.6x），但仍面临历史样本/胜率不足的风险。
+
+单钱包主动变化方面，0x936c...bb0f钱包对UAVAX进行了5.48M美元的现货买入，但其合约持仓（ETH空、BTC空、NEAR空）均为极高杠杆短线型，且与UAVAX的现货偏多方向存在潜在背离。0x24fb...ed0f钱包对ETH新开多单4.35M美元，为15x高杠杆短线型。此外，多个钱包对ETH、SOL、NEAR、UPUMP、ZEC进行了大额合约或现货操作，但多伴随高杠杆或现货主导等风险因素。
+
+【相比上次 AI 分析】
+数据不足，无法进行比较。上次AI分析报告因服务器错误未能成功生成。
+
+【重点观察】
+1.  **UAVAX（偏多）**:
+    -   **方向**: 偏多
+    -   **理由**: 存在大额现货主动买入（$5.48M），且由单一优质钱包主导。
+    -   **风险**: 信号现货主导，可能是转账/归集，不等于合约方向；钱包集中度过高（Top1贡献100%），可能为单钱包异动；该钱包其他合约持仓为高杠杆空单，存在现货与合约方向背离的风险。AI风控结论为VETO。
+2.  **ETH（偏空）**:
+    -   **方向**: 偏空
+    -   **理由**: 本轮合约主动变化-$11.73M，有资金流出迹象。
+    -   **风险**: 高杠杆占比过高（67%），平均杠杆13.7x，偏短线；本轮异动与滚动方向冲突；历史样本/胜率不足。AI风控结论为VETO。
+3.  **SOL（偏空）**:
+    -   **方向**: 偏空
+    -   **理由**: 本轮合约主动变化-$5.84M，有资金流出迹象。
+    -   **风险**: 高杠杆占比过高（84%），平均杠杆13.7x，偏短线；历史样本/胜率不足；窗口内含断跑gap。AI风控结论为VETO。
+4.  **LIT（偏多）**:
+    -   **方向**: 偏多
+    -   **理由**: 滚动建仓/减仓信号，低/中杠杆仓位占比100%，平均杠杆4.8x，杠杆健康度良好。
+    -   **风险**: 历史样本/胜率不足；窗口内含断跑gap。AI风控结论为WATCH。
+
+【AI 风控结论】
+-   LIT: WATCH
+-   UAVAX: VETO
+-   XMR: WATCH
+-   SOL: VETO
+-   TRX: VETO
+-   HYPE: WATCH
+-   ETH: VETO
+-   ZEC: VETO
+-   UPUMP: VETO
+-   PUMP: VETO
+-   UANSEM: VETO
+-   MAX: VETO
+-   NEKO: VETO
+-   BUDDY: VETO
+-   NEAR: VETO
+-   KNTQ: VETO
+-   TAO: VETO
+-   BASED: VETO
+-   HWAVE: VETO
+-   BRIDGE: VETO
 
 【风险提示】
-- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
-- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
+1.  **高杠杆集中风险**: SOL、TRX、ETH、ZEC、NEAR、PUMP等币种存在大量高杠杆仓位，一旦市场出现剧烈波动，可能引发连锁清算，加剧价格波动。
+2.  **现货主导信号风险**: UAVAX、UPUMP、UANSEM、MAX、NEKO、BUDDY等币种的信号主要由现货主导，可能为钱包转账、归集或划转行为，不代表实际的合约交易方向，存在误判风险。
+3.  **流动性不足风险**: JTO和PENDLE流动性风险高，AAVE、DOGE、LINK、TAO、VVV、ZRO流动性风险中，在这些币种上进行大额操作可能面临成交困难或滑点过大的风险。
+4.  **数据样本不足风险**: 多数“只观察”币种的信号均提示“历史样本/胜率不足”，这意味着信号的可靠性尚未得到充分验证。
+5.  **钱包集中度风险**: UAVAX、BUDDY等币种的信号存在钱包集中度过高的问题，可能由少数大额钱包异动引起，不代表市场普遍情绪。
+6.  **信号冲突风险**: ETH、UPUMP等币种的本轮异动与滚动方向冲突，增加了判断的复杂性。
+7.  **异常现货比例升高**: 6.17%的异常现货比例虽然未达阻断阈值，但仍需警惕数据异常可能带来的潜在风险。
+
+【参数观察】
+当前扫描未发现达到币种专属阈值的短线强异动，且“自动优化分析层”显示“暂无可分析的成熟信号样本”，这可能表明当前的筛选参数（如阈值）相对严格，导致未能捕捉到更多信号。然而，考虑到市场整体中性且存在较多高杠杆和现货主导的风险信号，当前参数的保守性可能有助于规避不确定性。需要更多轮数据来判断参数是否过严或过松。
 
 【下一轮重点检查】
-- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
+1.  **异常现货比例**: 持续监控异常现货比例是否继续升高，或接近阻断阈值。
+2.  **高杠杆币种的杠杆健康度**: 重点关注SOL、TRX、ETH、ZEC、NEAR、PUMP等高杠杆币种的杠杆结构变化，特别是高杠杆仓位占比和平均杠杆水平。
+3.  **流动性风险币种的成交额**: 持续关注JTO、PENDLE等流动性风险高币种的成交额变化，评估其流动性状况是否改善。
+4.  **“只观察”币种的信号演变**: 观察

@@ -1,6 +1,5 @@
 {
-  "consecutive_failures": 1,
-  "last_failure_at": "2026-09-01T19:28:06Z",
-  "last_error": "developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 5",
+  "consecutive_failures": 0,
+  "last_success_at": "2026-09-01T20:26:30Z",
   "model": "gemini-2.5-flash"
 }
