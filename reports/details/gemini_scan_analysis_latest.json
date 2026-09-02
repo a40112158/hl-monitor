@@ -1,7 +1,7 @@
 {
   "status": "incomplete_output",
   "urgency": "normal",
-  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【参数观察】、【下一轮重点检查】、报告结尾",
+  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【市场与资金结构】、【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
   "data_quality": "unknown",
   "market_structure": "unknown",
   "changes_since_previous": [],
@@ -10,8 +10,8 @@
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动信号。多数观察币种存在历史样本不足、高杠杆集中或现货主导等风险，导致长期资格未通过。大盘环境保持中性，但BTC和ETH有显著的合约主动变化，需持续观察其后续影响。\n\n【数据质量】\n本轮扫描的钱包监控成功率为100%，数据完整性较高。然而，现货异常比例略有升高至6.26%，虽然仍在阻断阈值10.00%以下，但需保持关注。\n\n【市场与资金结构】\n大盘环境：BTC和ETH在1小时、4小时和24小时内波动不大，整体处于中性区间。BTC 24小时下跌1.63%，ETH 24小时下跌2.50%。\n资金费率：所有列出的币种（JTO, PENDLE, AAVE, DOGE, LINK, TAO, VVV, ZRO等）资金费率均接近0.00%，风险评估为低。\n流动性：JTO和PENDLE的24小时成交额较低（$3.43M和$2.00M），流动性风险为高。AAVE、DOGE、LINK、TAO、VVV、ZRO的流动性风险为中。其他主要币种如BTC、ETH、HYPE、SOL、LIT、PUMP、XMR、ZEC流动性风险为低。\n主动资金变化：\n*   BTC：有“money_printer”钱包主动做空-$8.99M（20x杠杆），“smart_money”钱包平多-$5.28M（5x杠杆）。\n*   MAX：有“smart_money”钱包现货减持-$4.98M。\n*   ETH：有“smart_money”钱包平多-$4.80M（15x杠杆）。\n*   SOL：有“smart_money”钱包主动做多$2.19M（5x杠杆）。\n*   HYPE：有“smart_money”钱包主动做空-$1.87M（5x杠杆）。\n*   LIT：有“money_printer”钱包主动做空-$949.51K（5x杠杆）。\n*   PUMP：有“smart_money”钱包主动做多$851.89K（10x杠杆）。\n*   ZEC：有“smart_money”钱包新开多$836.39K（10x杠杆），另有“money_printer”钱包平多-$518.68K（5x杠杆）。\n*   XRP：有“smart_money”钱包平多-$519.39K（5x杠杆）。\n*   ENA：有“money_printer”钱包新开空-$509.68K（10x杠杆）。\n资金流向样本显示，多个“money_printer”钱包存在大额USDC减少（疑似资金流出/买入），且持有大量永续空头仓位。部分“smart_money”钱包有USDC增加和现货减少（疑似卖出/转现金）。\n净流入、OI、多空人数比、主动买卖比等整体市场指标数据不足。\n\n【相比上次 AI 分析】\n上次AI分析报告内容不完整，无法进行有效比较。本轮报告提供了完整的分析框架和详细的信号解释，数据质量和市场结构分析更为全面。\n\n【重点观察】\n暂无明确高优先级目标。\n\n【AI 风控结论】\nLIT: WATCH\nMAX: VETO\nHYPE: WATCH\nZEC: VETO\nXMR: WATCH\nCASHCAT: VETO\nETH: VETO\nSOL: VETO\nBTC: VETO\nTAO: VETO\nUANSEM: VETO\nPUMP: VETO\nNEKO: VETO\nKNTQ: VETO\nUPUMP: VETO\nBUDDY: VETO\nNEAR: VETO\nBASED: VETO\nBRIDGE: VETO\nHWAVE: VETO\n\n【风险提示】\n1.  **历史样本/胜率不足：** 大部分“只观察”信号的置信度为低，且存在历史样本或胜率不足的风险，不宜作为确定性交易依据。\n2.  **高杠杆集中：** ETH、SOL、BTC、ZEC、PUMP、NEAR等币种的同方向高杠杆/爆仓边缘仓位占比过高（67%-94%），平均杠杆也偏高（13.7x-17.4x），存在较高的短线爆仓风险。\n3.  **现货主导/钱包集中度过高：** MAX、UANSEM、NEKO、KNTQ、UPUMP、BUDDY、BASED、BRIDGE、HWAVE等币种的信号现货主导，可能为转账/归集/划转，不代表合约方向。TAO、UPUMP、BA\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
-  "generated_at": "2026-09-02T03:27:50Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强信号。市场整体情绪偏中性，BTC和ETH均处于中性区间。多数观察币种因历史样本不足、高杠杆占比过高、现货主导或钱包集中度过高等原因被标记为“只观察”或被风控否决。值得注意的是，ETH和SOL的信号方向由多头转为偏空，且伴随高杠杆风险。部分钱包出现大额合约操作，但未形成明确的整体信号。\n\n【数据质量】\n本轮扫描成功率为100%，共\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
+  "generated_at": "2026-09-02T04:26:49Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
