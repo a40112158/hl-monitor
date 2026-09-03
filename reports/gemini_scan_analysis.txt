@@ -1,23 +1,24 @@
 【Gemini 本轮扫描分析】
 
-状态：success
+状态：api_error
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-本轮扫描未发现达到币种专属阈值的短线强异动信号。所有观察信号均处于“只观察”状态，且普遍存在历史样本不足、高杠杆占比过高、钱包集中度高或现货主导等风险，信心度较低。现货数据异常比例略有升高，但仍在可接受范围内。整体市场环境未见明显异常。
+Gemini 分析层调用失败。
+
+错误信息：
+developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}
 
 【数据质量】
-扫描成功率为100%，共监控2419个钱包，无部分成功或失败的扫描。现货语义质量可信度较高，但异常隔离的现货数据比例为6.38%，略高于正常水平，但仍在10.00%的阻断阈值之下，数据质量整体可接受。报告中未发现空数据或极端值。
+unknown
 
 【市场与资金结构】
-BTC在1小时和4小时内均下跌-0.07%，24小时上涨+0.19%，市场状态为“near_high”。ETH在1小时和4小时内均下跌，24小时下跌-0.77%，市场状态为“neutral”。
-所有列出的币种资金费率均为+0.00%或-0.00%，风险评估为“低”。
-流动性方面，JTO、PENDLE、TAO、VVV的24小时成交额较低，流动性风险为“高”。AAVE、ASTER、LINK、NEAR的流动性风险为“中”。其他主要币种如BTC、ETH、SOL、HYPE、ZEC、XMR、CASHCAT、LIT、PUMP、PONS、XRP的流动性风险为“低”，成交额相对较高。
-报告中未提供净流入、OI、多空人数比、主动买卖比等具体数据。
+unknown
 
-【相比上次 AI 分析】
-本轮扫描与上次AI分析相比，市场结构和信号强度无明显变化。上次报告也指出未发现达到币种专属阈值的短线强异动信号，本轮情况类似。所有观察信号仍处于“只观察”状态，且普遍存在历史样本不足、高杠杆占比过高、钱包集中度高或现货主导
+【风险提示】
+- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
+- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
 
-【本地完整性校验】
-⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
+【下一轮重点检查】
+- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
