@@ -1,21 +1,21 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-09-05 04:25:26 | UTC：2026-09-04 20:25:26
+更新时间北京时间：2026-09-05 05:25:09 | UTC：2026-09-04 21:25:09
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0x350e...fcfb [money_printer] grade=S score=100.0 样本=79 72h胜率=0.37623461813757747 30d胜率=None 主币=HYPE,ETH,ZEC,XRP,BTC
-0xbf73...5d58 [money_printer] grade=B score=100.0 样本=52 72h胜率=0.4484527397039862 30d胜率=None 主币=ZEC,ETH,NEAR,BTC,HYPE
-0x3888...dcdd [smart_money] grade=B score=100.0 样本=43 72h胜率=0.3025699023230937 30d胜率=0.0 主币=UPUMP
-0xe0ff...7610 [money_printer] grade=B score=100.0 样本=28 72h胜率=0.4752124467092768 30d胜率=None 主币=LIT
+0x350e...fcfb [money_printer] grade=A score=100.0 样本=79 72h胜率=0.37623461813757764 30d胜率=None 主币=HYPE,ETH,ZEC,XRP,BTC
+0xbf73...5d58 [money_printer] grade=B score=100.0 样本=52 72h胜率=0.4484527397039861 30d胜率=None 主币=ZEC,ETH,NEAR,BTC,HYPE
+0x3888...dcdd [smart_money] grade=B score=100.0 样本=42 72h胜率=0.30527538244719526 30d胜率=None 主币=UPUMP
+0xe0ff...7610 [money_printer] grade=B score=100.0 样本=29 72h胜率=0.4752124467092768 30d胜率=None 主币=LIT
+0xc675...795d [money_printer] grade=A score=100.0 样本=26 72h胜率=0.6001224670200911 30d胜率=None 主币=BTC,SOL,HYPE,ETH,ADA
 0xeb0f...4637 [smart_money] grade=B score=100.0 样本=21 72h胜率=0.5385564541917256 30d胜率=None 主币=ZEC,XRP,SOL,ETH
 0x152e...c9dc [money_printer] grade=A score=100.0 样本=17 72h胜率=0.3795142620987446 30d胜率=None 主币=HYPE,ETH,BTC
-0xbd49...3d01 [money_printer] grade=B score=99.5 样本=10 72h胜率=0.7191291577666771 30d胜率=None 主币=UPUMP
-0x75ec...24b8 [money_printer] grade=B score=95.9 样本=33 72h胜率=0.3890460088141219 30d胜率=None 主币=ZEC,HYPE,KNTQ
+0xbd49...3d01 [money_printer] grade=B score=99.5 样本=10 72h胜率=0.7191291577666769 30d胜率=None 主币=UPUMP
+0x75ec...24b8 [money_printer] grade=B score=95.9 样本=33 72h胜率=0.38904600881412194 30d胜率=None 主币=ZEC,HYPE,KNTQ
 0x2a72...267c [smart_money] grade=B score=95.1 样本=41 72h胜率=0.3746311223130882 30d胜率=None 主币=PUMP
-0x04cc...38d1 [smart_money] grade=A score=92.2 样本=17 72h胜率=0.12513519767419912 30d胜率=None 主币=XRP,ZEC,ASTER,MON
 
 【Top 币种画像】
 
