@@ -1,2 +1,1 @@
-﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings
-0x5cddd9a435aabecbea14d7abe24f546ff24ccb94,smart_money,-667000.001678,0.0,0.0,USDC减少，疑似资金流出/买入,-,-,-,-,-,-,-
+﻿empty
