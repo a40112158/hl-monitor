@@ -1,1 +1,3 @@
-﻿empty
+﻿address,groups,usdc_delta,spot_delta,spot_price_effect,flow_type,spot_increases,spot_decreases,spot_net_changes,spot_operations,perp_operations,current_perp_positions,current_spot_holdings
+0x5b5d51203a0f9079f8aeb098a6523a13f298c060,money_printer,-799379.8327189982,0.0,0.03511754164390004,USDC减少，疑似资金流出/买入,-,-,-,-,-,ETH空 5x $198.16M cross 强平距=+48.39% 中杠杆趋势型；BTC空 5x $171.45M cross 强平距=+56.38% 中杠杆趋势型；SOL空 10x $81.04M cross 强平距=+116.46% 高杠杆短线型,UXPL $11.37M 数量=6.63M；HYPE $65.85K 数量=793.04K；LATINA $45.66K 数量=45.66K
+0xb83de012dba672c76a7dbbbf3e459cb59d7d6e36,money_printer,-511394.91275800765,0.0,0.0,USDC减少，疑似资金流出/买入,-,-,-,-,-,ETH空 5x $111.81M cross 强平距=+55.65% 中杠杆趋势型；BTC空 5x $99.07M cross 强平距=+64.03% 中杠杆趋势型；HYPE空 5x $77.60M cross 强平距=+75.43% 中杠杆趋势型,UXPL $1.45M 数量=846.76K；HYPE $66.87K 数量=805.38K；LATINA $35.47K 数量=35.47K
