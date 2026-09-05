@@ -1,21 +1,21 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-09-05 17:25:05 | UTC：2026-09-05 09:25:05
+更新时间北京时间：2026-09-05 18:25:06 | UTC：2026-09-05 10:25:06
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0xbf73...5d58 [money_printer] grade=B score=100.0 样本=53 72h胜率=0.45217055204511064 30d胜率=None 主币=ZEC,ETH,NEAR,BTC,HYPE
-0x3888...dcdd [smart_money] grade=B score=100.0 样本=42 72h胜率=0.3052753824471953 30d胜率=None 主币=UPUMP
-0xe0ff...7610 [money_printer] grade=B score=100.0 样本=30 72h胜率=0.4752124467092768 30d胜率=None 主币=LIT
+0x350e...fcfb [money_printer] grade=B score=100.0 样本=79 72h胜率=0.35759635445205096 30d胜率=None 主币=HYPE,ETH,ZEC,XRP,BTC
+0xbf73...5d58 [money_printer] grade=B score=100.0 样本=53 72h胜率=0.4521705520451105 30d胜率=None 主币=ZEC,ETH,NEAR,BTC,HYPE
+0x3888...dcdd [smart_money] grade=B score=100.0 样本=42 72h胜率=0.30527538244719543 30d胜率=None 主币=UPUMP
+0xe0ff...7610 [money_printer] grade=B score=100.0 样本=30 72h胜率=0.47521244670927687 30d胜率=None 主币=LIT
 0xeb0f...4637 [smart_money] grade=B score=100.0 样本=21 72h胜率=0.5727210812312122 30d胜率=None 主币=ZEC,XRP,SOL,ETH
 0x152e...c9dc [money_printer] grade=A score=100.0 样本=17 72h胜率=0.37951426209874456 30d胜率=None 主币=HYPE,ETH,BTC
-0xbd49...3d01 [money_printer] grade=B score=99.5 样本=10 72h胜率=0.719129157766677 30d胜率=None 主币=UPUMP
-0x75ec...24b8 [money_printer] grade=B score=95.9 样本=33 72h胜率=0.452952619707843 30d胜率=None 主币=ZEC,HYPE,KNTQ
-0xbcd4...0dd2 [money_printer] grade=B score=94.6 样本=124 72h胜率=0.39001433662904506 30d胜率=None 主币=HYPE,XRP,LIT,PUMP,BNB
+0xbcd4...0dd2 [money_printer] grade=A score=99.9 样本=124 72h胜率=0.38478233925479777 30d胜率=None 主币=HYPE,XRP,LIT,PUMP,BNB
+0xbd49...3d01 [money_printer] grade=B score=99.5 样本=10 72h胜率=0.7191291577666769 30d胜率=None 主币=UPUMP
+0x75ec...24b8 [money_printer] grade=B score=95.9 样本=33 72h胜率=0.4529526197078431 30d胜率=None 主币=ZEC,HYPE,KNTQ
 0x2a72...267c [smart_money] grade=B score=93.5 样本=40 72h胜率=0.3680183380860691 30d胜率=None 主币=PUMP
-0x04cc...38d1 [smart_money] grade=A score=92.2 样本=17 72h胜率=0.12513519767419912 30d胜率=None 主币=XRP,ZEC,ASTER,MON
 
 【Top 币种画像】
 
