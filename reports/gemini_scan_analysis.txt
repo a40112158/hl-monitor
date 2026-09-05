@@ -1,24 +1,14 @@
 【Gemini 本轮扫描分析】
 
-状态：api_error
+状态：success
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-Gemini 分析层调用失败。
-
-错误信息：
-developer:ReadTimeout: The read operation timed out | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}}
+本轮扫描未发现达到币种专属阈值的短线强信号或长期交易候选。多数“只观察”币种因历史样本不足、钱包集中度过高、现货主导或高杠杆占比过高等风险，未能通过AI风控硬门槛。市场整体环境偏中性，BTC处于中性区间，ETH接近低位。需持续观察信号的成熟度和风险指标。
 
 【数据质量】
-unknown
+本轮扫描成功率为100.00%，共监控2419个钱包，无部分成功或失败案例，数据完整性良好。
 
-【市场与资金结构】
-unknown
-
-【风险提示】
-- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
-- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
-
-【下一轮重点检查】
-- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
+【本地完整性校验】
+⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
