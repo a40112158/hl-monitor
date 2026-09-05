@@ -1,17 +1,17 @@
 {
-  "status": "api_error",
-  "urgency": "normal",
-  "executive_summary": "developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 42.229569886s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric' | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, h",
-  "data_quality": "unknown",
-  "market_structure": "unknown",
+  "status": "completed",
+  "urgency": "high",
+  "executive_summary": "本轮扫描未发现达到币种专属阈值的短线强异动或适合低杠杆的长期交易候选。市场整体情绪中性，BTC和ETH波动不大。值得关注的是，现货异常比例有所升高，但仍在阻断阈值以下。多数“只观察”币种因历史样本不足、钱包集中度过高或高杠杆占比过高而被风控否决。",
+  "data_quality": "详见 Markdown 报告【数据质量】部分。",
+  "market_structure": "详见 Markdown 报告【市场与资金结构】部分。",
   "changes_since_previous": [],
   "focus_items": [],
   "risk_warnings": [],
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：api_error\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\nGemini 分析层调用失败。\n\n错误信息：\ndeveloper:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 42.229569886s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric' | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, h\n\n【数据质量】\nunknown\n\n【市场与资金结构】\nunknown\n\n【风险提示】\n- 本轮 AI 分析失败，不代表扫描数据本身一定失败。\n- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。\n\n【下一轮重点检查】\n- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。\n",
-  "generated_at": "2026-09-05T22:26:38Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动或适合低杠杆的长期交易候选。市场整体情绪中性，BTC和ETH波动不大。值得关注的是，现货异常比例有所升高，但仍在阻断阈值以下。多数“只观察”币种因历史样本不足、钱包集中度过高或高杠杆占比过高而被风控否决。\n\n【数据质量】\n本轮扫描成功率为100%，共监控2419个钱包，全部成功。现货语义质量方面，可信数据9076条，异常隔离650条，异常率为6.68%，已升高但低于10.00%的阻断阈值。数据整体完整，无接口失败或空数据，但部分币种存在历史样本不足的风险提示。\n\n【市场与资金结构】\nBTC：1小时跌幅-0.01%，4小时涨幅+0.04%，24小时涨幅+0.16%，市场情绪为中性（neutral）。\nETH：1小时跌幅-0.02%，4小时涨幅+0.15%，24小时涨幅+1.04%，市场情绪接近高位（near_high）。\n资金费率普遍较低，风险评估为低。\n流动性方面：\nGRAM：24小时成交额$3.32M，流动性风险高。\nVVV：24小时成交额$3.93M，流动性风险高。\nMON：24小时成交额$7.26M，流动性风险中。\nLINK：24小时成交额$6.50M，流动性风险中。\nXPL：24小时成交额$7.52M，流动性风险中。\n其他币种流动性风险较低。\n净流入、OI、多空人数比、主动买卖比等数据不足。\n\n【相比上次 AI 分析】\n上次AI分析因配额耗尽未能完成，本轮无法进行有效比较。\n\n【重点观察】\n本轮暂无明确高优先级目标。所有信号均处于“只观察”状态，且多数因风险因素未能通过长期资格硬门槛。\n1.  **PUMP (偏空)**：alert=-2.1，long=-0.9。风险提示历史样本/胜率不足，窗口内含断跑gap，本轮异动与滚动方向冲突，同方向高杠杆仓位偏多44%。\n2.  **PONS (偏空)**：alert=-0.9，long=-2.5。风险提示历史样本/胜率不足，滚动信号钱包集中度过高（Top1贡献89%），长期资格未通过。\n3.  **XMR (偏空)**：alert=-0.9，long=-3.4。风险提示历史样本/胜率不足，滚动信号钱包集中度过高（Top3占比93%），窗口内含断跑gap，长期资格未通过。\n4.  **LIT (偏多)**：alert=+0.7，long=+3.7。风险提示历史样本/胜率不足，窗口内含断跑gap。\n5.  **GRAM (偏空)**：alert=+0.0，long=-1.1。风险提示历史样本/胜率不足，流动性高风险（24h成交额仅$3.32M），长期多空硬门槛未通过。\n6.  **NEAR (偏多)**：alert=+0.0，long=+1.1。风险提示历史样本/胜率不足，窗口内含断跑gap，长期资格未通过：高杠杆占比过高（94%）。\n7.  **BTC (偏多)**：alert=+0.0，long=+0.0。风险提示历史样本/胜率不足，滚动信号钱包集中度过高（Top1贡献100%），高杠杆占比过高（90%），平均杠杆过高（25.5x）。\n\n【AI 风控结论】\n*   LIT (偏多): WATCH\n*   XMR (偏空): VETO (钱包集中度过高)\n*   PONS (偏空): VETO (钱包集中度过高、Top1贡献过高)\n*   PUMP (偏空): WATCH\n*   HYPE (偏空): WATCH\n*   TAO (偏多): VETO (钱包集中度过高、Top1贡献过高)\n*   GRAM (偏空): VETO (流动性风险高)\n*   NEAR (偏多): VETO (高杠杆占比过高)\n*   KNTQ (偏空): VETO (现货主导、缺少合约/低杠杆确认)\n*   NEKO (偏空): VETO (现货主导、缺少合约/低杠杆确认)\n*   UANSEM (偏多): VETO (现货主导、缺少合约/低杠杆确认)\n*   UXPL (偏多): VETO (现货主导、缺少合约/低杠杆确认)\n*   ZEC (偏空): VETO (高杠杆占比过高)\n*   UPUMP (偏多): VETO (现货主导、钱包集中度过高、缺少合约/低杠杆确认)\n*   BASED (偏多): VETO (现货主导、钱包集中度过高、缺少合约/低杠杆确认)\n*   MAX (偏空): VETO (现货主导、缺少合约/低杠杆确认)\n*   UAVAX (偏多): VETO (现货主导、缺少合约/低杠杆确认)\n*   HWAVE (偏空): VETO (现货主导、钱包集中度过高、持续性不足、缺少合约/低杠杆确认)\n*   UBONK (偏多): VETO (现货主导、钱包集中度过高、缺少合约/低杠杆确认)\n*   BTC (偏多): VETO (钱包集中度过高、高杠杆占比过高、平均杠杆过高)\n\n【风险提示】\n1.  **数据不足风险**：多数“只观察”币种存在历史样本/胜率不足的问题，信号可靠性较低。\n2.  **流动性风险**：GRAM和VVV等币种24小时成交额较低，存在流动性高风险，可能导致价格剧烈波动或难以平仓。\n3.  **钱包集中度风险**：PONS、XMR、TAO、BTC、UPUMP、BASED、HWAVE、UBONK等币种的滚动信号钱包集中度过高，可能为单钱包异动，不代表市场普遍趋势。\n4.  **高杠杆风险**：NEAR、ZEC和BTC等币种同方向高杠杆/爆仓边缘仓位占比过高，或平均杠杆过高，存在短期剧烈波动的风险。\n5.  **现货主导风险**：KNTQ、NEKO、UANSEM、UXPL、UPUMP、BASED、MAX、UAVAX、HWAVE、UBONK等币种的信号现货主导，可能为转账/归集/划转行为，不等于合约方向。\n6.  **窗口内含断跑gap**：部分币种信号窗口不连续，可能影响信号的准确性。\n7.  **信号与滚动方向冲突**：PUMP等币种本轮异动与滚动方向冲突，增加了不确定性。\n8.  **异常现货比例升高**：虽然未达阻断阈值，但6.68%的异常现货比例仍需警惕，可能暗示数据质量存在潜在问题。\n\n【参数观察】\n当前筛选参数可能偏严，导致本轮未出现达到币种专属阈值的短线强异动，且所有信号均处于“只观察”状态。这有助于过滤掉不确定性较高的信号，但同时也可能错过一些潜在机会。考虑到现货异常比例有所升高，当前的保守参数设置在风险控制方面是合理的。\n\n【下一轮重点检查】\n1.  持续关注异常现货比例的变化趋势，确认其是否继续升高或趋于稳定。\n2.  对本轮被VETO的币种，特别是因钱包集中度过高或高杠杆占比过高而被否决的币种，密切观察其后续几轮的资金结构和杠杆分布，看是否有改善。\n3.  对流动性风险较高的币种（如GRAM, VVV），持续监控其成交额变化，评估流动性风险是否缓解。\n4.  观察“只观察”币种中，如LIT、PUMP、HYPE等，其风险因素（如历史样本不足、窗口内含断跑gap）是否有所改善，以及信号强度是否有进一步提升。",
+  "generated_at": "2026-09-05T23:25:28Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
@@ -25,6 +25,6 @@
   ],
   "force_analysis": true,
   "force_reason": "manual",
-  "tg_sent": false,
+  "tg_sent": true,
   "error_tg_sent": false
 }
