@@ -1,17 +1,17 @@
 {
-  "status": "completed",
-  "urgency": "high",
-  "executive_summary": "本轮扫描未发现达到币种专属阈值的短线强异动或适合低杠杆的长期候选。多数观察币种因高杠杆占比、钱包集中度过高或现货主导等原因未能通过长期资格硬门槛。数据质量良好，但异常现货比例略有升高，需持续关注。",
-  "data_quality": "详见 Markdown 报告【数据质量】部分。",
-  "market_structure": "详见 Markdown 报告【市场与资金结构】部分。",
+  "status": "incomplete_output",
+  "urgency": "normal",
+  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【市场与资金结构】、【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
+  "data_quality": "unknown",
+  "market_structure": "unknown",
   "changes_since_previous": [],
   "focus_items": [],
   "risk_warnings": [],
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动或适合低杠杆的长期候选。多数观察币种因高杠杆占比、钱包集中度过高或现货主导等原因未能通过长期资格硬门槛。数据质量良好，但异常现货比例略有升高，需持续关注。\n\n【数据质量】\n本轮扫描成功率为100.00%，共监控2419个钱包，无部分成功或失败。现货语义质量方面，可信数据9083条，异常隔离617条，异常率为6.36%，低于10.00%的阻断阈值，但仍需警惕异常比例升高的趋势。数据完整性良好，未发现空数据或极端值。\n\n【市场与资金结构】\nBTC 1小时涨幅+0.01%，4小时跌幅-0.05%，24小时跌幅-1.72%，市场状态为中性（neutral）。\nETH 1小时涨幅+0.04%，4小时涨幅+0.02%，24小时跌幅-2.18%，市场状态接近低位（near_low）。\n资金费率方面，JTO为-0.00%，PENDLE、ZRO、VVV、ASTER、DOGE、LINK、TAO均为+0.00%，整体风险较低。\n流动性方面，JTO、PENDLE、ZRO的24小时成交额较低，流动性风险为高。VVV、ASTER、DOGE、LINK、TAO的流动性风险为中。BTC、ETH、HYPE、LIT、NEAR、PUMP、SOL、XMR、XPL、XRP、ZEC、CASHCAT的流动性风险为低。\n净流入、OI、多空人数比、主动买卖比、价格涨跌幅等数据不足。\n\n【相比上次 AI 分析】\n上次AI分析报告内容不完整，缺失多个章节，因此本轮无法与上次报告进行有效比较。\n\n【重点观察】\n本轮暂无明确高优先级目标。以下币种因存在一定信号但伴随显著风险，建议继续观察：\n*   **LIT (偏多)**：Alert分0.975，长期候选分3.6，但风险提示历史样本/胜率不足，且窗口内含断跑gap。本地风控结论为WATCH。\n*   **HYPE (偏空)**：Alert分0.0，长期候选分2.315，风险提示历史样本/胜率不足，窗口内含断跑gap，同方向高杠杆仓位偏多43%。本地风控结论为WATCH。\n\n【AI 风控结论】\n*   LIT (bullish): WATCH\n*   NEAR (bearish): VETO (高杠杆占比过高)\n*   XMR (bearish): VETO (钱包集中度过高)\n*   ETH (bullish): VETO (高杠杆占比过高、平均杠杆过高)\n*   HYPE (bearish): WATCH\n*   PUMP (bullish): VETO (高杠杆占比过高)\n*   MAX (bearish): VETO (现货主导、缺少合约/低杠杆确认)\n*   KNTQ (bearish): VETO (现货主导、缺少合约/低杠杆确认)\n*   UANSEM (bullish): VETO (现货主导、缺少合约/低杠杆确认)\n*   TAO (bullish): VETO (钱包集中度过高、Top1贡献过高、流动性偏低)\n*   ZEC (bullish): VETO (高杠杆占比过高)\n*   UXPL (bullish): VETO (现货主导、缺少合约/低杠杆确认)\n*   BUDDY (bearish): VETO (现货主导、钱包集中度过高、缺少合约/低杠杆确认)\n*   NEKO (bearish): VETO (现货主导、缺少合约/低杠杆确认)\n*   UPUMP (bearish): VETO (现货主导、钱包集中度过高、缺少合约/低杠杆确认)\n*   SOL (bearish): VETO (高杠杆占比过高、平均杠杆过高)\n*   BRIDGE (bullish): VETO (现货主导、钱包集中度过高、持续性不足、Top1贡献过高、缺少合约/低杠杆确认)\n*   UAVAX (bearish): VETO (现货主导、钱包集中度过高、Top1贡献过高、缺少合约/低杠杆确认)\n*   UBONK (bullish): VETO (现货主导、钱包集中度过高、Top1贡献过高、缺少合约/低杠杆确认)\n*   BASED (bullish): VETO (现货主导、钱包集中度过高、Top1贡献过高、缺少合约/低杠杆确认)\n\n【风险提示】\n*   **历史样本/胜率不足**：多数观察币种的信号历史样本不足，其有效性有待更多数据验证。\n*   **高杠杆占比过高**：ETH、NEAR、PUMP、ZEC、SOL等币种同方向高杠杆仓位占比过高，存在较高的爆仓风险。\n*   **钱包集中度过高**：XMR、TAO、BUDDY、UPUMP等币种的滚动信号可能由少数钱包主导，存在单钱包异动风险。\n*   **现货主导信号**：MAX、KNTQ、UANSEM、UXPL、BUDDY、NEKO、UPUMP、BRIDGE、UAVAX、UBONK、BASED等币种的信号主要由现货活动驱动，可能为转账/归集/划转，不代表合约方向。\n*   **流动性不足**：JTO、PENDLE、ZRO等币种24小时成交额较低，可能面临流动性风险。\n*   **断跑gap**：部分币种的信号窗口内含断跑gap，可能影响信号的连续性和可靠性。\n*   **大盘环境**：BTC和ETH均处于中性或接近低位，市场可能缺乏明确方向，需警惕震荡行情。\n\n【参数观察】\n本轮扫描未产生任何达到币种专属阈值的短线强信号或长期候选，且多数“只观察”币种因高杠杆、钱包集中度或现货主导等硬门槛被否决。自动优化分析层显示“暂无可分析的成熟信号样本”。这可能表明当前的筛选参数相对严格，导致信号难以通过。需要更多轮数据来评估参数的长期有效性，并观察是否有更多信号能够成熟。\n\n【下一轮重点检查】\n*   持续关注现货异常比例的变化趋势。\n*   重点观察LIT和HYPE的信号演变，特别是其风险因素（历史样本、断跑gap、高杠杆占比）是否有改善。\n*   对因高杠杆占比和钱包集中度过高而被否决的币种，持续追踪其杠杆结构和钱包行为，判断风险是否有所缓解。\n*   关注是否有新的币种出现持续性较好、杠杆结构健康的低杠杆长期信号。",
-  "generated_at": "2026-09-05T01:25:27Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动或适合低杠杆的长期候选。多数观察币种因高杠杆占比、钱包集中度过高或现货主导等原因未能通过长期资格硬门槛。数据质量良好，但异常现货比例略有升高，需持续关注。\n\n【数据质量】\n本轮扫描成功率为100%，共监控2419个钱包，无部分成功或失败的扫描。现货语义质量可信数据9079条，异常隔离621条，异常率为6.\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
+  "generated_at": "2026-09-05T02:25:35Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
@@ -25,6 +25,6 @@
   ],
   "force_analysis": true,
   "force_reason": "manual",
-  "tg_sent": true,
+  "tg_sent": false,
   "error_tg_sent": false
 }
