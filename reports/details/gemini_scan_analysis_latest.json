@@ -1,7 +1,7 @@
 {
-  "status": "incomplete_output",
+  "status": "api_error",
   "urgency": "normal",
-  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
+  "executive_summary": "developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 39.478137188s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric' | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, h",
   "data_quality": "unknown",
   "market_structure": "unknown",
   "changes_since_previous": [],
@@ -10,8 +10,8 @@
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强信号。多数币种处于“只观察”状态，主要受限于历史样本不足、高杠杆仓位集中、滚动窗口未成熟或信号由现货主导等风险因素。大盘环境相对中性，但部分币种流动性风险较高，需保持谨慎观察。\n\n【数据质量】\n本轮扫描监控钱包成功率为100%（2419个钱包全部成功）。然而，异常现货比例为6.48%，虽然低于10.00%的阻断阈值，但仍需持续关注其变化，以确保数据可靠性。部分币种信号存在窗口内含断跑gap，且历史样本/胜率不足。\n\n【市场与资金结构】\n*   **BTC:** 1小时涨幅+0.04%，4小时跌幅-0.33%，24小时涨幅+0.10%，市场状态为neutral。24小时成交额$886.59M，开放利率（OI）$2.83B，资金费率+0.0008%，资金费率风险低。\n*   **ETH:** 1小时涨幅+0.02%，4小时涨幅+0.27%，24小时涨幅+1.10%，市场状态为near_high。24小时成交额$321.90M，开放利率（OI）$2.24B，资金费率+0.0013%，资金费率风险低。\n*   **其他币种流动性与资金费率：**\n    *   VVV：24小时成交额$4.55M，流动性风险高。\n    *   ZRO：24小时成交额$1.87M，流动性风险高。\n    *   LINK：24小时成交额$5.90M，流动性风险中。\n    *   XPL：24小时成交额$6.60M，流动性风险中。\n    *   其他主要币种如HYPE、LIT、PONS、PUMP、XMR、ZEC、XRP等资金费率均显示为低风险，流动性风险也较低。\n*   **净流入/流出：** 观察到部分钱包有显著资金活动。例如，一个“money_printer”钱包有$1.24M USDC增加，疑似资金回流；另一个“money_printer”钱包有-$0.94M USDC减少，疑似资金流出/买入。同时，有钱包在USDC减少的同时现货增加，疑似进行买入操作。\n*   **开放利率（OI）:** BTC和ETH的OI较高，HYPE、ZEC、SOL的OI也相对较高，显示市场对这些币种的关注度。\n*   **多空人数比、主动买卖比：** 数据不足。\n*   **价格涨跌幅：** 大部分币种在短期（1h/4h）内波动不大。PONS在24小时内涨幅较大（+31.78%），但4小时内有显著跌幅（-5.57%）。\n\n【相比上次 AI 分析】\n上次AI分析报告内容不完整，因此无法进行有效的横向比较。本轮报告提供了完整的分析内容。\n\n【重点观察】\n*   **LIT (偏多):** alert=+0.7。理由：主滚动窗口30天内资金流入$\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
-  "generated_at": "2026-09-05T20:25:42Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：api_error\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\nGemini 分析层调用失败。\n\n错误信息：\ndeveloper:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 39.478137188s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric' | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, h\n\n【数据质量】\nunknown\n\n【市场与资金结构】\nunknown\n\n【风险提示】\n- 本轮 AI 分析失败，不代表扫描数据本身一定失败。\n- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。\n\n【下一轮重点检查】\n- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。\n",
+  "generated_at": "2026-09-05T21:26:40Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
@@ -26,5 +26,5 @@
   "force_analysis": true,
   "force_reason": "manual",
   "tg_sent": false,
-  "error_tg_sent": false
+  "error_tg_sent": true
 }
