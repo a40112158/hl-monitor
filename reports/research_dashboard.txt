@@ -1,21 +1,21 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-09-05 22:25:10 | UTC：2026-09-05 14:25:10
+更新时间北京时间：2026-09-05 23:25:15 | UTC：2026-09-05 15:25:15
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0xbcd4...0dd2 [money_printer] grade=A score=100.0 样本=128 72h胜率=0.36510982893003957 30d胜率=None 主币=HYPE,XRP,LIT,PUMP,BNB
-0x350e...fcfb [money_printer] grade=A score=100.0 样本=79 72h胜率=0.3886718984798816 30d胜率=None 主币=HYPE,ETH,ZEC,XRP,BTC
-0xbf73...5d58 [money_printer] grade=B score=100.0 样本=53 72h胜率=0.44080736806903054 30d胜率=None 主币=ZEC,ETH,NEAR,BTC,HYPE
-0x3888...dcdd [smart_money] grade=B score=100.0 样本=42 72h胜率=0.30527538244719526 30d胜率=None 主币=UPUMP
-0xe0ff...7610 [money_printer] grade=B score=100.0 样本=30 72h胜率=0.47521244670927687 30d胜率=None 主币=LIT
-0xeb0f...4637 [smart_money] grade=B score=100.0 样本=21 72h胜率=0.49690613793772503 30d胜率=None 主币=ZEC,XRP,SOL,ETH
-0x152e...c9dc [money_printer] grade=A score=100.0 样本=17 72h胜率=0.3795142620987446 30d胜率=None 主币=HYPE,ETH,BTC
-0xbd49...3d01 [money_printer] grade=B score=99.5 样本=10 72h胜率=0.719129157766677 30d胜率=None 主币=UPUMP
-0x75ec...24b8 [money_printer] grade=B score=95.9 样本=33 72h胜率=0.48081531337695604 30d胜率=None 主币=ZEC,HYPE,KNTQ
-0x2a72...267c [smart_money] grade=B score=93.5 样本=40 72h胜率=0.36801833808606915 30d胜率=None 主币=PUMP
+0xbcd4...0dd2 [money_printer] grade=B score=100.0 样本=129 72h胜率=0.3604738285211662 30d胜率=None 主币=HYPE,XRP,LIT,PUMP,PONS
+0x350e...fcfb [money_printer] grade=B score=100.0 样本=80 72h胜率=0.3886718984798816 30d胜率=None 主币=HYPE,ETH,ZEC,XRP,BTC
+0xbf73...5d58 [money_printer] grade=B score=100.0 样本=53 72h胜率=0.4408073680690307 30d胜率=None 主币=ZEC,ETH,NEAR,BTC,HYPE
+0x3888...dcdd [smart_money] grade=B score=100.0 样本=42 72h胜率=0.3052753824471954 30d胜率=None 主币=UPUMP
+0xe0ff...7610 [money_printer] grade=B score=100.0 样本=30 72h胜率=0.4752124467092767 30d胜率=None 主币=LIT
+0xeb0f...4637 [smart_money] grade=B score=100.0 样本=21 72h胜率=0.4659090842008845 30d胜率=None 主币=ZEC,XRP,SOL,ETH
+0x152e...c9dc [money_printer] grade=A score=100.0 样本=17 72h胜率=0.25084066005260364 30d胜率=None 主币=HYPE,ETH,BTC
+0x5986...89d9 [smart_money] grade=S score=100.0 样本=15 72h胜率=0.3625808383820498 30d胜率=None 主币=ETH,SOL,BTC,ZEC
+0xbd49...3d01 [money_printer] grade=B score=99.5 样本=10 72h胜率=0.7191291577666771 30d胜率=None 主币=UPUMP
+0x9bd2...0c88 [smart_money] grade=A score=98.1 样本=66 72h胜率=0.501639617425428 30d胜率=None 主币=ZEC,HYPE,TRUMP
 
 【Top 币种画像】
 

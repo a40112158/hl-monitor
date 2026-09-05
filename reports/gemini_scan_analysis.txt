@@ -1,70 +1,24 @@
 【Gemini 本轮扫描分析】
 
-状态：success
+状态：api_error
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-本轮扫描未发现达到币种专属阈值的短线强异动信号，所有观察到的币种均处于“只观察”状态，且普遍存在历史样本不足、钱包集中度过高或高杠杆占比过高等风险。大盘BTC和ETH波动较小，市场整体情绪偏中性。现货异常比例略有升高，但仍在可控范围内。本轮无明确高优先级交易目标，建议继续保持观察。
+Gemini 分析层调用失败。
+
+错误信息：
+developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}
 
 【数据质量】
-本轮扫描成功率为100%，所有2419个监控钱包均成功处理，无部分成功或失败。现货语义质量方面，可信数据9075条，异常隔离628条，异常率为6.47%。系统发出“异常现货比例升高”的告警，但仍低于10.00%的阻断阈值。多数“只观察”信号存在“历史样本/胜率不足”和“窗口内含断跑gap”的风险提示，表明部分币种的数据连续性和历史有效性有待提高。
+unknown
 
 【市场与资金结构】
-大盘环境：
-BTC：1小时涨幅+0.03%，4小时涨幅+0.03%，24小时涨幅+0.92%，市场状态接近高位（regime=near_high）。
-ETH：1小时涨幅+0.01%，4小时跌幅-0.01%，24小时涨幅+0.60%，市场状态中性（regime=neutral）。
-整体大盘波动较小，市场情绪相对平稳。
+unknown
 
-资金费率 / 流动性：
-ZRO：资金费率+0.00%，风险低；24小时成交额$2.03M，流动性风险高。
-VVV：资金费率+0.01%，风险低；24小时成交额$5.45M，流动性风险中。
-DOGE：资金费率+0.00%，风险低；24小时成交额$11.08M，流动性风险中。
-LINK：资金费率+0.00%，风险低；24小时成交额$5.44M，流动性风险中。
-XPL：资金费率+0.00%，风险低；24小时成交额$10.98M，流动性风险中。
-多数币种资金费率中性，流动性风险普遍存在，特别是ZRO流动性风险较高。
+【风险提示】
+- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
+- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
 
-资金结构：
-本轮有多个币种出现主动资金变化：
-NEKO：现货主动变化-$182.64M，钱包质量加权资金流-$166.20M，偏空。
-HYPE：合约主动变化$2.91M，钱包质量加权资金流$828.86K，偏多。
-ZEC：合约主动变化$2.03M，偏多。
-UPUMP：现货主动变化$1.53M，钱包质量加权资金流-$1.04M，偏多。
-PUMP：合约主动变化$2.13M，钱包质量加权资金流$1.67M，偏多。
-部分币种的资金流向与滚动窗口方向冲突，或现货主导，需警惕资金异动是否为真实合约意图。
-
-杠杆结构：
-PUMP、HYPE、ZEC、XRP等币种存在高杠杆仓位偏多或高杠杆占比过高的风险，平均杠杆在7x-14x之间，强平距离相对较近。
-LIT、PONS、XMR、TAO等币种低/中杠杆仓位占比较高，平均杠杆在2x-5x之间，强平距离相对较远。
-
-钱包行为：
-发现多个关联钱包行为聚类，例如cluster:04cc5be7包含11个钱包，cluster:07fe8986包含13个钱包，这些聚类行为可能影响市场结构。
-Top钱包画像显示，部分优质钱包（如0xbcd4...0dd2, 0x350e...fcfb）72小时胜率较低，但30天胜率数据不足。
-
-【相比上次 AI 分析】
-相比上次报告，本轮整体紧急度从“high”降至“normal”，表明市场缺乏明确强信号的状况持续，但整体风险感知有所下降。
-具体币种信号变化：
-PUMP的多头警报分数从1.27显著提升至4.21，但仍未达到阈值，且因高杠杆占比过高被否决。
-HYPE方向发生反转，从上次的偏空转为本轮的偏多，警报分数为1.93，但同样因高杠杆占比过高被否决。
-PONS的空头警报分数有所衰减，从-5.45降至-1.07。
-ZEC方向也发生反转，从上次的偏多转为本轮的偏空，警报分数为0.0。
-BNB的长期候选资格门槛从BLOCK变为PASS，尽管其警报分数仍为0.0，但这是一个积极的变化。
-总体而言，市场缺乏强信号的状况未变，但部分币种的信号强度和方向出现动态调整。
-
-【重点观察】
-本轮暂无明确高优先级目标。
-根据AI风控结论，目前只有LIT和BNB被标记为WATCH，但其信号分数较低，且存在历史样本不足等风险，需谨慎观察。
-
-【AI 风控结论】
-PUMP (bullish): VETO (高杠杆占比过高；数据未成熟或集中度警告)
-LIT (bullish): WATCH (数据未成熟或集中度警告)
-NEKO (bearish): VETO (现货主导；缺少合约/低杠杆确认；数据未成熟或集中度警告)
-PONS (bearish): VETO (钱包集中度过高；数据未成熟或集中度警告)
-XMR (bearish): VETO (钱包集中度过高；数据未成熟或集中度警告)
-HYPE (bullish): VETO (高杠杆占比过高；数据未成熟或集中度警告)
-TAO (bullish): VETO (钱包集中度过高；Top1贡献过高(70%)；数据未成熟或集中度警告)
-UANSEM (bullish): VETO (现货主导；缺少合约/低杠杆确认；数据未成熟或集中度警告)
-KNTQ (bearish): VETO (现货主导；缺少
-
-【本地完整性校验】
-⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
+【下一轮重点检查】
+- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
