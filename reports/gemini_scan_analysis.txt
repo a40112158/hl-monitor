@@ -1,62 +1,24 @@
 【Gemini 本轮扫描分析】
 
-状态：success
+状态：api_error
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-本轮扫描未发现达到币种专属阈值的短线强异动信号。所有观察到的币种均处于“只观察”状态，且多数因历史样本不足、高杠杆占比、钱包集中度过高或现货主导等风险因素被风控否决。整体市场环境保持中性，但现货异常比例略有升高，需持续关注。
+Gemini 分析层调用失败。
+
+错误信息：
+developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 59.604495413s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.google
 
 【数据质量】
-本轮扫描健康度良好，监控钱包成功率达100%，未出现部分或失败扫描。现货语义质量方面，异常隔离率为6.73%，虽低于10.00%的阻断阈值，但已触发告警，表明现货数据存在一定程度的异常，需保持警惕。多数“只观察”信号存在“历史样本/胜率不足”和“窗口内含断跑gap”的问题，表明这些信号的持续性和可靠性有待进一步验证。此外，“暂无可分析的成熟信号样本”也反映出当前缺乏经过充分验证的信号。
+unknown
 
 【市场与资金结构】
-大盘环境方面，BTC和ETH在1小时、4小时和24小时周期内波动较小，整体处于中性区间。
-资金费率方面，VVV、PENDLE、LINK、ASTER、XPL等主要币种的资金费率均显示为低风险，表明市场情绪相对平稳，未出现明显的极端多空倾向。
-流动性方面，VVV和PENDLE的24小时成交额较低（分别为$2.19M和$3.42M），流动性风险被评估为高。LINK和ASTER的流动性风险为中等。其他主要币种如BTC、ETH、HYPE、ZEC等流动性风险较低。
-净流入、OI、多空人数比、主动买卖比等指标未在汇总数据中直接提供，但部分币种的资金流向（如ZEC本轮合约主动变化$3.33M，钱包质量加权资金流$2.06M）和杠杆情况（如ZEC高杠杆占比64%，NEAR高杠杆占比98%）在具体信号解释中有所体现。整体来看，市场结构未显示出明确的单边趋势或资金大规模异动。
-
-【相比上次 AI 分析】
-上次AI分析报告内容不完整，无法进行有效比较。
-
-【重点观察】
-暂无明确高优先级目标。
-
-【AI 风控结论】
-- ZEC (偏多): VETO (高杠杆占比过高(64%)、24h涨幅过大(20.4%))
-- XMR (偏空): WATCH (历史样本/胜率不足；窗口内含断跑gap)
-- LIT (偏多): WATCH (历史样本/胜率不足；窗口内含断跑gap)
-- PONS (偏多): VETO (钱包集中度过高、Top1贡献过高(100%))
-- HYPE (偏空): WATCH (历史样本/胜率不足；窗口内含断跑gap；同方向高杠杆仓位偏多45%)
-- PUMP (偏多): VETO (高杠杆占比过高(56%))
-- TAO (偏多): VETO (钱包集中度过高、Top1贡献过高(70%)、高位追多)
-- UPUMP (偏空): VETO (spot-only/现货主导、钱包集中度过高、Top1贡献过高(81%)、缺少合约/低杠杆确认、长期空单缺少明确short确认)
-- NEAR (偏多): VETO (高杠杆占比过高(98%))
-- NEKO (偏空): VETO (spot-only/现货主导、缺少合约/低杠杆确认)
-- UANSEM (偏多): VETO (spot-only/现货主导、缺少合约/低杠杆确认)
-- KNTQ (偏空): VETO (spot-only/现货主导、缺少合约/低杠杆确认)
-- BUDDY (偏多): VETO (spot-only/现货主导、钱包集中度过高、含断跑gap且覆盖不足(77%)、缺少合约/低杠杆确认)
-- MAX (偏空): VETO (spot-only/现货主导、缺少合约/低杠杆确认)
-- HWAVE (偏空): VETO (spot-only/现货主导、钱包集中度过高、持续性不足、Top1贡献过高(100%)、缺少合约/低杠杆确认)
-- UAVAX (偏空): VETO (spot-only/现货主导、钱包集中度过高、Top1贡献过高(100%)、缺少合约/低杠杆确认)
-- BASED (偏多): VETO (spot-only/现货主导、钱包集中度过高、Top1贡献过高(80%)、缺少合约/低杠杆确认)
-- SOL (偏空): VETO (高杠杆占比过高(85%)、平均杠杆过高(13.8x))
-- XRP (偏多): VETO (高杠杆占比过高(57%)、平均杠杆过高(12.8x))
-- ETH (偏多): VETO (高杠杆占比过高(92%)、平均杠杆过高(16.2x))
+unknown
 
 【风险提示】
-1.  **数据样本不足与不连续性风险：** 大多数“只观察”币种存在“历史样本/胜率不足”和“窗口内含断跑gap”的风险，可能导致信号不具备统计学上的可靠性。
-2.  **高杠杆与爆仓风险：** ZEC、PUMP、NEAR、SOL、XRP、ETH等币种的信号方向存在高杠杆仓位占比过高的问题，部分币种平均杠杆偏高，增加了极端行情下的爆仓风险。
-3.  **钱包集中度风险：** PONS、TAO、UPUMP、BUDDY、HWAVE、UAVAX、BASED等币种的信号存在钱包集中度过高的问题，可能为单钱包异动，不代表市场普遍情绪。
-4.  **现货主导信号风险：** UPUMP、NEKO、UANSEM、KNTQ、BUDDY、MAX、HWAVE、UAVAX、BASED等币种的信号现货主导，可能为转账/归集/划转行为，不等于合约方向，且缺少合约/低杠杆确认。
-5.  **追高风险：** TAO币种存在“高位追多”的风险，价格位置可能不佳。
-6.  **流动性不足风险：** VVV和PENDLE的24小时成交额较低，存在流动性不足的风险，可能导致交易滑点或难以快速平仓。
-7.  **现货异常比例升高：** 本轮扫描现货异常比例达到6.73%，虽然未触及阻断阈值，但需警惕潜在的数据质量问题或市场异常行为。
-
-【参数观察】
-当前筛选参数在风险控制方面表现严格，成功过滤了大量因高杠杆、钱包集中度、现货主导或样本不足而存在高风险的信号，导致“暂无达到币种专属阈值的短线强异动”和“暂无适合低杠杆长期单的候选”。这表明参数在保守性上是有效的。然而，由于缺乏成熟信号样本进行分析，目前无法判断参数是否过于严格，以至于错失了潜在的低风险机会。需要更多轮数据来评估参数的平衡性。
+- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
+- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
 
 【下一轮重点检查】
-
-【本地完整性校验】
-⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
+- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
