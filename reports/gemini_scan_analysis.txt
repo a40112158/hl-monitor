@@ -1,24 +1,23 @@
 【Gemini 本轮扫描分析】
 
-状态：api_error
+状态：success
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-Gemini 分析层调用失败。
-
-错误信息：
-developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 30.479843087s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric' | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, h
+本轮扫描健康度良好，钱包成功率100%。但未发现达到币种专属阈值的短线强信号。多数观察币种因历史样本不足、钱包集中度过高、现货主导或高杠杆占比等原因未能通过长期资格硬门槛。现货异常比例略有升高，但仍在阈值内。整体市场环境BTC中性，ETH接近高位。
 
 【数据质量】
-unknown
+本轮扫描数据完整，2419个监控钱包全部成功，成功率为100%，无部分成功或失败。现货语义质量方面，可信数据9081条，异常隔离646条，异常率为6.64%，略高于正常水平，但低于10.00%的阻断阈值。多个币种的信号分析中提及“历史样本/胜率不足”和“窗口内含断跑gap”，表明部分币种的历史数据连续性或样本量存在不足。上次AI分析因资源耗尽未能成功生成报告，无法提供对比。
 
 【市场与资金结构】
-unknown
+*   **大盘环境：** BTC在1小时内无明显波动，4小时上涨0.20%，24小时上涨0.67%，市场情绪为中性。ETH在1小时内无明显波动，4小时上涨0.82%，24小时上涨2.50%，市场情绪接近高位。
+*   **资金费率与流动性：**
+    *   多数币种资金费率处于低风险水平。
+    *   VVV和GRAM的24小时成交额分别为$3.25M和$3.51M，流动性风险较高。
+    *   TAO、AAVE、LINK和XPL的24小时成交额在$6.46M至$17.89M之间，流动性风险为中等。
+    *   BTC、ETH、HYPE、LIT、NEAR、PONS、PUMP、SOL、XMR、XRP、ZEC等主要币种流动性风险较低，24小时成交额较高。
+*   **净流入、OI、多空人数比、主动买卖比：** 报告中未提供
 
-【风险提示】
-- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
-- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
-
-【下一轮重点检查】
-- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
+【本地完整性校验】
+⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
