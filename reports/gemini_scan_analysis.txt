@@ -1,24 +1,37 @@
 【Gemini 本轮扫描分析】
 
-状态：api_error
+状态：success
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-Gemini 分析层调用失败。
-
-错误信息：
-developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 59.604495413s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.google
+本轮扫描未发现达到币种专属阈值的短线强异动信号。多数观察币种存在历史样本不足、钱包集中度过高、现货主导或高杠杆占比过高等风险，均未通过长期资格硬门槛。市场整体波动不大，但现货异常比例略有升高，需持续关注。
 
 【数据质量】
-unknown
+本轮扫描成功率为100%，监控钱包2419个，无partial或failed。现货语义质量可信度较高，但异常隔离现货比例为6.73%，略高于上次，接近10.00%的阻断阈值，需警惕。数据整体完整，未发现空数据或极端值。自动优化分析层显示暂无可分析的成熟信号样本，表明历史数据积累仍不足以进行深度优化。
 
 【市场与资金结构】
-unknown
+*   **大盘环境：**
+    *   BTC：1小时下跌0.04%，4小时下跌0.04%，24小时上涨0.16%，处于“接近高位”状态。
+    *   ETH：1小时下跌0.06%，4小时上涨0.46%，24小时上涨0.99%，处于“中性”状态。
+*   **资金费率与流动性：**
+    *   多数主流及观察币种资金费率处于低风险水平。
+    *   VVV、GRAM、PENDLE的24小时成交额较低（分别为2.22M美元、1.27M美元、3.24M美元），流动性风险为“高”。
+    *   ASTER（17.45M美元）和XPL（9.90M美元）流动性风险为“中”。
+    *   其他如HYPE、ZEC、PONS、PUMP、SOL、BTC、ETH等币种24小时成交额较高，流动性风险为“低”。
+*   **净流入、OI、多空人数比、主动买卖比、价格涨跌幅：** 数据不足。
 
-【风险提示】
-- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
-- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
+【相比上次 AI 分析】
+上次AI分析因服务器错误或配额耗尽而未能完成，因此本轮无法与上次报告进行有效比较。
 
-【下一轮重点检查】
-- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
+【重点观察】
+本轮暂无明确高优先级目标。以下币种因存在一定异动但风险较高，仅供继续观察：
+
+*   **HWAVE (偏多):** 现货主动变化15.34M美元，钱包质量加权资金流11.81M美元。但信号现货主导、钱包高度集中（Top1贡献100%）、持续性不足，且存在反向滚动窗口。
+*   **LINK (偏多):** 本轮合约主动变化1.17M美元，24小时表现强于BTC。但滚动窗口未成熟，同方向高杠杆/爆仓边缘仓位占比100%。
+*   **TAO (偏多):** 本轮钱包质量加权资金流1.05M美元，24小时表现强于BTC，价格靠近24小时高位。但钱包集中度过高（Top3占比100%），窗口内含断跑gap。
+*   **HYPE (偏多):** 本轮合约主动变化3.52M美元，24小时表现强于BTC。但本轮异动与滚动方向冲突，同方向高杠杆仓位偏多51%。
+*   **LIT (偏多):** 价格靠近24小时低位，多头加分。但历史样本/胜率不足，窗口内含断跑gap。
+
+【本地完整性校验】
+⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
