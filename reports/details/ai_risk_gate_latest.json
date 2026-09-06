@@ -1,21 +1,12 @@
 {
-  "generated_at": "2026-09-06T22:25:31Z",
+  "generated_at": "2026-09-06T23:25:26Z",
   "items": [
     {
-      "coin": "HWAVE",
-      "direction": "bullish",
+      "coin": "MAX",
+      "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
-        "maturity_or_concentration_warning"
-      ],
-      "rule": "AI may keep or downgrade this verdict, never upgrade it"
-    },
-    {
-      "coin": "LIT",
-      "direction": "bullish",
-      "verdict": "WATCH",
-      "reasons": [
         "maturity_or_concentration_warning"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
@@ -32,20 +23,27 @@
     {
       "coin": "TAO",
       "direction": "bullish",
-      "verdict": "VETO",
+      "verdict": "WATCH",
       "reasons": [
-        "local_candidate_gate_failed",
         "maturity_or_concentration_warning"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "LINK",
-      "direction": "bullish",
-      "verdict": "VETO",
+      "coin": "HYPE",
+      "direction": "bearish",
+      "verdict": "WATCH",
       "reasons": [
-        "local_candidate_gate_failed",
-        "high_leverage_concentration"
+        "maturity_or_concentration_warning"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
+      "coin": "LIT",
+      "direction": "bullish",
+      "verdict": "WATCH",
+      "reasons": [
+        "maturity_or_concentration_warning"
       ],
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
@@ -60,8 +58,8 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "HYPE",
-      "direction": "bullish",
+      "coin": "KNTQ",
+      "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
@@ -71,7 +69,7 @@
     },
     {
       "coin": "ZEC",
-      "direction": "bullish",
+      "direction": "bearish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
@@ -102,26 +100,6 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "UANSEM",
-      "direction": "bullish",
-      "verdict": "VETO",
-      "reasons": [
-        "local_candidate_gate_failed",
-        "maturity_or_concentration_warning"
-      ],
-      "rule": "AI may keep or downgrade this verdict, never upgrade it"
-    },
-    {
-      "coin": "KNTQ",
-      "direction": "bearish",
-      "verdict": "VETO",
-      "reasons": [
-        "local_candidate_gate_failed",
-        "maturity_or_concentration_warning"
-      ],
-      "rule": "AI may keep or downgrade this verdict, never upgrade it"
-    },
-    {
       "coin": "NEKO",
       "direction": "bearish",
       "verdict": "VETO",
@@ -132,8 +110,8 @@
       "rule": "AI may keep or downgrade this verdict, never upgrade it"
     },
     {
-      "coin": "MAX",
-      "direction": "bearish",
+      "coin": "UANSEM",
+      "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
@@ -143,6 +121,16 @@
     },
     {
       "coin": "BUDDY",
+      "direction": "bullish",
+      "verdict": "VETO",
+      "reasons": [
+        "local_candidate_gate_failed",
+        "maturity_or_concentration_warning"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
+      "coin": "HWAVE",
       "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
@@ -184,6 +172,17 @@
     {
       "coin": "SOL",
       "direction": "bearish",
+      "verdict": "VETO",
+      "reasons": [
+        "local_candidate_gate_failed",
+        "high_leverage_concentration",
+        "maturity_or_concentration_warning"
+      ],
+      "rule": "AI may keep or downgrade this verdict, never upgrade it"
+    },
+    {
+      "coin": "ETH",
+      "direction": "bullish",
       "verdict": "VETO",
       "reasons": [
         "local_candidate_gate_failed",
