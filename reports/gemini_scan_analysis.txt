@@ -1,64 +1,24 @@
 【Gemini 本轮扫描分析】
 
-状态：success
+状态：api_error
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-本轮扫描未发现明显达到币种专属阈值的短线强信号或异动。市场环境整体中性，但需关注现货异常比例的升高。多数观察币种因历史样本不足、现货主导或高杠杆集中度等原因未能通过长期资格硬门槛，建议继续保持观察。
+Gemini 分析层调用失败。
+
+错误信息：
+developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}
 
 【数据质量】
-本轮扫描成功率为100%，覆盖2419个钱包，数据完整。然而，现货语义异常率达到6.79%，接近10.00%的阻断阈值，需持续关注此指标的健康状况。多数“只观察”币种存在“历史样本/胜率不足”的问题，表明其数据深度或可靠性有待提高。
+unknown
 
 【市场与资金结构】
-大盘环境方面，BTC和ETH在1小时、4小时和24小时内的价格波动均较小，市场情绪整体处于中性状态。
-资金费率方面，多数币种的资金费率较低，风险评估为低。
-流动性方面，PENDLE、VVV、GRAM的24小时成交额较低，流动性风险评估为高；ASTER、DOGE、XPL的流动性风险评估为中；其余主要币种如BTC、ETH、SOL、PONS、PUMP、ZEC、HYPE、LIT、TAO、XMR等流动性风险评估为低。
-净流入方面，KNTQ和UPUMP本轮现货主动变化分别为-$8.07M和-$4.58M，显示出明显的现货流出。BTC和ETH分别有$7.92M和-$7.02M的合约主动变化。
-杠杆结构方面，PUMP、ZEC、ETH、SOL等币种存在较高比例的高杠杆仓位，部分币种平均杠杆偏高，强平距离相对较近，显示出一定的市场脆弱性。
-
-【相比上次 AI 分析】
-上次AI分析报告内容不完整，无法进行有效比较。
-
-【重点观察】
-暂无明确高优先级目标。
-本轮所有信号均未达到短线强信号阈值，且均被归类为“只观察”。其中，PONS、XMR、LIT、TAO、HYPE虽然通过了长期资格门槛（candidate_gate: PASS），但其alert_score较低，且普遍存在“历史样本/胜率不足”和“窗口内含断跑gap”的风险，信心度为低。
-
-【AI 风控结论】
-*   KNTQ (偏空): VETO
-*   PONS (偏空): WATCH
-*   XMR (偏空): WATCH
-*   LIT (偏多): WATCH
-*   TAO (偏多): WATCH
-*   UPUMP (偏空): VETO
-*   HYPE (偏空): WATCH
-*   PUMP (偏多): VETO
-*   ZEC (偏多): VETO
-*   ETH (偏空): VETO
-*   NEKO (偏空): VETO
-*   UANSEM (偏多): VETO
-*   MAX (偏空): VETO
-*   BUDDY (偏多): VETO
-*   SOL (偏空): VETO
-*   BASED (偏多): VETO
-*   HWAVE (偏多): VETO
-*   UAVAX (偏空): VETO
+unknown
 
 【风险提示】
-1.  **数据质量风险：** 现货异常比例升高至6.79%，虽然未达阻断阈值，但需警惕数据可靠性下降的潜在风险。
-2.  **样本不足风险：** 多数“只观察”币种存在“历史样本/胜率不足”的问题，其信号强度和可靠性较低，不宜作为确定性交易依据。
-3.  **现货主导信号风险：** KNTQ、UPUMP、NEKO、UANSEM、MAX、BUDDY、BASED、HWAVE、UAVAX等币种的信号现货主导，可能为转账、归集或划转行为，不直接等同于合约方向，存在误判风险。
-4.  **高杠杆集中风险：** PUMP、ZEC、ETH、SOL等币种存在高杠杆仓位占比过高的问题，市场波动可能导致连锁清算风险。
-5.  **流动性不足风险：** PENDLE、VVV、GRAM等币种的24小时成交额较低，流动性风险较高，可能导致滑点增大或难以平仓。
-6.  **单钱包异动风险：** UPUMP、BUDDY、BASED、HWAVE、UAVAX等币种的信号存在钱包集中度过高的情况，可能由单一大户行为主导，而非市场普遍共识。
-7.  **断跑gap风险：** 多个币种的滚动窗口内含断跑gap，可能影响信号的连续性和准确性。
-
-【参数观察】
-本轮扫描未发现达到币种专属阈值的短线强信号，且自动优化分析层显示“暂无可分析的成熟信号样本”。这可能表明当前筛选参数相对严格，或者市场缺乏明显的异动。鉴于多数信号因“历史样本/胜率不足”或“长期资格未通过”而被否决，需要更多轮数据来判断参数是否过于严格或宽松。
+- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
+- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
 
 【下一轮重点检查】
-1.  持续监控现货异常比例，确保数据质量稳定。
-2.  重点关注PONS、XMR、LIT、TAO、HYPE等被标记为WATCH的币种，观察其信号是否持续增强或风险因素是否有改善。
-3.  对流动性风险较高的币种（PENDLE, VVV, GRAM, ASTER, DOGE, XPL）进行更细致的流动性评估。
-4.  对存在钱包集中度过高问题的币种，进一步分析其资金流向和钱包行为模式。
-5.  关注大盘BTC和ETH的 regime 变化，以及其对整体市场情绪的影响。
+- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
