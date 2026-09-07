@@ -1,24 +1,26 @@
 【Gemini 本轮扫描分析】
 
-状态：api_error
+状态：success
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-Gemini 分析层调用失败。
-
-错误信息：
-developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}
+本轮扫描未发现达到币种专属阈值的短线强异动信号。现货数据异常比例略有升高，但仍在可接受范围内。多数观察币种因历史样本不足、高杠杆占比过高或现货主导等原因被风控系统否决或降级。市场整体情绪中性，需持续观察。
 
 【数据质量】
-unknown
+本轮扫描成功率为100%，未出现部分成功或失败的钱包。现货语义质量显示异常隔离率为6.79%，略高于正常水平，但低于10.00%的阻断阈值，存在数据质量告警。自动优化分析层提示暂无可分析的成熟信号样本，表明当前信号样本量不足以进行模型优化。
 
 【市场与资金结构】
-unknown
+*   **大盘环境：** BTC和ETH在1小时、4小时和24小时内波动较小，市场情绪整体呈中性。
+*   **资金费率：** 大多数币种资金费率处于低风险水平，PONS资金费率略高（+0.0117%），SOL资金费率略负（-0.0002%），但整体风险可控。
+*   **流动性：** VVV、GRAM、PENDLE流动性风险较高（24h成交额低于$5M），ASTER、DOGE、XPL流动性风险中等（24h成交额在$13M-$15M之间）。PUMP、PONS、XMR、TAO、LIT、ZEC、HYPE、ETH、SOL等币种流动性风险较低，24h成交额较高。
+*   **净流入/流出：**
+    *   PUMP、ZEC、ETH本轮合约主动变化及钱包质量加权资金流呈偏多方向。
+    *   PONS、KNTQ本轮钱包质量加权资金流呈偏空方向。
+    *   UPUMP本轮现货主动变化为负，但钱包质量加权资金流为正，存在冲突。
+    *   HYPE本轮钱包质量加权资金流为正，但主滚动窗口资金流为负，存在冲突。
+*   **杠杆结构：**
+    *   PUMP、ZEC、ETH、SOL等币种同方向高杠杆仓位占比较高（PUMP 56%，ZEC 62%，ETH 93%，
 
-【风险提示】
-- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
-- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
-
-【下一轮重点检查】
-- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
+【本地完整性校验】
+⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。

@@ -1,7 +1,7 @@
 {
-  "status": "api_error",
+  "status": "incomplete_output",
   "urgency": "normal",
-  "executive_summary": "developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}",
+  "executive_summary": "Gemini 返回内容不完整，已阻止其被标记为成功。缺失章节：【相比上次 AI 分析】、【重点观察】、【AI 风控结论】、【风险提示】、【参数观察】、【下一轮重点检查】、报告结尾",
   "data_quality": "unknown",
   "market_structure": "unknown",
   "changes_since_previous": [],
@@ -10,8 +10,8 @@
   "parameter_notes": [],
   "next_checks": [],
   "model": "gemini-2.5-flash",
-  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：api_error\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\nGemini 分析层调用失败。\n\n错误信息：\ndeveloper:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}\n\n【数据质量】\nunknown\n\n【市场与资金结构】\nunknown\n\n【风险提示】\n- 本轮 AI 分析失败，不代表扫描数据本身一定失败。\n- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。\n\n【下一轮重点检查】\n- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。\n",
-  "generated_at": "2026-09-07T19:29:37Z",
+  "markdown_report": "【Gemini 本轮扫描分析】\n\n状态：success\n模型：gemini-2.5-flash\n紧急度：normal\n\n【执行摘要】\n本轮扫描未发现达到币种专属阈值的短线强异动信号。现货数据异常比例略有升高，但仍在可接受范围内。多数观察币种因历史样本不足、高杠杆占比过高或现货主导等原因被风控系统否决或降级。市场整体情绪中性，需持续观察。\n\n【数据质量】\n本轮扫描成功率为100%，未出现部分成功或失败的钱包。现货语义质量显示异常隔离率为6.79%，略高于正常水平，但低于10.00%的阻断阈值，存在数据质量告警。自动优化分析层提示暂无可分析的成熟信号样本，表明当前信号样本量不足以进行模型优化。\n\n【市场与资金结构】\n*   **大盘环境：** BTC和ETH在1小时、4小时和24小时内波动较小，市场情绪整体呈中性。\n*   **资金费率：** 大多数币种资金费率处于低风险水平，PONS资金费率略高（+0.0117%），SOL资金费率略负（-0.0002%），但整体风险可控。\n*   **流动性：** VVV、GRAM、PENDLE流动性风险较高（24h成交额低于$5M），ASTER、DOGE、XPL流动性风险中等（24h成交额在$13M-$15M之间）。PUMP、PONS、XMR、TAO、LIT、ZEC、HYPE、ETH、SOL等币种流动性风险较低，24h成交额较高。\n*   **净流入/流出：**\n    *   PUMP、ZEC、ETH本轮合约主动变化及钱包质量加权资金流呈偏多方向。\n    *   PONS、KNTQ本轮钱包质量加权资金流呈偏空方向。\n    *   UPUMP本轮现货主动变化为负，但钱包质量加权资金流为正，存在冲突。\n    *   HYPE本轮钱包质量加权资金流为正，但主滚动窗口资金流为负，存在冲突。\n*   **杠杆结构：**\n    *   PUMP、ZEC、ETH、SOL等币种同方向高杠杆仓位占比较高（PUMP 56%，ZEC 62%，ETH 93%，\n\n【本地完整性校验】\n⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。",
+  "generated_at": "2026-09-07T20:25:48Z",
   "interval_minutes": 30,
   "input_reports": [
     "last_run_status.json",
