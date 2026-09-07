@@ -1,21 +1,21 @@
 【研究面板 / 信号验证摘要】
-更新时间北京时间：2026-09-07 10:25:26 | UTC：2026-09-07 02:25:26
+更新时间北京时间：2026-09-07 11:25:20 | UTC：2026-09-07 03:25:20
 说明：本报告不改变交易信号，只用于验证：哪些信号、钱包、币种历史上更有效。样本少时不要过度解读。
 
 【信号回测摘要】
 暂无成熟回测样本。
 
 【Top 钱包画像】
-0xbcd4...0dd2 [money_printer] grade=A score=100.0 样本=142 72h胜率=0.386984878064586 30d胜率=None 主币=HYPE,XRP,LIT,PONS,PUMP
-0x350e...fcfb [money_printer] grade=A score=100.0 样本=86 72h胜率=0.4163765970195146 30d胜率=None 主币=HYPE,ETH,ZEC,XRP,BTC
-0xbf73...5d58 [money_printer] grade=A score=100.0 样本=53 72h胜率=0.5286820030782734 30d胜率=None 主币=ZEC,NEAR,ETH,PUMP,BTC
-0x3888...dcdd [smart_money] grade=B score=100.0 样本=40 72h胜率=0.3113237168794444 30d胜率=None 主币=UPUMP
+0xbcd4...0dd2 [money_printer] grade=A score=100.0 样本=142 72h胜率=0.3869848780645859 30d胜率=None 主币=HYPE,XRP,LIT,PONS,PUMP
+0x350e...fcfb [money_printer] grade=A score=100.0 样本=86 72h胜率=0.41637659701951457 30d胜率=None 主币=HYPE,ETH,ZEC,XRP,BTC
+0xbf73...5d58 [money_printer] grade=A score=100.0 样本=54 72h胜率=0.5286820030782735 30d胜率=None 主币=ZEC,ETH,NEAR,PUMP,BTC
+0x3888...dcdd [smart_money] grade=B score=100.0 样本=40 72h胜率=0.31132371687944443 30d胜率=None 主币=UPUMP
 0x75ec...24b8 [money_printer] grade=A score=100.0 样本=34 72h胜率=0.5061159117327779 30d胜率=None 主币=ZEC,HYPE,KNTQ
-0xe0ff...7610 [money_printer] grade=A score=100.0 样本=32 72h胜率=0.42325353321786613 30d胜率=None 主币=LIT
-0xeb0f...4637 [smart_money] grade=B score=100.0 样本=21 72h胜率=0.498890085022074 30d胜率=None 主币=ZEC,XRP,SOL,ETH
+0xe0ff...7610 [money_printer] grade=A score=100.0 样本=32 72h胜率=0.42325353321786596 30d胜率=None 主币=LIT
+0xeb0f...4637 [smart_money] grade=B score=100.0 样本=21 72h胜率=0.49889008502207405 30d胜率=None 主币=ZEC,XRP,SOL,ETH
 0x152e...c9dc [money_printer] grade=A score=100.0 样本=17 72h胜率=0.1478482321194272 30d胜率=None 主币=HYPE,ETH,BTC
 0xbd49...3d01 [money_printer] grade=B score=100.0 样本=10 72h胜率=0.7191291577666769 30d胜率=None 主币=UPUMP
-0x461c...d2f2 [smart_money] grade=C score=97.7 样本=41 72h胜率=0.43420060422799606 30d胜率=None 主币=ZEC,TAO,BTC,UNI
+0x461c...d2f2 [smart_money] grade=C score=97.7 样本=41 72h胜率=0.4342006042279959 30d胜率=None 主币=ZEC,TAO,BTC,UNI
 
 【Top 币种画像】
 
