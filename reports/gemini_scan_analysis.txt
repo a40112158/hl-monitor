@@ -1,24 +1,23 @@
 【Gemini 本轮扫描分析】
 
-状态：api_error
+状态：success
 模型：gemini-2.5-flash
 紧急度：normal
 
 【执行摘要】
-Gemini 分析层调用失败。
-
-错误信息：
-developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}} | developer:ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'The request timed out. Please try again.', 'status': 'DEADLINE_EXCEEDED'}}
+本轮扫描成功完成，钱包成功率100%。未发现短线强信号或明确的低杠杆长期交易候选。值得关注的是，现货异常数据比例升高至6.82%，接近10%的阻断阈值，需持续监测。多数被识别的币种因数据不足、现货主导、钱包集中度过高或高杠杆等原因被列为“只观察”或被风控否决。
 
 【数据质量】
-unknown
+数据扫描成功率为100%，覆盖2419个钱包，无部分成功或失败案例，数据完整性良好。现货语义质量方面，可信数据为9079条，异常隔离数据为665条，异常率为6.82%。此异常率已升高，但仍在10.00%的阻断阈值之下，需持续关注。
 
 【市场与资金结构】
-unknown
+*   **BTC:** 1小时跌幅-0.01%，4小时跌幅-0.16%，24小时跌幅-1.31%，市场状态为`near_low`。
+*   **ETH:** 1小时涨幅+0.04%，4小时跌幅-0.16%，24小时跌幅-0.94%，市场状态为`neutral`。
+*   **资金费率与流动性：**
+    *   GRAM：资金费率+0.00%，风险低；24小时成交额$2.79M，流动性风险高。
+    *   XPL：资金费率+0.01%，风险低；24小时成交额$14.53M，流动性风险中。
+    *   VVV：资金费率+0.00%，风险低；24小时成交额$6.12M，流动性风险中。
+    *   AERO：资金费率
 
-【风险提示】
-- 本轮 AI 分析失败，不代表扫描数据本身一定失败。
-- 现在扫描分析已经改成普通 Markdown 输出，不再解析 JSON；如果仍报错，多半是 API Key、额度、模型、网络或 Vertex AI 配置问题。
-
-【下一轮重点检查】
-- 检查 GitHub Action 日志里的 Gemini provider、model、attempt 和错误信息。
+【本地完整性校验】
+⚠️ AI 输出被截断或缺少必需章节，本轮结论仅供复查，不进入成功状态。
