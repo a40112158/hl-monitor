@@ -1,1 +1,0 @@
-﻿lifecycle_id,model_version,source_event_id,lifecycle_type,coin,direction,status,lifecycle_state,entry_time,entry_px,entry_score,max_score,last_seen_at,last_score,missing_count,mark_return_pct,mfe_pct,mae_pct,mfe_at,mae_at,last_mark_px,last_mark_at,expires_at,exit_time,exit_px,exit_reason,exit_type,lifecycle_return_pct,net_lifecycle_return_pct,holding_hours,note
